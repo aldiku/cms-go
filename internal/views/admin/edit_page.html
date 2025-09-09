@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Edit Page</title>
+</head>
+<body>
+  <h1>Edit Page</h1>
+  <form method="POST" action="/admin/pages/{{.Page.ID}}/edit">
+    <input type="text" name="title" value="{{.Page.Title}}" required />
+    <input type="text" name="slug" value="{{.Page.Slug}}" required />
+    <select name="type">
+      <option value="page" {{if eq .Page.Type "page"}}selected{{end}}>Page</option>
+      <option value="post" {{if eq .Page.Type "post"}}selected{{end}}>Post</option>
+    </select>
+    <textarea name="content">{{.Page.Content}}</textarea>
+    <button type="submit">Update</button>
+  </form>
+</body>
+</html>

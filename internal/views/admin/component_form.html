@@ -1,0 +1,21 @@
+{{define "admin/component_form.html"}}
+<!DOCTYPE html>
+<html>
+<head><title>Admin - Component Editor</title></head>
+<body>
+  <h1>Component Editor</h1>
+  <form method="POST" action="{{if .Component}}/admin/components/{{.Component.ID}}/edit{{else}}/admin/components/new{{end}}">
+    <label>Name</label><br />
+    <input type="text" name="name" value="{{if .Component}}{{.Component.Name}}{{end}}" required /><br /><br />
+
+    <label>Schema (JSON)</label><br />
+    <textarea name="schema" rows="6" cols="60">{{if .Component}}{{.Component.Schema}}{{end}}</textarea><br /><br />
+
+    <label>Template (Go HTML)</label><br />
+    <textarea name="template" rows="10" cols="60">{{if .Component}}{{.Component.Template}}{{end}}</textarea><br /><br />
+
+    <button type="submit">Save</button>
+  </form>
+</body>
+</html>
+{{end}}

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin - Pages</title>
+</head>
+<body>
+  <h1>Pages</h1>
+
+  <!-- Create Page -->
+  <form method="POST" action="/admin/pages/new">
+    <input type="text" name="title" placeholder="Page Title" required />
+    <input type="text" name="slug" placeholder="Slug (e.g. /about)" required />
+    <select name="type">
+      <option value="page">Page</option>
+      <option value="post">Post</option>
+    </select>
+    <textarea name="content" placeholder="Page Content"></textarea>
+    <button type="submit">Save</button>
+  </form>
+
+  <hr />
+
+  <!-- List Pages -->
+  <ul>
+    {{range .Pages}}
+      <li>
+        {{.Title}} ({{.Slug}})
+        <a href="/admin/pages/{{.ID}}/edit">Edit</a>
+      </li>
+    {{end}}
+  </ul>
+</body>
+</html>

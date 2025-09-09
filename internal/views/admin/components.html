@@ -1,0 +1,18 @@
+{{define "admin/components.html"}}
+<!DOCTYPE html>
+<html>
+<head><title>Admin - Components</title></head>
+<body>
+  <h1>Components</h1>
+  <a href="/admin/components/new">➕ Add Component</a>
+  <ul>
+    {{range .Components}}
+      <li>
+        <b>{{.Name}}</b> 
+        [<a href="/admin/components/{{.ID}}/edit">Edit</a>]
+      </li>
+    {{end}}
+  </ul>
+</body>
+</html>
+{{end}}

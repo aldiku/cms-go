@@ -1,0 +1,28 @@
+{{define "front-layout"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{.Title}}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: sans-serif; margin:0; padding:0; }
+    .row { display:flex; flex-wrap:wrap; margin-bottom:20px; }
+    .col { flex:1; padding:10px; }
+  </style>
+</head>
+<body>
+  {{ range .rows }}
+  <div class="row">
+    {{ range .columns }}
+      <div class="col">
+        {{ range .components }}
+          {{ renderComponent .type .props }}
+        {{ end }}
+      </div>
+    {{ end }}
+  </div>
+{{ end }}
+</body>
+</html>
+{{end}}

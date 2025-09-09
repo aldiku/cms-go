@@ -1,0 +1,20 @@
+{{define "admin/layouts.html"}}
+<!DOCTYPE html>
+<html>
+<head><title>Admin - Layouts</title></head>
+<body>
+  <h1>Layouts</h1>
+  <form method="POST" action="/admin/layouts/new">
+    <input type="text" name="name" placeholder="Layout Name" required />
+    <textarea name="structure" placeholder='{"rows":[]}'></textarea>
+    <button type="submit">Save</button>
+  </form>
+
+  <ul>
+    {{range .Layouts}}
+      <li>{{.Name}} — <pre>{{.Structure}}</pre></li>
+    {{end}}
+  </ul>
+</body>
+</html>
+{{end}}
