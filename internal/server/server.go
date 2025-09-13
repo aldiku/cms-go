@@ -79,9 +79,6 @@ func New() *echo.Echo {
 
 	e.Renderer = NewRenderer()
 
-	// Public frontend routes
-	e.GET("/*", handlers.DynamicPage)
-
 	// Admin panel (HTML forms)
 	e.GET("/admin", handlers.AdminDashboard)
 	e.GET("/admin/pages", handlers.AdminPages)
@@ -101,6 +98,8 @@ func New() *echo.Echo {
 	e.POST("/admin/components/:id/edit", handlers.AdminUpdateComponent)
 
 	e.GET("/admin/menus", handlers.AdminMenus)
+	// Public frontend routes
+	e.GET("/*", handlers.DynamicPage)
 
 	return e
 }
