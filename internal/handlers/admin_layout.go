@@ -18,10 +18,11 @@ func AdminLayouts(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to load layouts")
 	}
 
-	// Just list layouts
-	return c.Render(http.StatusOK, "admin/layouts", map[string]interface{}{
+	data := map[string]interface{}{
 		"Layouts": layouts,
-	})
+	}
+
+	return renderWithLayout(c.Response().Writer, "internal/views/admin/admin-layout.html", "internal/views/admin/layouts.html", data)
 }
 
 func AdminCreateLayout(c echo.Context) error {
@@ -70,9 +71,12 @@ func AdminEditLayout(c echo.Context) error {
 	}
 
 	// Render edit page
-	return c.Render(http.StatusOK, "admin/edit_layout", map[string]interface{}{
+
+	data := map[string]interface{}{
 		"Layout": layout,
-	})
+	}
+
+	return renderWithLayout(c.Response().Writer, "internal/views/admin/admin-layout.html", "internal/views/admin/edit_layout.html", data)
 }
 
 func SaveComponentToFile(comp models.Component) error {

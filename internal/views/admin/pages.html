@@ -1,33 +1,27 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Admin - Pages</title>
-</head>
-<body>
-  <h1>Pages</h1>
+{{ define "content" }}
+<div class="max-w-5xl mx-auto py-8">
 
-  <!-- Create Page -->
-  <form method="POST" action="/admin/pages/new">
-    <input type="text" name="title" placeholder="Page Title" required />
-    <input type="text" name="slug" placeholder="Slug (e.g. /about)" required />
-    <select name="type">
-      <option value="page">Page</option>
-      <option value="post">Post</option>
-    </select>
-    <textarea name="content" placeholder="Page Content"></textarea>
-    <button type="submit">Save</button>
-  </form>
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Pages</h1>
+    <a href="/admin/pages/new" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+      + New Page
+    </a>
+  </div>
 
-  <hr />
+  <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    {{ range .Pages }}
+    <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
+      <h2 class="text-lg font-semibold text-gray-800 mb-2">{{ .Title }}</h2>
+      <p class="text-gray-500 mb-4">Slug: <span class="font-mono">{{ .Slug }}</span></p>
+      <div class="flex justify-between items-center">
+        <a href="/admin/pages/{{ .ID }}/edit" class="text-blue-500 hover:underline">Edit</a>
+        <form method="POST" action="/admin/pages/{{ .ID }}/delete" onsubmit="return confirm('Are you sure?');">
+          <button type="submit" class="text-red-500 hover:underline">Delete</button>
+        </form>
+      </div>
+    </div>
+    {{ end }}
+  </div>
 
-  <!-- List Pages -->
-  <ul>
-    {{range .Pages}}
-      <li>
-        {{.Title}} ({{.Slug}})
-        <a href="/admin/pages/{{.ID}}/edit">Edit</a>
-      </li>
-    {{end}}
-  </ul>
-</body>
-</html>
+</div>
+{{ end }}

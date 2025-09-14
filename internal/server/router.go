@@ -27,8 +27,9 @@ func New() *echo.Echo {
 	// Admin panel (HTML forms)
 	e.GET("/admin", handlers.AdminDashboard)
 	e.GET("/admin/pages", handlers.AdminPages)
+	e.GET("/admin/pages/new", handlers.AdminPageEditor)
 	e.POST("/admin/pages/new", handlers.AdminCreatePage)
-	e.GET("/admin/pages/:id/edit", handlers.AdminEditPage)
+	e.GET("/admin/pages/:id/edit", handlers.AdminPageEditor)
 	e.POST("/admin/pages/:id/edit", handlers.AdminUpdatePage)
 
 	// Layouts

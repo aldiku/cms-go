@@ -134,10 +134,18 @@ func DynamicPage(c echo.Context) error {
 // example RenderComponent: lookup subtemplate by name and execute
 func RenderComponent(tmpl *template.Template, name string, data interface{}) template.HTML {
 	var buf bytes.Buffer
-	err := tmpl.ExecuteTemplate(&buf, name, data)
+
+	// data biasanya map[string]interface{}
+	props, _ := data.(map[string]interface{})
+
+	// kalau ada props["html"], pastikan ini langsung template.HTML
+	if htmlContent, ok := props["html"]; ok {
+		props["html"] = template.HTML(fmt.Sprintf("%v", htmlContent))
+	}
+
+	err := tmpl.ExecuteTemplate(&buf, name, props)
 	if err != nil {
-		// log the error but don’t crash
-		fmt.Printf("renderComponent error 1: %v\n", err)
+		fmt.Printf("renderComponent error: %v\n", err)
 		return template.HTML("")
 	}
 	return template.HTML(buf.String())

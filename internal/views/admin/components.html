@@ -1,18 +1,26 @@
-{{define "admin/components.html"}}
-<!DOCTYPE html>
-<html>
-<head><title>Admin - Components</title></head>
-<body>
-  <h1>Components</h1>
-  <a href="/admin/components/new">➕ Add Component</a>
-  <ul>
-    {{range .Components}}
-      <li>
-        <b>{{.Name}}</b> 
-        [<a href="/admin/components/{{.ID}}/edit">Edit</a>]
-      </li>
-    {{end}}
-  </ul>
-</body>
-</html>
-{{end}}
+{{ define "content" }}
+<div class="max-w-5xl mx-auto py-8 space-y-6">
+
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Components</h1>
+    <a href="/admin/components/new" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+      ➕ Add Component
+    </a>
+  </div>
+
+  <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    {{ range .Components }}
+    <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
+      <h2 class="text-lg font-semibold text-gray-800 mb-2">{{ .Name }}</h2>
+      <div class="flex justify-end space-x-4">
+        <a href="/admin/components/{{ .ID }}/edit" class="text-blue-500 hover:underline">Edit</a>
+        <form method="POST" action="/admin/components/{{ .ID }}/delete" onsubmit="return confirm('Are you sure?');">
+          <button type="submit" class="text-red-500 hover:underline">Delete</button>
+        </form>
+      </div>
+    </div>
+    {{ end }}
+  </div>
+
+</div>
+{{ end }}

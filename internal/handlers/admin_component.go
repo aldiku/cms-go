@@ -13,9 +13,12 @@ import (
 func AdminComponents(c echo.Context) error {
 	var comps []models.Component
 	db.DB.Find(&comps)
-	return c.Render(http.StatusOK, "admin/components.html", map[string]interface{}{
+
+	data := map[string]interface{}{
 		"Components": comps,
-	})
+	}
+
+	return renderWithLayout(c.Response().Writer, "internal/views/admin/admin-layout.html", "internal/views/admin/components.html", data)
 }
 
 // Component Editor (New)
@@ -44,9 +47,12 @@ func AdminEditComponent(c echo.Context) error {
 	if err := db.DB.First(&comp, id).Error; err != nil {
 		return c.NoContent(http.StatusNotFound)
 	}
-	return c.Render(http.StatusOK, "admin/component_form.html", map[string]interface{}{
+
+	data := map[string]interface{}{
 		"Component": comp,
-	})
+	}
+
+	return renderWithLayout(c.Response().Writer, "internal/views/admin/admin-layout.html", "internal/views/admin/component_form.html", data)
 }
 
 func AdminUpdateComponent(c echo.Context) error {

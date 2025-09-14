@@ -1,76 +1,87 @@
-{{define "admin/component_form.html"}}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Admin - Component Editor</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    #schemaEditor, #templateEditor {
-      width: 100%;
-      height: 300px;
-      border: 1px solid #ddd;
-      border-radius: 0.375rem;
-    }
-  </style>
-</head>
-<body class="bg-light">
-  <div class="container mt-5">
-    <div class="card shadow-sm">
-      <div class="card-header bg-primary text-white">
-        <h4 class="mb-0">Component Editor</h4>
-      </div>
-      <div class="card-body">
-        <form method="POST" action="{{if .Component}}/admin/components/{{.Component.ID}}/edit{{else}}/admin/components/new{{end}}">
-          
-          <div class="mb-3">
-            <label for="name" class="form-label">Name</label>
-            <input type="text" id="name" name="name" class="form-control" 
-                   value="{{if .Component}}{{.Component.Name}}{{end}}" required>
-          </div>
+{{ define "content" }}
 
-          <div class="mb-3">
-            <label for="schemaEditor" class="form-label">Schema (JSON)</label>
-            <div id="schemaEditor">{{if .Component}}{{.Component.Schema}}{{end}}</div>
-            <textarea id="schema" name="schema" hidden>{{if .Component}}{{.Component.Schema}}{{end}}</textarea>
-          </div>
+<style>
+  #schemaEditor, #templateEditor {
+    width: 100%;
+    height: 300px;
+    border: 1px solid #ddd;
+    border-radius: 0.375rem; /* Tailwind rounded-md */
+  }
+</style>
 
-          <div class="mb-3">
-            <label for="templateEditor" class="form-label">Template (Go HTML)</label>
-            <div id="templateEditor">{{if .Component}}{{.Component.Template}}{{end}}</div>
-            <textarea id="template" name="template" hidden>{{if .Component}}{{.Component.Template}}{{end}}</textarea>
-          </div>
+<div class="max-w-4xl mx-auto py-8 space-y-6">
 
-          <div class="d-flex justify-content-end">
-            <button type="submit" class="btn btn-success px-4">💾 Save</button>
-          </div>
-        </form>
-      </div>
+  <!-- Card -->
+  <div class="bg-white shadow rounded-lg overflow-hidden">
+    <!-- Card Header -->
+    <div class="bg-blue-600 text-white px-6 py-4">
+      <h4 class="text-lg font-semibold mb-0">Component Editor</h4>
+    </div>
+
+    <!-- Card Body -->
+    <div class="px-6 py-6">
+      <form method="POST" action="{{if .Component}}/admin/components/{{.Component.ID}}/edit{{else}}/admin/components/new{{end}}" class="space-y-6">
+
+        <!-- Name -->
+        <div>
+          <label for="name" class="block text-gray-700 font-medium mb-2">Name</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value="{{if .Component}}{{.Component.Name}}{{end}}"
+            required
+          >
+        </div>
+
+        <!-- Schema Editor -->
+        <div>
+          <label for="schemaEditor" class="block text-gray-700 font-medium mb-2">Schema (JSON)</label>
+          <div id="schemaEditor" class="rounded-md border border-gray-300 shadow-sm">{{if .Component}}{{.Component.Schema}}{{end}}</div>
+          <textarea id="schema" name="schema" hidden>{{if .Component}}{{.Component.Schema}}{{end}}</textarea>
+        </div>
+
+        <!-- Template Editor -->
+        <div>
+          <label for="templateEditor" class="block text-gray-700 font-medium mb-2">Template (Go HTML)</label>
+          <div id="templateEditor" class="rounded-md border border-gray-300 shadow-sm">{{if .Component}}{{.Component.Template}}{{end}}</div>
+          <textarea id="template" name="template" hidden>{{if .Component}}{{.Component.Template}}{{end}}</textarea>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex justify-end">
+          <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 transition-colors">
+            💾 Save
+          </button>
+        </div>
+
+      </form>
     </div>
   </div>
 
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</div>
 
-  <!-- Ace Editor -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js"></script>
-  <script>
-    // Schema editor
-    const schemaEditor = ace.edit("schemaEditor");
-    schemaEditor.setTheme("ace/theme/github");
-    schemaEditor.session.setMode("ace/mode/json");
+<!-- Ace Editor -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js"></script>
+<script>
+  // Schema editor
+  const schemaEditor = ace.edit("schemaEditor");
+  schemaEditor.setTheme("ace/theme/github");
+  schemaEditor.session.setMode("ace/mode/json");
+  schemaEditor.setOption("wrap", true);
 
-    // Template editor
-    const templateEditor = ace.edit("templateEditor");
-    templateEditor.setTheme("ace/theme/github");
-    templateEditor.session.setMode("ace/mode/html");
+  // Template editor
+  const templateEditor = ace.edit("templateEditor");
+  templateEditor.setTheme("ace/theme/github");
+  templateEditor.session.setMode("ace/mode/html");
+  templateEditor.setOption("wrap", true);
 
-    // Sync editors to hidden textareas before submit
-    document.querySelector("form").addEventListener("submit", function () {
-      document.getElementById("schema").value = schemaEditor.getValue();
-      document.getElementById("template").value = templateEditor.getValue();
-    });
-  </script>
-</body>
-</html>
-{{end}}
+  // Sync editors to hidden textareas before submit
+  document.querySelector("form").addEventListener("submit", function () {
+    document.getElementById("schema").value = schemaEditor.getValue();
+    document.getElementById("template").value = templateEditor.getValue();
+  });
+</script>
+
+{{ end }}

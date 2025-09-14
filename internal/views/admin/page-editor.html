@@ -1,0 +1,90 @@
+{{ define "content" }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js"></script>
+
+<div class="max-w-5xl mx-auto py-8 space-y-6">
+
+  <div class="bg-white shadow rounded-lg overflow-hidden">
+    <div class="bg-blue-600 text-white px-6 py-4">
+      <h4 class="text-lg font-semibold mb-0">
+        {{if .Page}}Edit Page: {{.Page.Title}}{{else}}Create New Page{{end}}
+      </h4>
+    </div>
+
+    <div class="px-6 py-6">
+      <form method="POST" action="{{if .Page}}/admin/pages/{{.Page.ID}}/edit{{else}}/admin/pages/new{{end}}" class="space-y-6">
+
+        <!-- Title -->
+        <div>
+          <label for="title" class="block text-gray-700 font-medium mb-2">Title</label>
+          <input
+            type="text"
+            id="title"
+            name="title"
+            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value="{{if .Page}}{{.Page.Title}}{{end}}"
+            required
+          >
+        </div>
+
+        <!-- Slug -->
+        <div>
+          <label for="slug" class="block text-gray-700 font-medium mb-2">Slug</label>
+          <input
+            type="text"
+            id="slug"
+            name="slug"
+            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value="{{if .Page}}{{.Page.Slug}}{{end}}"
+            required
+          >
+        </div>
+
+        <!-- Type -->
+        <div>
+          <label for="type" class="block text-gray-700 font-medium mb-2">Type</label>
+          <select id="type" name="type" class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="page" {{if eq .Page.Type "page"}}selected{{end}}>Page</option>
+            <option value="post" {{if eq .Page.Type "post"}}selected{{end}}>Post</option>
+          </select>
+        </div>
+
+        <!-- Layout -->
+        <div>
+          <label for="layout" class="block text-gray-700 font-medium mb-2">Layout</label>
+          <select id="layout" name="layout_id" class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            {{ range .Layouts }}
+            <option value="{{ .ID }}" {{if $.Page}}{{if eq $.Page.LayoutID .ID}}selected{{end}}{{end}}>{{ .Name }}</option>
+            {{ end }}
+          </select>
+        </div>
+
+        <!-- Content Editor -->
+        <div>
+          <label for="contentEditor" class="block text-gray-700 font-medium mb-2">Content (JSON/Markdown)</label>
+          <div id="contentEditor" class="h-64 border border-gray-300 rounded shadow-sm">{{if .Page}}{{.Page.Content}}{{end}}</div>
+          <textarea id="content" name="content" hidden>{{if .Page}}{{.Page.Content}}{{end}}</textarea>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex justify-end">
+          <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 transition-colors">
+            💾 Save
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const contentEditor = ace.edit("contentEditor");
+  contentEditor.setTheme("ace/theme/github");
+  contentEditor.session.setMode("ace/mode/json"); // can be json or markdown
+  contentEditor.setOption("wrap", true);
+
+  document.querySelector("form").addEventListener("submit", function () {
+    document.getElementById("content").value = contentEditor.getValue();
+  });
+</script>
+{{ end }}

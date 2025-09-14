@@ -1,67 +1,73 @@
-{{define "admin/edit_layout"}}
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Edit Layout</title>
-  <style>
-    #editor-structure, #editor-template {
-      width: 100%;
-      height: 300px;
-      border: 1px solid #ccc;
-      font-size: 14px;
-      margin-bottom: 20px;
-    }
-  </style>
-  <!-- Load Ace from CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.3/ace.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-</head>
-<body>
-  <h1>Edit Layout: {{.Layout.Name}}</h1>
+{{ define "content" }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.3/ace.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-  <form method="POST" action="/admin/layouts/{{.Layout.ID}}/edit">
-    <label for="name">Name:</label><br />
-    <input type="text" id="name" name="name" value="{{.Layout.Name}}" required />
-    <br /><br />
+<div class="max-w-5xl mx-auto py-8">
+  <h1 class="text-2xl font-bold mb-6">Edit Layout: {{.Layout.Name}}</h1>
 
-    <label for="structure">Structure (JSON):</label><br />
-    <!-- Hidden textarea to hold the JSON -->
-    <textarea id="structure" name="structure" style="display:none;">{{.Layout.Structure}}</textarea>
-    <!-- Ace Editor for JSON -->
-    <div id="editor-structure">{{.Layout.Structure}}</div>
-    <br />
+  <form method="POST" action="/admin/layouts/{{.Layout.ID}}/edit" class="space-y-6">
 
-    <label for="template">Template (HTML with Go syntax):</label><br />
-    <!-- Hidden textarea to hold the template -->
-    <textarea id="template" name="template" style="display:none;">{{.Layout.Template}}</textarea>
-    <!-- Ace Editor for HTML -->
-    <div id="editor-template">{{.Layout.Template}}</div>
-    <br />
+    <!-- Name Input -->
+    <div>
+      <label for="name" class="block text-gray-700 font-medium mb-2">Name:</label>
+      <input
+        type="text"
+        id="name"
+        name="name"
+        value="{{.Layout.Name}}"
+        required
+        class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    </div>
 
-    <button type="submit">Save Changes</button>
+    <!-- Structure Editor -->
+    <div>
+      <label for="structure" class="block text-gray-700 font-medium mb-2">Structure (JSON):</label>
+      <textarea id="structure" name="structure" style="display:none;">{{.Layout.Structure}}</textarea>
+      <div id="editor-structure" class="h-64 border border-gray-300 rounded shadow-sm">{{.Layout.Structure}}</div>
+    </div>
+
+    <!-- Template Editor -->
+    <div>
+      <label for="template" class="block text-gray-700 font-medium mb-2">Template (HTML with Go syntax):</label>
+      <textarea id="template" name="template" style="display:none;">{{.Layout.Template}}</textarea>
+      <div id="editor-template" class="h-64 border border-gray-300 rounded shadow-sm">{{.Layout.Template}}</div>
+    </div>
+
+    <!-- Submit Button -->
+    <div>
+      <button
+        type="submit"
+        class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 transition-colors"
+      >
+        Save Changes
+      </button>
+    </div>
+
   </form>
 
-  <p><a href="/admin/layouts">← Back to Layouts</a></p>
+  <p class="mt-4 text-gray-600">
+    <a href="/admin/layouts" class="text-blue-500 hover:underline">← Back to Layouts</a>
+  </p>
+</div>
 
-  <script>
-    // Initialize Structure editor
-    var editorStructure = ace.edit("editor-structure");
-    editorStructure.setTheme("ace/theme/monokai");
-    editorStructure.session.setMode("ace/mode/json");
-    editorStructure.setOption("wrap", true);
+<script>
+  // Initialize Structure editor
+  var editorStructure = ace.edit("editor-structure");
+  editorStructure.setTheme("ace/theme/monokai");
+  editorStructure.session.setMode("ace/mode/json");
+  editorStructure.setOption("wrap", true);
 
-    // Initialize Template editor
-    var editorTemplate = ace.edit("editor-template");
-    editorTemplate.setTheme("ace/theme/monokai");
-    editorTemplate.session.setMode("ace/mode/html");
-    editorTemplate.setOption("wrap", true);
+  // Initialize Template editor
+  var editorTemplate = ace.edit("editor-template");
+  editorTemplate.setTheme("ace/theme/monokai");
+  editorTemplate.session.setMode("ace/mode/html");
+  editorTemplate.setOption("wrap", true);
 
-    // Sync editors with hidden textareas before submit
-    var form = document.querySelector("form");
-    form.addEventListener("submit", function() {
-      document.getElementById("structure").value = editorStructure.getValue();
-      document.getElementById("template").value = editorTemplate.getValue();
-    });
-  </script>
-</body>
-</html>
-{{end}}
+  // Sync editors with hidden textareas before submit
+  var form = document.querySelector("form");
+  form.addEventListener("submit", function() {
+    document.getElementById("structure").value = editorStructure.getValue();
+    document.getElementById("template").value = editorTemplate.getValue();
+  });
+</script>
+{{ end }}
