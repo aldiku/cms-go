@@ -12,16 +12,12 @@
   </style>
 </head>
 <body>
-  {{ range .rows }}
-  <div class="row">
-    {{ range .columns }}
-      <div class="col">
+{{ range .rows }}
+  {{ range .columns }}
         {{ range .components }}
           {{ renderComponent .type .props }}
         {{ end }}
-      </div>
     {{ end }}
-  </div>
 {{ end }}
 </body>
 </html>

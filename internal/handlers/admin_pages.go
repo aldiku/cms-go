@@ -8,6 +8,16 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+func AdminCreatePage(c echo.Context) error {
+	title := c.FormValue("title")
+	slug := c.FormValue("slug")
+	content := c.FormValue("content")
+	page := models.Page{Title: title, Slug: slug, Content: content, Type: "page"}
+
+	db.DB.Create(&page)
+	return c.Redirect(http.StatusFound, "/admin/pages")
+}
+
 // GET /admin/pages/:id/edit
 func AdminEditPage(c echo.Context) error {
 	id := c.Param("id")

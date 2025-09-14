@@ -17,6 +17,7 @@ type Layout struct {
 	ID        uint   `gorm:"primaryKey"`
 	Name      string `gorm:"uniqueIndex"`
 	Structure string // JSON for rows/columns/components
+	Template  string // HTML template (Go template syntax)
 	CreatedAt time.Time
 }
 

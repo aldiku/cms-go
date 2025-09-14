@@ -1,0 +1,67 @@
+{{define "admin/edit_layout"}}
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Edit Layout</title>
+  <style>
+    #editor-structure, #editor-template {
+      width: 100%;
+      height: 300px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+  </style>
+  <!-- Load Ace from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.3/ace.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+  <h1>Edit Layout: {{.Layout.Name}}</h1>
+
+  <form method="POST" action="/admin/layouts/{{.Layout.ID}}/edit">
+    <label for="name">Name:</label><br />
+    <input type="text" id="name" name="name" value="{{.Layout.Name}}" required />
+    <br /><br />
+
+    <label for="structure">Structure (JSON):</label><br />
+    <!-- Hidden textarea to hold the JSON -->
+    <textarea id="structure" name="structure" style="display:none;">{{.Layout.Structure}}</textarea>
+    <!-- Ace Editor for JSON -->
+    <div id="editor-structure">{{.Layout.Structure}}</div>
+    <br />
+
+    <label for="template">Template (HTML with Go syntax):</label><br />
+    <!-- Hidden textarea to hold the template -->
+    <textarea id="template" name="template" style="display:none;">{{.Layout.Template}}</textarea>
+    <!-- Ace Editor for HTML -->
+    <div id="editor-template">{{.Layout.Template}}</div>
+    <br />
+
+    <button type="submit">Save Changes</button>
+  </form>
+
+  <p><a href="/admin/layouts">← Back to Layouts</a></p>
+
+  <script>
+    // Initialize Structure editor
+    var editorStructure = ace.edit("editor-structure");
+    editorStructure.setTheme("ace/theme/monokai");
+    editorStructure.session.setMode("ace/mode/json");
+    editorStructure.setOption("wrap", true);
+
+    // Initialize Template editor
+    var editorTemplate = ace.edit("editor-template");
+    editorTemplate.setTheme("ace/theme/monokai");
+    editorTemplate.session.setMode("ace/mode/html");
+    editorTemplate.setOption("wrap", true);
+
+    // Sync editors with hidden textareas before submit
+    var form = document.querySelector("form");
+    form.addEventListener("submit", function() {
+      document.getElementById("structure").value = editorStructure.getValue();
+      document.getElementById("template").value = editorTemplate.getValue();
+    });
+  </script>
+</body>
+</html>
+{{end}}

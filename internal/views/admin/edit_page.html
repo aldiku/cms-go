@@ -2,6 +2,14 @@
 <html>
 <head>
   <title>Edit Page</title>
+  <style>
+    #editor {
+      width: 100%;
+      height: 400px;
+      border: 1px solid #333;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
   <h1>Edit Page</h1>
@@ -12,8 +20,28 @@
       <option value="page" {{if eq .Page.Type "page"}}selected{{end}}>Page</option>
       <option value="post" {{if eq .Page.Type "post"}}selected{{end}}>Post</option>
     </select>
-    <textarea name="content">{{.Page.Content}}</textarea>
+
+    <!-- Hidden textarea untuk submit -->
+    <textarea id="content" name="content" style="display:none;">{{.Page.Content}}</textarea>
+
+    <!-- Ace editor container -->
+    <div id="editor">{{.Page.Content}}</div>
+
     <button type="submit">Update</button>
   </form>
+
+  <!-- Ace editor -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.3/ace.js"  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script>
+    const editor = ace.edit("editor");
+    editor.setTheme("ace/theme/monokai");      // dark theme
+    editor.session.setMode("ace/mode/json");   // JSON mode
+    editor.session.setValue(document.getElementById("content").value);
+
+    // Sinkronkan editor ke textarea saat submit
+    document.querySelector("form").addEventListener("submit", function () {
+      document.getElementById("content").value = editor.getValue();
+    });
+  </script>
 </body>
 </html>
