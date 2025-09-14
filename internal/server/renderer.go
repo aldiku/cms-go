@@ -57,8 +57,9 @@ func NewRenderer() *Template {
 
 func DynamicPage(c echo.Context) error {
 	path := c.Request().URL.Path
+	renderer := c.Echo().Renderer.(*Template)
 
-	// 1) load page from DB (selalu fresh)
+	// 1) load page from DB
 	var page models.Page
 	if err := db.DB.Where("slug = ?", path).First(&page).Error; err != nil {
 		return c.Render(http.StatusNotFound, "404.html", nil)
@@ -76,41 +77,57 @@ func DynamicPage(c echo.Context) error {
 		}
 	}
 
-	// 3) parse layout structure (cached di file, tapi rows bisa di-merge)
+	// 3) parse layout structure
 	var layoutSchema map[string]interface{}
 	if err := json.Unmarshal([]byte(layout.Structure), &layoutSchema); err != nil {
 		return c.String(http.StatusInternalServerError, "layout parse error: "+err.Error())
 	}
 
-	// 4) parse page.Content (selalu fresh setiap request)
+	// 4) parse page content JSON
 	var pageSchema map[string]interface{}
 	if err := json.Unmarshal([]byte(page.Content), &pageSchema); err != nil {
 		return c.String(http.StatusInternalServerError, "page parse error: "+err.Error())
 	}
 
-	// 5) merge rows (layout + page)
-	layoutRows, _ := layoutSchema["rows"].([]interface{})
-	pageRows, _ := pageSchema["rows"].([]interface{})
+	// 5) cari rows layout, lalu replace content.html
+	if rows, ok := layoutSchema["rows"].([]interface{}); ok {
+		for _, r := range rows {
+			row, _ := r.(map[string]interface{})
+			if cols, ok := row["columns"].([]interface{}); ok {
+				for _, colRaw := range cols {
+					col, _ := colRaw.(map[string]interface{})
+					if comps, ok := col["components"].([]interface{}); ok {
+						for _, compRaw := range comps {
+							comp, _ := compRaw.(map[string]interface{})
+							if comp["type"] == "content" {
+								props, _ := comp["props"].(map[string]interface{})
+								if props == nil {
+									props = map[string]interface{}{}
+								}
 
-	mergedRows := []interface{}{}
-	for _, r := range layoutRows {
-		row, _ := r.(map[string]interface{})
-		if row["placeholder"] == "content" {
-			mergedRows = append(mergedRows, pageRows...) // inject page rows
-		} else {
-			mergedRows = append(mergedRows, row)
+								// Ambil page.Content JSON → render ke HTML string
+								// Asumsikan pageSchema punya "rows"
+								if pageHTML, err := renderPageJSON(pageSchema, renderer); err == nil {
+									props["html"] = template.HTML(pageHTML) // 🚨 langsung HTML
+								}
+
+								comp["props"] = props
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 
 	// 6) data context
 	data := map[string]interface{}{
 		"Title": page.Title,
-		"rows":  mergedRows, // selalu fresh
+		"rows":  layoutSchema["rows"], // sudah di-modify
 		"page":  page,
 	}
 
-	// 7) render pakai template dari folder generated (boleh cache)
-	renderer := c.Echo().Renderer.(*Template)
+	// 7) render dynamic
 	return renderDynamic(c, layout, data, renderer)
 }
 
@@ -183,4 +200,34 @@ func renderDynamic(c echo.Context, layout models.Layout, data interface{}, rende
 	}
 
 	return c.HTML(http.StatusOK, buf.String())
+}
+
+func renderPageJSON(pageSchema map[string]interface{}, renderer *Template) (string, error) {
+	var buf strings.Builder
+
+	rows, _ := pageSchema["rows"].([]interface{})
+	for _, r := range rows {
+		row, _ := r.(map[string]interface{})
+		buf.WriteString(`<div class="row">`)
+		if cols, ok := row["columns"].([]interface{}); ok {
+			for _, colRaw := range cols {
+				col, _ := colRaw.(map[string]interface{})
+				buf.WriteString(`<div class="col">`)
+				if comps, ok := col["components"].([]interface{}); ok {
+					for _, compRaw := range comps {
+						comp, _ := compRaw.(map[string]interface{})
+						typ, _ := comp["type"].(string)
+						props, _ := comp["props"].(map[string]interface{})
+
+						html := string(RenderComponent(renderer.templates, typ, props))
+						buf.WriteString(html)
+					}
+				}
+				buf.WriteString(`</div>`)
+			}
+		}
+		buf.WriteString(`</div>`)
+	}
+
+	return buf.String(), nil
 }
