@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"cms-go/internal/config"
 	"cms-go/internal/db"
 	"cms-go/internal/models"
 	"encoding/json"
@@ -107,30 +108,8 @@ func DynamicPage(c echo.Context) error {
 									props = map[string]interface{}{}
 								}
 
-								fmt.Println("comp", comp, "prop", props)
-
-								// Ambil page.Content JSON → render ke HTML string
-								// Asumsikan pageSchema punya "rows"
-								if path, ok := props["path"].(string); ok && path != "" {
-									content, err := os.ReadFile(path)
-									if err != nil {
-										log.Printf("Error reading HTML file %s: %v", path, err)
-										props = map[string]interface{}{
-											"html": template.HTML("<!-- Error loading HTML file -->"),
-										}
-									} else {
-										// Replace the component with raw HTML content
-										props = map[string]interface{}{
-											"html": template.HTML(content),
-										}
-									}
-									fmt.Println("get from path", props)
-								} else {
-									if pageHTML, err := renderPageJSON(pageSchema, renderer); err == nil {
-										props["html"] = template.HTML(pageHTML) // 🚨 langsung HTML
-									}
-									fmt.Println("get from content", props)
-
+								if pageHTML, err := renderPageJSON(pageSchema, renderer); err == nil {
+									props["html"] = template.HTML(pageHTML) // 🚨 langsung HTML
 								}
 
 								comp["props"] = props
@@ -163,6 +142,16 @@ func RenderComponent(tmpl *template.Template, name string, data interface{}) tem
 	// kalau ada props["html"], pastikan ini langsung template.HTML
 	if htmlContent, ok := props["html"]; ok {
 		props["html"] = template.HTML(fmt.Sprintf("%v", htmlContent))
+	}
+
+	if path, ok := props["path"].(string); ok && path != "" {
+		content, err := os.ReadFile(config.RootPath() + path)
+		if err != nil {
+			log.Printf("Error reading HTML file %s: %v", path, err)
+			props["html"] = template.HTML(fmt.Sprintf("%v", "<!-- Error loading HTML file -->"))
+		} else {
+			props["html"] = template.HTML(content)
+		}
 	}
 
 	err := tmpl.ExecuteTemplate(&buf, name, props)
