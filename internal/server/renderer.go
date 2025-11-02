@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -105,10 +107,30 @@ func DynamicPage(c echo.Context) error {
 									props = map[string]interface{}{}
 								}
 
+								fmt.Println("comp", comp, "prop", props)
+
 								// Ambil page.Content JSON → render ke HTML string
 								// Asumsikan pageSchema punya "rows"
-								if pageHTML, err := renderPageJSON(pageSchema, renderer); err == nil {
-									props["html"] = template.HTML(pageHTML) // 🚨 langsung HTML
+								if path, ok := props["path"].(string); ok && path != "" {
+									content, err := os.ReadFile(path)
+									if err != nil {
+										log.Printf("Error reading HTML file %s: %v", path, err)
+										props = map[string]interface{}{
+											"html": template.HTML("<!-- Error loading HTML file -->"),
+										}
+									} else {
+										// Replace the component with raw HTML content
+										props = map[string]interface{}{
+											"html": template.HTML(content),
+										}
+									}
+									fmt.Println("get from path", props)
+								} else {
+									if pageHTML, err := renderPageJSON(pageSchema, renderer); err == nil {
+										props["html"] = template.HTML(pageHTML) // 🚨 langsung HTML
+									}
+									fmt.Println("get from content", props)
+
 								}
 
 								comp["props"] = props
@@ -145,7 +167,7 @@ func RenderComponent(tmpl *template.Template, name string, data interface{}) tem
 
 	err := tmpl.ExecuteTemplate(&buf, name, props)
 	if err != nil {
-		fmt.Printf("renderComponent error: %v\n", err)
+		fmt.Printf("renderComponent error 1: %v\n", err)
 		return template.HTML("")
 	}
 	return template.HTML(buf.String())
@@ -182,7 +204,7 @@ func renderDynamic(c echo.Context, layout models.Layout, data interface{}, rende
 		"renderComponent": func(name string, data interface{}) template.HTML {
 			var buf bytes.Buffer
 			if err := tmpl.ExecuteTemplate(&buf, name, data); err != nil {
-				fmt.Printf("renderComponent error: %v\n", err)
+				fmt.Printf("renderComponent error2: %v\n", err)
 				return template.HTML("")
 			}
 			return template.HTML(buf.String())

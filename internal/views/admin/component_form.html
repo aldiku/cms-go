@@ -9,7 +9,7 @@
   }
 </style>
 
-<div class="max-w-4xl mx-auto py-8 space-y-6">
+<div class="w-full mx-auto py-8 space-y-6">
 
   <!-- Card -->
   <div class="bg-white shadow rounded-lg overflow-hidden">
@@ -35,20 +35,20 @@
           >
         </div>
 
-        <!-- Schema Editor -->
-        <div>
-          <label for="schemaEditor" class="block text-gray-700 font-medium mb-2">Schema (JSON)</label>
-          <div id="schemaEditor" class="rounded-md border border-gray-300 shadow-sm">{{if .Component}}{{.Component.Schema}}{{end}}</div>
-          <textarea id="schema" name="schema" hidden>{{if .Component}}{{.Component.Schema}}{{end}}</textarea>
-        </div>
-
+        
         <!-- Template Editor -->
         <div>
           <label for="templateEditor" class="block text-gray-700 font-medium mb-2">Template (Go HTML)</label>
           <div id="templateEditor" class="rounded-md border border-gray-300 shadow-sm">{{if .Component}}{{.Component.Template}}{{end}}</div>
           <textarea id="template" name="template" hidden>{{if .Component}}{{.Component.Template}}{{end}}</textarea>
         </div>
-
+        
+        <!-- Schema Editor -->
+        <div>
+          <label for="schemaEditor" class="block text-gray-700 font-medium mb-2">Schema (JSON)</label>
+          <div id="schemaEditor" class="rounded-md border border-gray-300 shadow-sm">{{if .Component}}{{.Component.Schema}}{{end}}</div>
+          <textarea id="schema" name="schema" hidden>{{if .Component}}{{.Component.Schema}}{{end}}</textarea>
+        </div>
         <!-- Submit Button -->
         <div class="flex justify-end">
           <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 transition-colors">
