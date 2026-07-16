@@ -1,5 +1,5 @@
 {{ define "content" }}
-<div class="w-full mx-auto py-8">
+<div class="w-full mx-auto py-8 space-y-6">
 
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-bold text-gray-800">Pages</h1>
@@ -8,19 +8,69 @@
     </a>
   </div>
 
-  <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-    {{ range .Pages }}
-    <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
-      <h2 class="text-lg font-semibold text-gray-800 mb-2">{{ .Title }}</h2>
-      <p class="text-gray-500 mb-4">Slug: <span class="font-mono">{{ .Slug }}</span></p>
-      <div class="flex justify-between items-center">
-        <a href="/admin/pages/{{ .ID }}/edit" class="text-blue-500 hover:underline">Edit</a>
-        <form method="POST" action="/admin/pages/{{ .ID }}/delete" onsubmit="return confirm('Are you sure?');">
-          <button type="submit" class="text-red-500 hover:underline">Delete</button>
-        </form>
+  <form method="GET" action="/admin/pages" class="max-w-sm">
+    <input
+      type="text"
+      name="q"
+      value="{{ .Query }}"
+      placeholder="Search pages by title or slug..."
+      class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    >
+  </form>
+
+  <div class="bg-white shadow rounded-lg overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-800 text-white">
+          <tr>
+            <th class="px-6 py-3 text-left text-sm font-semibold">ID</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold">Title</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold">Slug</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold">Type</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold">Action</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {{ range .Pages }}
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 text-sm text-gray-700">{{ .ID }}</td>
+            <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ .Title }}</td>
+            <td class="px-6 py-4 text-sm text-gray-700 font-mono">{{ .Slug }}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ .Type }}</td>
+            <td class="px-6 py-4 text-sm">
+              <div class="flex space-x-4">
+                <a href="/admin/pages/{{ .ID }}/edit" class="text-blue-500 hover:underline">Edit</a>
+                <form method="POST" action="/admin/pages/{{ .ID }}/delete" onsubmit="return confirm('Are you sure?');">
+                  <button type="submit" class="text-red-500 hover:underline">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {{ else }}
+          <tr>
+            <td colspan="5" class="px-6 py-4 text-sm text-gray-500 text-center">No pages found.</td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+      <p class="text-sm text-gray-600">Page {{ .CurrentPage }} of {{ .TotalPages }}</p>
+      <div class="flex space-x-2">
+        {{ if .HasPrev }}
+        <a href="/admin/pages?q={{ .Query }}&page={{ .PrevPage }}" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100">Previous</a>
+        {{ else }}
+        <span class="px-3 py-1.5 text-sm border border-gray-200 rounded text-gray-400">Previous</span>
+        {{ end }}
+        {{ if .HasNext }}
+        <a href="/admin/pages?q={{ .Query }}&page={{ .NextPage }}" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100">Next</a>
+        {{ else }}
+        <span class="px-3 py-1.5 text-sm border border-gray-200 rounded text-gray-400">Next</span>
+        {{ end }}
       </div>
     </div>
-    {{ end }}
   </div>
 
 </div>

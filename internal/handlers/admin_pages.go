@@ -7,16 +7,58 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 )
 
+const adminPagesPerPage = 10
+
 func AdminPages(c echo.Context) error {
+	query := strings.TrimSpace(c.QueryParam("q"))
+
+	pageNum, err := strconv.Atoi(c.QueryParam("page"))
+	if err != nil || pageNum < 1 {
+		pageNum = 1
+	}
+
+	like := "%" + query + "%"
+
+	var total int64
+	countQuery := db.DB.Model(&models.Page{})
+	if query != "" {
+		countQuery = countQuery.Where("title ILIKE ? OR slug ILIKE ?", like, like)
+	}
+	countQuery.Count(&total)
+
+	totalPages := int((total + adminPagesPerPage - 1) / adminPagesPerPage)
+	if totalPages < 1 {
+		totalPages = 1
+	}
+	if pageNum > totalPages {
+		pageNum = totalPages
+	}
+
+	findQuery := db.DB.Model(&models.Page{})
+	if query != "" {
+		findQuery = findQuery.Where("title ILIKE ? OR slug ILIKE ?", like, like)
+	}
+
 	var pages []models.Page
-	db.DB.Find(&pages)
+	findQuery.Order("id desc").
+		Limit(adminPagesPerPage).
+		Offset((pageNum - 1) * adminPagesPerPage).
+		Find(&pages)
 
 	data := map[string]interface{}{
-		"Pages": pages,
+		"Pages":       pages,
+		"Query":       query,
+		"CurrentPage": pageNum,
+		"TotalPages":  totalPages,
+		"HasPrev":     pageNum > 1,
+		"HasNext":     pageNum < totalPages,
+		"PrevPage":    pageNum - 1,
+		"NextPage":    pageNum + 1,
 	}
 
 	return renderWithLayout(c.Response().Writer, "internal/views/admin/admin-layout.html", "internal/views/admin/pages.html", data)

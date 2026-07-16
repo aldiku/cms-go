@@ -65,9 +65,9 @@ func ParseTemplates() (*template.Template, error) {
 func RenderComponent(tmpl *template.Template, name string, data interface{}) template.HTML {
 	props, _ := data.(map[string]interface{})
 
-	if htmlContent, ok := props["html"]; ok {
-		return template.HTML(fmt.Sprintf("%v", htmlContent))
-	}
+	// if htmlContent, ok := props["html"]; ok {
+	// 	return template.HTML(fmt.Sprintf("%v", htmlContent))
+	// }
 
 	if path, ok := props["path"].(string); ok && path != "" {
 		content, err := os.ReadFile(config.RootPath() + path)
