@@ -39,13 +39,15 @@ func NewRenderer() *Template {
 	// parse base views
 	tmpl, err := root.ParseGlob("internal/views/**/*.html")
 	if err != nil {
-		panic(err)
+		log.Printf("parse base views error: %v", err)
+		tmpl = root
 	}
 
 	// parse generated views
-	tmpl, err = tmpl.ParseGlob("internal/views/generated/**/*.html")
-	if err != nil {
-		panic(err)
+	if generated, err := tmpl.ParseGlob("internal/views/generated/**/*.html"); err != nil {
+		log.Printf("parse generated views error: %v", err)
+	} else {
+		tmpl = generated
 	}
 
 	// reinject funcs (supaya renderComponent jalan)
