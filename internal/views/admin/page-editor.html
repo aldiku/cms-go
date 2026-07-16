@@ -37,6 +37,7 @@
             class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="page" {{if eq .Page.Type "page" }}selected{{end}}>Page</option>
             <option value="post" {{if eq .Page.Type "post" }}selected{{end}}>Post</option>
+            <option value="html" {{if eq .Page.Type "html" }}selected{{end}}>Html</option>
           </select>
         </div>
 
@@ -54,7 +55,12 @@
 
         <!-- Content Editor -->
         <div>
-          <label for="contentEditor" class="block text-gray-700 font-medium mb-2">Content (JSON/Markdown)</label>
+          <label for="contentEditor" class="block text-gray-700 font-medium mb-2">Content</label>
+          {{if eq .Page.Type "html" }}
+          <span class="text-sm">HTML</span>
+          {{else}}
+          <span class="text-sm">JSON</span>
+          {{end}}
           <div id="contentEditor" class="h-64 border border-gray-300 rounded shadow-sm">{{if
             .Page}}{{.Page.Content}}{{end}}</div>
           <textarea id="content" name="content" hidden>{{if .Page}}{{.Page.Content}}{{end}}</textarea>
@@ -75,7 +81,9 @@
 <script>
   const contentEditor = ace.edit("contentEditor");
   contentEditor.setTheme("ace/theme/github");
-  contentEditor.session.setMode("ace/mode/json"); // can be json or markdown
+
+  contentEditor.session.setMode("ace/mode/{{if eq .Page.Type `html`}}html{{else}}json{{end}}");
+
   contentEditor.setOption("wrap", true);
 
   document.querySelector("form").addEventListener("submit", function () {

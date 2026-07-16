@@ -60,14 +60,9 @@ func ParseTemplates() (*template.Template, error) {
 
 // RenderComponent renders a page component. If props carries raw "html" (or a
 // "path" to an HTML file), that content becomes the entire rendered output,
-// replacing the component wholesale. Otherwise the named component template
 // (e.g. "hero") is looked up and executed with props as its data (e.g. {{.headline}}).
 func RenderComponent(tmpl *template.Template, name string, data interface{}) template.HTML {
 	props, _ := data.(map[string]interface{})
-
-	// if htmlContent, ok := props["html"]; ok {
-	// 	return template.HTML(fmt.Sprintf("%v", htmlContent))
-	// }
 
 	if path, ok := props["path"].(string); ok && path != "" {
 		content, err := os.ReadFile(config.RootPath() + path)
@@ -76,6 +71,13 @@ func RenderComponent(tmpl *template.Template, name string, data interface{}) tem
 			return template.HTML("<!-- Error loading HTML file -->")
 		}
 		return template.HTML(content)
+	}
+
+	if raw, ok := props["html"]; ok {
+		switch v := raw.(type) {
+		case string:
+			props["html"] = template.HTML(v)
+		}
 	}
 
 	var buf bytes.Buffer
@@ -142,12 +144,24 @@ func RenderPage(base *template.Template, page models.Page, layout models.Layout)
 		return "", fmt.Errorf("layout parse error: %w", err)
 	}
 
-	var pageSchema map[string]interface{}
-	if err := json.Unmarshal([]byte(page.Content), &pageSchema); err != nil {
-		return "", fmt.Errorf("page parse error: %w", err)
+	// Determine what HTML should be rendered into the content component.
+	var renderedHTML template.HTML
+
+	switch page.Type {
+	case "html":
+		// Raw HTML stored directly in page.Content
+		renderedHTML = template.HTML(page.Content)
+
+	default: // page, post
+		var pageSchema map[string]interface{}
+		if err := json.Unmarshal([]byte(page.Content), &pageSchema); err != nil {
+			return "", fmt.Errorf("page parse error: %w", err)
+		}
+
+		renderedHTML = template.HTML(renderPageComponents(pageSchema, tmpl))
 	}
 
-	// cari rows layout, lalu replace content.html dengan hasil render page components
+	// Replace the content component with the rendered HTML.
 	if rows, ok := layoutSchema["rows"].([]interface{}); ok {
 		for _, r := range rows {
 			row, _ := r.(map[string]interface{})
@@ -162,7 +176,7 @@ func RenderPage(base *template.Template, page models.Page, layout models.Layout)
 								if props == nil {
 									props = map[string]interface{}{}
 								}
-								props["html"] = template.HTML(renderPageComponents(pageSchema, tmpl))
+								props["html"] = renderedHTML
 								comp["props"] = props
 							}
 						}
