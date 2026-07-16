@@ -24,7 +24,7 @@ func AdminComponents(c echo.Context) error {
 
 // Component Editor (New)
 func AdminNewComponent(c echo.Context) error {
-	return c.Render(http.StatusOK, "admin/component_form.html", nil)
+	return renderWithLayout(c.Response().Writer, "internal/views/admin/admin-layout.html", "internal/views/admin/component_form.html", nil)
 }
 
 func AdminCreateComponent(c echo.Context) error {

@@ -3,24 +3,68 @@
 
   <div class="flex justify-between items-center mb-6">
     <h1 class="text-2xl font-bold text-gray-800">Components</h1>
-    <a href="/admin/components/new" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+    <a href="/admin/components/new"
+      class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
       ➕ Add Component
     </a>
   </div>
 
-  <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-    {{ range .Components }}
-    <div class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
-      <h2 class="text-lg font-semibold text-gray-800 mb-2">{{ .Name }}</h2>
-      <div class="flex justify-end space-x-4">
-        <a href="/admin/components/{{ .ID }}/edit" class="text-blue-500 hover:underline">Edit</a>
-        <form method="POST" action="/admin/components/{{ .ID }}/delete" onsubmit="return confirm('Are you sure?');">
-          <button type="submit" class="text-red-500 hover:underline">Delete</button>
-        </form>
-      </div>
+  <div class="max-w-sm">
+    <input type="text" id="component-search" placeholder="Search components by name..."
+      class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      oninput="filterComponents(this.value)">
+  </div>
+
+  <div class="bg-white shadow rounded-lg overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-800 text-white">
+          <tr>
+            <th class="px-6 py-3 text-left text-sm font-semibold">ID</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold">Name</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold">Template</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold">Action</th>
+          </tr>
+        </thead>
+        <tbody id="components-table-body" class="bg-white divide-y divide-gray-200">
+          {{ range .Components }}
+          <tr class="component-row hover:bg-gray-50">
+            <td class="px-6 py-4 text-sm text-gray-700">{{ .ID }}</td>
+            <td class="component-name px-6 py-4 text-sm font-medium text-gray-900">{{ .Name }}</td>
+            <td class="px-6 py-4 text-sm text-gray-700 max-w-md truncate"><code>{{ .Template }}</code></td>
+            <td class="px-6 py-4 text-sm">
+              <div class="flex space-x-4">
+                <a href="/admin/components/{{ .ID }}/edit" class="text-blue-500 hover:underline">Edit</a>
+                <form method="POST" action="/admin/components/{{ .ID }}/delete"
+                  onsubmit="return confirm('Are you sure?');">
+                  <button type="submit" class="text-red-500 hover:underline">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
+      <p id="components-empty" class="hidden px-6 py-4 text-sm text-gray-500">No components match your search.</p>
     </div>
-    {{ end }}
   </div>
 
 </div>
+
+<script>
+  function filterComponents(query) {
+    const q = query.trim().toLowerCase();
+    const rows = document.querySelectorAll('#components-table-body .component-row');
+    let visibleCount = 0;
+
+    rows.forEach((row) => {
+      const name = row.querySelector('.component-name').textContent.toLowerCase();
+      const match = name.includes(q);
+      row.classList.toggle('hidden', !match);
+      if (match) visibleCount++;
+    });
+
+    document.getElementById('components-empty').classList.toggle('hidden', visibleCount !== 0);
+  }
+</script>
 {{ end }}

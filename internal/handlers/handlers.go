@@ -9,11 +9,11 @@ import (
 )
 
 func AdminDashboard(c echo.Context) error {
-	return c.String(http.StatusOK, "Admin Dashboard")
+	return c.Render(http.StatusNotFound, "404.html", nil)
 }
 
 func AdminMenus(c echo.Context) error {
-	return c.String(http.StatusOK, "Menu management (DB version)")
+	return c.Render(http.StatusNotFound, "404.html", nil)
 }
 
 func renderWithLayout(w io.Writer, layoutPath, viewPath string, data map[string]interface{}) error {
