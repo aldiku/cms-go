@@ -1,73 +1,132 @@
 {{ define "content" }}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js"></script>
 
-<div class="w-full mx-auto py-8 space-y-6">
-
-  <div class="bg-white shadow rounded-lg overflow-hidden">
-    <div class="bg-blue-600 text-white px-6 py-4">
+<div class="w-full mx-auto h-[calc(100vh-60px)]">
+  <div class="bg-white shadow rounded-lg overflow-hidden h-full flex flex-col">
+    <div class="bg-blue-600 text-white px-6 py-4 flex-shrink-0">
       <h4 class="text-lg font-semibold mb-0">
         {{if .Page.ID}}Edit Page: {{.Page.Title}}{{else}}Create New Page{{end}}
       </h4>
     </div>
 
-    <div class="px-6 py-6">
+    <div class="px-4 py-2 flex-1 overflow-hidden">
       <form method="POST" action="{{if .Page.ID}}/admin/pages/{{.Page.ID}}/edit{{else}}/admin/pages/new{{end}}"
-        class="space-y-6">
+        class="space-y-2 flex flex-col h-full" id="pageForm">
 
-        <!-- Title -->
-        <div>
-          <label for="title" class="block text-gray-700 font-medium mb-2">Title</label>
-          <input type="text" id="title" name="title"
-            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value="{{if .Page}}{{.Page.Title}}{{end}}" required>
+        <!-- Hidden content field -->
+        <textarea id="content" name="content" hidden>{{if .Page}}{{.Page.Content}}{{end}}</textarea>
+
+        <!-- Tabs -->
+        <div class="border-b border-gray-200">
+          <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="tabNav">
+            <li class="mr-2">
+              <button type="button"
+                class="inline-block p-4 rounded-t-lg border-b-2 border-blue-600 text-blue-600 active-tab"
+                data-tab="meta">Meta</button>
+            </li>
+            <li class="mr-2">
+              <button type="button"
+                class="inline-block p-4 rounded-t-lg border-b-2 border-transparent hover:text-gray-600 hover:border-gray-300 text-gray-500"
+                data-tab="editor">Editor</button>
+            </li>
+          </ul>
         </div>
 
-        <!-- Slug -->
-        <div>
-          <label for="slug" class="block text-gray-700 font-medium mb-2">Slug</label>
-          <input type="text" id="slug" name="slug"
-            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value="{{if .Page}}{{.Page.Slug}}{{end}}" required>
+        <!-- META TAB -->
+        <div id="tabMeta" class="tab-content space-y-6 h-full">
+          <div>
+            <label for="title" class="block text-gray-700 font-medium mb-2">Title</label>
+            <input type="text" id="title" name="title"
+              class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value="{{if .Page}}{{.Page.Title}}{{end}}" required>
+          </div>
+          <div>
+            <label for="slug" class="block text-gray-700 font-medium mb-2">Slug</label>
+            <input type="text" id="slug" name="slug"
+              class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value="{{if .Page}}{{.Page.Slug}}{{end}}" required>
+          </div>
+          <div>
+            <label for="type" class="block text-gray-700 font-medium mb-2">Type</label>
+            <select id="type" name="type"
+              class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="page" {{if eq .Page.Type "page" }}selected{{end}}>Page</option>
+              <option value="post" {{if eq .Page.Type "post" }}selected{{end}}>Post</option>
+              <option value="html" {{if eq .Page.Type "html" }}selected{{end}}>Html</option>
+            </select>
+          </div>
+          <div>
+            <label for="layout" class="block text-gray-700 font-medium mb-2">Layout</label>
+            <select id="layout" name="layout_id"
+              class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              {{ range .Layouts }}
+              <option value="{{ .ID }}" {{if $.Page}}{{if eq $.Page.LayoutID .ID}}selected{{end}}{{end}}>{{ .Name }}
+              </option>
+              {{ end }}
+            </select>
+          </div>
         </div>
 
-        <!-- Type -->
-        <div>
-          <label for="type" class="block text-gray-700 font-medium mb-2">Type</label>
-          <select id="type" name="type"
-            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="page" {{if eq .Page.Type "page" }}selected{{end}}>Page</option>
-            <option value="post" {{if eq .Page.Type "post" }}selected{{end}}>Post</option>
-            <option value="html" {{if eq .Page.Type "html" }}selected{{end}}>Html</option>
-          </select>
+        <!-- EDITOR TAB -->
+        <div id="tabEditor" class="tab-content hidden flex-1 flex flex-col gap-4 min-h-0">
+          <div id="jsonTools" class="hidden flex items-center gap-2">
+            <span class="text-sm font-medium text-gray-700">JSON</span>
+
+            <button type="button" id="beautifyJson" class="px-3 py-1 text-sm border rounded hover:bg-gray-100">
+              ✨ Beautify
+            </button>
+
+            <button type="button" id="compactJson" class="px-3 py-1 text-sm border rounded hover:bg-gray-100">
+              📦 Compact
+            </button>
+          </div>
+
+          <!-- Layout toggle (only for HTML) -->
+          <div id="layoutToggle" class="flex items-center space-x-4 {{if ne .Page.Type " html"}}hidden{{end}}">
+            <span class="text-sm font-medium text-gray-700">Editor layout:</span>
+            <div class="flex rounded-md shadow-sm" role="group">
+              <button type="button"
+                class="px-4 py-2 text-sm font-medium border border-gray-300 rounded-l-md bg-white hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-blue-500 layout-btn active-layout"
+                data-layout="col">Columns</button>
+              <button type="button"
+                class="px-4 py-2 text-sm font-medium border border-l-0 border-gray-300 rounded-r-md bg-white hover:bg-gray-50 focus:z-10 focus:ring-2 focus:ring-blue-500 layout-btn"
+                data-layout="row">Rows</button>
+            </div>
+          </div>
+
+          <!-- Editor + Preview -->
+          <div id="editorPreviewContainer" class="flex-1 flex flex-col {{if eq .Page.Type " html"}}md:flex-row{{end}}
+            gap-4 min-h-0">
+            <!-- Editor panel -->
+            <div id="editorPanel" class="flex-1 flex flex-col min-h-0">
+              <div id="contentEditor" class="flex-1 border border-gray-300 rounded shadow-sm">
+                {{if .Page}}{{.Page.Content}}{{end}}
+              </div>
+            </div>
+
+            <!-- Preview panel (only for HTML) -->
+            <div id="previewPanel" class="flex-1 flex flex-col min-h-0 {{if ne .Page.Type " html"}}hidden{{end}}">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-700">Preview</span>
+                <div class="flex space-x-2">
+                  <button type="button"
+                    class="text-xs px-2 py-1 border rounded hover:bg-gray-100 viewport-btn active-viewport"
+                    data-viewport="desktop">🖥️</button>
+                  <button type="button" class="text-xs px-2 py-1 border rounded hover:bg-gray-100 viewport-btn"
+                    data-viewport="mobile">📱</button>
+                </div>
+              </div>
+              <div class="flex-1 border border-gray-300 rounded shadow-sm overflow-hidden">
+                <iframe id="previewIframe" class="w-full h-full border-0 transition-all duration-200"
+                  srcdoc="<html><head><script src='https://cdn.tailwindcss.com'></script><style>body{padding:1rem;font-family:system-ui,sans-serif;}</style></head><body>{{if .Page}}{{.Page.Content}}{{else}}<p>Preview will appear here.</p>{{end}}</body></html>">
+                </iframe>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Layout -->
-        <div>
-          <label for="layout" class="block text-gray-700 font-medium mb-2">Layout</label>
-          <select id="layout" name="layout_id"
-            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            {{ range .Layouts }}
-            <option value="{{ .ID }}" {{if $.Page}}{{if eq $.Page.LayoutID .ID}}selected{{end}}{{end}}>{{ .Name }}
-            </option>
-            {{ end }}
-          </select>
-        </div>
-
-        <!-- Content Editor -->
-        <div>
-          <label for="contentEditor" class="block text-gray-700 font-medium mb-2">Content</label>
-          {{if eq .Page.Type "html" }}
-          <span class="text-sm">HTML</span>
-          {{else}}
-          <span class="text-sm">JSON</span>
-          {{end}}
-          <div id="contentEditor" class="h-64 border border-gray-300 rounded shadow-sm">{{if
-            .Page}}{{.Page.Content}}{{end}}</div>
-          <textarea id="content" name="content" hidden>{{if .Page}}{{.Page.Content}}{{end}}</textarea>
-        </div>
-
-        <!-- Submit Button -->
-        <div class="flex justify-end">
+        <!-- Submit -->
+        <div class="flex justify-end pt-4 border-t border-gray-200">
           <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 transition-colors">
             💾 Save
           </button>
@@ -79,15 +138,187 @@
 </div>
 
 <script>
-  const contentEditor = ace.edit("contentEditor");
-  contentEditor.setTheme("ace/theme/github");
+  (function () {
+    const jsonTools = document.getElementById("jsonTools");
+    const beautifyBtn = document.getElementById("beautifyJson");
+    const compactBtn = document.getElementById("compactJson");
+    const form = document.getElementById('pageForm');
+    const contentEditor = ace.edit("contentEditor");
+    const typeSelect = document.getElementById('type');
+    const layoutToggle = document.getElementById('layoutToggle');
+    const editorPreviewContainer = document.getElementById('editorPreviewContainer');
+    const previewPanel = document.getElementById('previewPanel');
+    const previewIframe = document.getElementById('previewIframe');
+    const contentTextarea = document.getElementById('content');
 
-  contentEditor.session.setMode("ace/mode/{{if eq .Page.Type `html`}}html{{else}}json{{end}}");
+    // ACE setup
+    contentEditor.setTheme("ace/theme/github");
+    contentEditor.setOption("wrap", true);
+    setAceMode('{{ .Page.Type }}' || 'page');
 
-  contentEditor.setOption("wrap", true);
+    // --- Tab switching ---
+    const tabButtons = document.querySelectorAll('#tabNav button');
+    const tabContents = {
+      meta: document.getElementById('tabMeta'),
+      editor: document.getElementById('tabEditor')
+    };
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', function () {
+        tabButtons.forEach(b => {
+          b.classList.remove('border-blue-600', 'text-blue-600');
+          b.classList.add('border-transparent', 'text-gray-500');
+        });
+        Object.values(tabContents).forEach(el => el.classList.add('hidden'));
+        this.classList.remove('border-transparent', 'text-gray-500');
+        this.classList.add('border-blue-600', 'text-blue-600');
+        const tab = this.dataset.tab;
+        if (tab === 'meta') tabContents.meta.classList.remove('hidden');
+        else if (tab === 'editor') {
+          tabContents.editor.classList.remove('hidden');
+          contentEditor.resize();
+        }
+      });
+    });
 
-  document.querySelector("form").addEventListener("submit", function () {
-    document.getElementById("content").value = contentEditor.getValue();
-  });
+    window.addEventListener("resize", () => {
+      contentEditor.resize();
+    });
+
+    // --- Layout toggle (col/row) ---
+    const layoutButtons = document.querySelectorAll('.layout-btn');
+    layoutButtons.forEach(btn => {
+      btn.addEventListener('click', function () {
+        layoutButtons.forEach(b => b.classList.remove('active-layout', 'bg-blue-50', 'border-blue-500'));
+        this.classList.add('active-layout', 'bg-blue-50', 'border-blue-500');
+        const layout = this.dataset.layout;
+        editorPreviewContainer.classList.remove('flex-col', 'md:flex-row', 'flex-row');
+        if (layout === 'col') {
+          editorPreviewContainer.classList.add('flex-col', 'md:flex-row');
+        } else {
+          editorPreviewContainer.classList.add('flex-col');
+        }
+        previewPanel.classList.remove('hidden');
+        setTimeout(() => contentEditor.resize(), 50);
+      });
+    });
+
+    // --- Viewport toggle ---
+    const viewportButtons = document.querySelectorAll('.viewport-btn');
+    viewportButtons.forEach(btn => {
+      btn.addEventListener('click', function () {
+        viewportButtons.forEach(b => b.classList.remove('active-viewport', 'bg-blue-50', 'border-blue-500'));
+        this.classList.add('active-viewport', 'bg-blue-50', 'border-blue-500');
+        const vp = this.dataset.viewport;
+        if (vp === 'mobile') {
+          previewIframe.style.width = '375px';
+          previewIframe.style.margin = '0 auto';
+        } else {
+          previewIframe.style.width = '100%';
+          previewIframe.style.margin = '0';
+        }
+      });
+    });
+
+    beautifyBtn.addEventListener("click", () => {
+      try {
+        const obj = JSON.parse(contentEditor.getValue());
+
+        contentEditor.setValue(
+          JSON.stringify(obj, null, 2),
+          -1
+        );
+      } catch (err) {
+        alert("Invalid JSON");
+      }
+    });
+
+    compactBtn.addEventListener("click", () => {
+      try {
+        const obj = JSON.parse(contentEditor.getValue());
+
+        contentEditor.setValue(
+          JSON.stringify(obj),
+          -1
+        );
+      } catch (err) {
+        alert("Invalid JSON");
+      }
+    });
+
+    // --- Type change ---
+    typeSelect.addEventListener('change', function () {
+      const newType = this.value;
+      setAceMode(newType);
+      if (newType === "html") {
+        jsonTools.classList.add("hidden");
+
+        layoutToggle.classList.remove("hidden");
+        previewPanel.classList.remove("hidden");
+
+        document.querySelector('.layout-btn[data-layout="col"]')?.click();
+        updatePreview(contentEditor.getValue());
+      } else {
+        jsonTools.classList.remove("hidden");
+
+        layoutToggle.classList.add("hidden");
+        previewPanel.classList.add("hidden");
+
+        editorPreviewContainer.classList.remove("md:flex-row", "flex-row");
+        editorPreviewContainer.classList.add("flex-col");
+      }
+      setTimeout(() => contentEditor.resize(), 100);
+    });
+
+    function setAceMode(type) {
+      let mode = 'json';
+      if (type === 'html') mode = 'html';
+      else if (type === 'page' || type === 'post') mode = 'json';
+      contentEditor.session.setMode("ace/mode/" + mode);
+    }
+
+    // --- Live preview update ---
+    contentEditor.session.on('change', function () {
+      const val = contentEditor.getValue();
+      contentTextarea.value = val;
+      if (typeSelect.value === 'html') {
+        updatePreview(val);
+      }
+    });
+
+    // --- Update preview with Tailwind CSS ---
+    function updatePreview(htmlContent) {
+      previewIframe.srcdoc = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <script src="https://cdn.tailwindcss.com"><\/script>
+          <style>body { padding: 1rem; font-family: system-ui, sans-serif; }</style>
+        </head>
+        <body>
+          ${htmlContent}
+        </body>
+        </html>
+      `;
+    }
+
+    // --- Initialisation ---
+    setTimeout(function () {
+      typeSelect.dispatchEvent(new Event('change'));
+      if (typeSelect.value === 'html') {
+        updatePreview(contentEditor.getValue());
+        document.querySelector('.layout-btn[data-layout="col"]')?.click();
+        document.querySelector('.viewport-btn[data-viewport="desktop"]')?.click();
+      }
+      contentEditor.resize();
+    }, 200);
+
+    // --- Submit handler ---
+    form.addEventListener('submit', function (e) {
+      contentTextarea.value = contentEditor.getValue();
+    });
+
+  })();
 </script>
 {{ end }}
