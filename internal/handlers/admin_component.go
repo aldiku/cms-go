@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"cms-go/internal/db"
+	"cms-go/internal/generator"
 	"cms-go/internal/models"
 	"fmt"
 	"net/http"
@@ -33,9 +34,8 @@ func AdminCreateComponent(c echo.Context) error {
 		Template: c.FormValue("template"),
 	}
 	db.DB.Create(&comp)
-	err := SaveComponentToFile(comp)
-	if err != nil {
-		fmt.Println("Failed to save layout to file:", err)
+	if err := generator.GenerateTemplatesFromDB(); err != nil {
+		fmt.Println("template generation error:", err)
 	}
 	return c.Redirect(http.StatusFound, "/admin/components")
 }
@@ -66,9 +66,8 @@ func AdminUpdateComponent(c echo.Context) error {
 	comp.Schema = c.FormValue("schema")
 	comp.Template = c.FormValue("template")
 	db.DB.Save(&comp)
-	err := SaveComponentToFile(comp)
-	if err != nil {
-		fmt.Println("Failed to save layout to file:", err)
+	if err := generator.GenerateTemplatesFromDB(); err != nil {
+		fmt.Println("template generation error:", err)
 	}
 	return c.Redirect(http.StatusFound, "/admin/components")
 }

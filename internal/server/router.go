@@ -2,6 +2,7 @@ package server
 
 import (
 	"cms-go/internal/db"
+	"cms-go/internal/generator"
 	"cms-go/internal/handlers"
 	"cms-go/internal/models"
 	"fmt"
@@ -19,7 +20,7 @@ func New() *echo.Echo {
 	db.Connect()
 	db.DB.AutoMigrate(&models.Page{}, &models.Layout{}, &models.Menu{}, &models.Component{})
 	// generate templates from DB into views/generated
-	if err := GenerateTemplatesFromDB(); err != nil {
+	if err := generator.GenerateTemplatesFromDB(); err != nil {
 		fmt.Println("template generation error:", err)
 	}
 	e.Renderer = NewRenderer()

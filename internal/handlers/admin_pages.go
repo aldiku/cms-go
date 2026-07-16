@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"cms-go/internal/db"
+	"cms-go/internal/generator"
 	"cms-go/internal/models"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -27,6 +29,9 @@ func AdminCreatePage(c echo.Context) error {
 	page := models.Page{Title: title, Slug: slug, Content: content, Type: "page"}
 
 	db.DB.Create(&page)
+	if err := generator.GenerateTemplatesFromDB(); err != nil {
+		fmt.Println("template generation error:", err)
+	}
 	return c.Redirect(http.StatusFound, "/admin/pages")
 }
 
@@ -93,6 +98,10 @@ func AdminUpdatePage(c echo.Context) error {
 
 	if err := db.DB.Save(&page).Error; err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to update page")
+	}
+
+	if err := generator.GenerateTemplatesFromDB(); err != nil {
+		fmt.Println("template generation error:", err)
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/admin/pages")
