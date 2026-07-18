@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Page struct {
 	ID        uint `gorm:"primaryKey"`
@@ -11,6 +15,21 @@ type Page struct {
 	LayoutID  uint
 	CreatedAt time.Time
 	UpdatedAt time.Time
+
+	// SEO
+	MetaTitle          string // overrides <title> / og:title / twitter:title if set
+	MetaDescription    string
+	CanonicalURL       string // absolute override; falls back to SITE_URL + slug
+	FocusKeyword       string // stored for future on-page analysis, not scored in v1
+	MetaRobotsNoindex  bool
+	MetaRobotsNofollow bool
+	OGTitle            string // falls back to MetaTitle -> Title
+	OGDescription      string // falls back to MetaDescription
+	OGImage            string
+	TwitterCard        string // "summary" | "summary_large_image"
+	TwitterTitle       string // falls back to OGTitle
+	TwitterDescription string // falls back to OGDescription
+	TwitterImage       string // falls back to OGImage
 }
 
 type Layout struct {
@@ -22,8 +41,18 @@ type Layout struct {
 }
 
 type Menu struct {
-	ID   uint   `gorm:"primaryKey"`
-	Name string `gorm:"uniqueIndex"`
+	ID              uint `gorm:"primaryKey"`
+	Menu            string
+	Path            string
+	Icon            string // emoji or css class, free text
+	Status          uint8  // 1 = active (shown in sidebar / routable)
+	ParentID        uint
+	ListOrder       uint32
+	MenuDescription string
+	MenuType        string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	DeletedAt       gorm.DeletedAt `gorm:"index"`
 }
 
 type Component struct {

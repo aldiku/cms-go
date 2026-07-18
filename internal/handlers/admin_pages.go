@@ -61,14 +61,36 @@ func AdminPages(c echo.Context) error {
 		"NextPage":    pageNum + 1,
 	}
 
-	return renderWithLayout(c.Response().Writer, "internal/views/admin/admin-layout.html", "internal/views/admin/pages.html", data)
+	return renderWithLayout(c, "internal/views/admin/admin-layout.html", "internal/views/admin/pages.html", data)
+}
+
+// bindPageFromForm reads the shared create/edit form fields (meta + SEO)
+// from the request into page. Type and layout_id are handled separately by
+// each caller since AdminCreatePage hardcodes Type and AdminUpdatePage
+// validates layout_id.
+func bindPageFromForm(c echo.Context, page *models.Page) {
+	page.Title = c.FormValue("title")
+	page.Slug = c.FormValue("slug")
+	page.Content = c.FormValue("content")
+
+	page.MetaTitle = c.FormValue("meta_title")
+	page.MetaDescription = c.FormValue("meta_description")
+	page.CanonicalURL = c.FormValue("canonical_url")
+	page.FocusKeyword = c.FormValue("focus_keyword")
+	page.MetaRobotsNoindex = c.FormValue("meta_robots_noindex") == "on"
+	page.MetaRobotsNofollow = c.FormValue("meta_robots_nofollow") == "on"
+	page.OGTitle = c.FormValue("og_title")
+	page.OGDescription = c.FormValue("og_description")
+	page.OGImage = c.FormValue("og_image")
+	page.TwitterCard = c.FormValue("twitter_card")
+	page.TwitterTitle = c.FormValue("twitter_title")
+	page.TwitterDescription = c.FormValue("twitter_description")
+	page.TwitterImage = c.FormValue("twitter_image")
 }
 
 func AdminCreatePage(c echo.Context) error {
-	title := c.FormValue("title")
-	slug := c.FormValue("slug")
-	content := c.FormValue("content")
-	page := models.Page{Title: title, Slug: slug, Content: content, Type: "page"}
+	page := models.Page{Type: "page"}
+	bindPageFromForm(c, &page)
 
 	db.DB.Create(&page)
 	if err := generator.GenerateTemplatesFromDB(); err != nil {
@@ -95,7 +117,7 @@ func AdminPageEditor(c echo.Context) error {
 	}
 
 	return renderWithLayout(
-		c.Response().Writer,
+		c,
 		"internal/views/admin/admin-layout.html",
 		"internal/views/admin/page-editor.html",
 		data,
@@ -114,7 +136,7 @@ func AdminEditPage(c echo.Context) error {
 		"Page": page,
 	}
 
-	return renderWithLayout(c.Response().Writer, "internal/views/admin/admin-layout.html", "internal/views/admin/edit_page.html", data)
+	return renderWithLayout(c, "internal/views/admin/admin-layout.html", "internal/views/admin/edit_page.html", data)
 }
 
 // POST /admin/pages/:id/edit
@@ -125,10 +147,8 @@ func AdminUpdatePage(c echo.Context) error {
 		return c.String(http.StatusNotFound, "Page not found")
 	}
 
-	page.Title = c.FormValue("title")
-	page.Slug = c.FormValue("slug")
+	bindPageFromForm(c, &page)
 	page.Type = c.FormValue("type")
-	page.Content = c.FormValue("content")
 	layoutIDStr := c.FormValue("layout_id")
 	if layoutIDStr != "" {
 		if layoutIDUint, err := strconv.ParseUint(layoutIDStr, 10, 64); err == nil {

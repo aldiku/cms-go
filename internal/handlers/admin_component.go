@@ -19,12 +19,12 @@ func AdminComponents(c echo.Context) error {
 		"Components": comps,
 	}
 
-	return renderWithLayout(c.Response().Writer, "internal/views/admin/admin-layout.html", "internal/views/admin/components.html", data)
+	return renderWithLayout(c, "internal/views/admin/admin-layout.html", "internal/views/admin/components.html", data)
 }
 
 // Component Editor (New)
 func AdminNewComponent(c echo.Context) error {
-	return renderWithLayout(c.Response().Writer, "internal/views/admin/admin-layout.html", "internal/views/admin/component_form.html", nil)
+	return renderWithLayout(c, "internal/views/admin/admin-layout.html", "internal/views/admin/component_form.html", nil)
 }
 
 func AdminCreateComponent(c echo.Context) error {
@@ -52,7 +52,7 @@ func AdminEditComponent(c echo.Context) error {
 		"Component": comp,
 	}
 
-	return renderWithLayout(c.Response().Writer, "internal/views/admin/admin-layout.html", "internal/views/admin/component_form.html", data)
+	return renderWithLayout(c, "internal/views/admin/admin-layout.html", "internal/views/admin/component_form.html", data)
 }
 
 func AdminUpdateComponent(c echo.Context) error {

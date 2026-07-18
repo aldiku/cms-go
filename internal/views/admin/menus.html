@@ -1,0 +1,62 @@
+{{ define "content" }}
+<div class="w-full mx-auto py-8 space-y-6">
+
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Menus</h1>
+    <a href="/admin/menus/new" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+      + New Menu
+    </a>
+  </div>
+
+  <div class="bg-white shadow rounded-lg overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-800 text-white">
+          <tr>
+            <th class="px-6 py-3 text-left text-sm font-semibold">Order</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold">Menu</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold">Path</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold">Parent</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold">Type</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold">Status</th>
+            <th class="px-6 py-3 text-left text-sm font-semibold">Action</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {{ range .Menus }}
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 text-sm text-gray-700">{{ .ListOrder }}</td>
+            <td class="px-6 py-4 text-sm font-medium text-gray-900">
+              {{ if .Icon }}{{ .Icon }} {{ end }}{{ .Menu.Menu }}
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-700 font-mono">{{ .Path }}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ if .ParentName }}{{ .ParentName }}{{ else }}—{{ end }}</td>
+            <td class="px-6 py-4 text-sm text-gray-700">{{ .MenuType }}</td>
+            <td class="px-6 py-4 text-sm">
+              {{ if eq .Status 1 }}
+              <span class="px-2 py-1 text-xs rounded bg-green-100 text-green-700">Active</span>
+              {{ else }}
+              <span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600">Inactive</span>
+              {{ end }}
+            </td>
+            <td class="px-6 py-4 text-sm">
+              <div class="flex space-x-4">
+                <a href="/admin/menus/{{ .ID }}/edit" class="text-blue-500 hover:underline">Edit</a>
+                <form method="POST" action="/admin/menus/{{ .ID }}/delete" onsubmit="return confirm('Delete this menu?');">
+                  <button type="submit" class="text-red-500 hover:underline">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {{ else }}
+          <tr>
+            <td colspan="7" class="px-6 py-4 text-sm text-gray-500 text-center">No menus found.</td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{{ end }}

@@ -21,7 +21,7 @@ func AdminLayouts(c echo.Context) error {
 		"Layouts": layouts,
 	}
 
-	return renderWithLayout(c.Response().Writer, "internal/views/admin/admin-layout.html", "internal/views/admin/layouts.html", data)
+	return renderWithLayout(c, "internal/views/admin/admin-layout.html", "internal/views/admin/layouts.html", data)
 }
 
 func AdminCreateLayout(c echo.Context) error {
@@ -73,5 +73,5 @@ func AdminEditLayout(c echo.Context) error {
 		"Layout": layout,
 	}
 
-	return renderWithLayout(c.Response().Writer, "internal/views/admin/admin-layout.html", "internal/views/admin/edit_layout.html", data)
+	return renderWithLayout(c, "internal/views/admin/admin-layout.html", "internal/views/admin/edit_layout.html", data)
 }

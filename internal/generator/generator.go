@@ -187,9 +187,10 @@ func RenderPage(base *template.Template, page models.Page, layout models.Layout)
 	}
 
 	data := map[string]interface{}{
-		"Title": page.Title,
-		"rows":  layoutSchema["rows"],
-		"page":  page,
+		"Title":   page.Title,
+		"rows":    layoutSchema["rows"],
+		"page":    page,
+		"seoHead": BuildSEOHead(page, config.SiteURL()),
 	}
 
 	var buf bytes.Buffer
@@ -257,7 +258,17 @@ func GenerateTemplatesFromDB() error {
 		}
 	}
 
-	// --- Pages: render each one fully and cache the HTML to disk ---
+	// --- Pages: render the N latest-updated ones and cache the HTML to disk.
+	// The pages dir is wiped first so nothing stale survives a layout or
+	// component change (or a slug rename); evicted pages regenerate lazily
+	// on first request via GeneratePage.
+	if err := os.RemoveAll(pagesDir); err != nil {
+		return fmt.Errorf("failed to clear pages dir: %w", err)
+	}
+	if err := os.MkdirAll(pagesDir, 0755); err != nil {
+		return fmt.Errorf("failed to recreate pages dir: %w", err)
+	}
+
 	tmpl, err := ParseTemplates()
 	if err != nil {
 		return fmt.Errorf("parse templates: %w", err)
@@ -273,7 +284,7 @@ func GenerateTemplatesFromDB() error {
 	}
 
 	var pages []models.Page
-	if err := db.DB.Find(&pages).Error; err != nil {
+	if err := db.DB.Order("updated_at DESC").Limit(config.GeneratePageLimit()).Find(&pages).Error; err != nil {
 		return fmt.Errorf("fetch pages: %w", err)
 	}
 	for _, page := range pages {
@@ -302,4 +313,47 @@ func GenerateTemplatesFromDB() error {
 
 	log.Println("✅ Generated templates + pages from DB into", baseDir)
 	return nil
+}
+
+// GeneratePage renders the single page whose slug matches the request path,
+// writes it to disk so later requests are served straight from the file, and
+// returns the HTML. Returns gorm.ErrRecordNotFound when no page matches.
+// Used by the public handler as the cache-miss path for pages outside the
+// pre-rendered top-N set.
+func GeneratePage(path string) ([]byte, error) {
+	var page models.Page
+	// Slugs are stored with a leading slash ("/about-us"), but match the
+	// trimmed form too in case older rows were saved without it.
+	if err := db.DB.Where("slug = ? OR slug = ?", path, strings.TrimPrefix(path, "/")).First(&page).Error; err != nil {
+		return nil, err
+	}
+
+	var layout models.Layout
+	if page.LayoutID != 0 {
+		if err := db.DB.First(&layout, page.LayoutID).Error; err != nil {
+			return nil, fmt.Errorf("fetch layout %d: %w", page.LayoutID, err)
+		}
+	} else if err := db.DB.Where("name = ?", "front-layout").First(&layout).Error; err != nil {
+		return nil, fmt.Errorf("fetch default layout: %w", err)
+	}
+
+	tmpl, err := ParseTemplates()
+	if err != nil {
+		return nil, fmt.Errorf("parse templates: %w", err)
+	}
+
+	html, err := RenderPage(tmpl, page, layout)
+	if err != nil {
+		return nil, fmt.Errorf("render page %s: %w", page.Slug, err)
+	}
+
+	// Cache to disk best-effort: a write failure shouldn't fail the request.
+	filePath := PageFilePath(page.Slug)
+	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
+		log.Printf("failed to create dir for page %s: %v", page.Slug, err)
+	} else if err := os.WriteFile(filePath, []byte(html), 0644); err != nil {
+		log.Printf("failed to write page %s: %v", page.Slug, err)
+	}
+
+	return []byte(html), nil
 }

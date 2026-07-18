@@ -1,0 +1,96 @@
+{{ define "content" }}
+<div class="max-w-2xl mx-auto py-8">
+  <div class="bg-white shadow rounded-lg overflow-hidden">
+    <div class="bg-blue-600 text-white px-6 py-4">
+      <h4 class="text-lg font-semibold mb-0">
+        {{if .User.ID}}Edit User: {{.User.Email}}{{else}}Create New User{{end}}
+      </h4>
+    </div>
+
+    <form method="POST" action="{{if .User.ID}}/admin/users/{{.User.ID}}/edit{{else}}/admin/users/new{{end}}"
+      class="p-6 space-y-4">
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="firstname" class="block text-gray-700 font-medium mb-2">First name</label>
+          <input type="text" id="firstname" name="firstname" required value="{{.User.Firstname}}"
+            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label for="lastname" class="block text-gray-700 font-medium mb-2">Last name</label>
+          <input type="text" id="lastname" name="lastname" value="{{.User.Lastname}}"
+            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+      </div>
+
+      <div>
+        <label for="email" class="block text-gray-700 font-medium mb-2">Email</label>
+        <input type="email" id="email" name="email" required value="{{.User.Email}}"
+          class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div>
+        <label for="password" class="block text-gray-700 font-medium mb-2">Password</label>
+        <input type="password" id="password" name="password"
+          placeholder="{{if .User.ID}}Leave blank to keep current password{{end}}" {{if not .User.ID}}required{{end}}
+          class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="phone" class="block text-gray-700 font-medium mb-2">Phone</label>
+          <input type="text" id="phone" name="phone" value="{{.User.Phone}}"
+            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label for="employee_id" class="block text-gray-700 font-medium mb-2">Employee ID</label>
+          <input type="text" id="employee_id" name="employee_id" value="{{.User.EmployeeID}}"
+            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+      </div>
+
+      <div>
+        <label for="company" class="block text-gray-700 font-medium mb-2">Company</label>
+        <input type="text" id="company" name="company" value="{{.User.Company}}"
+          class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div>
+        <label for="address" class="block text-gray-700 font-medium mb-2">Address</label>
+        <textarea id="address" name="address" rows="2"
+          class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">{{.User.Address}}</textarea>
+      </div>
+
+      <div>
+        <label for="avatar" class="block text-gray-700 font-medium mb-2">Avatar URL</label>
+        <input type="text" id="avatar" name="avatar" value="{{.User.Avatar}}"
+          class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+        <div>
+          <label for="role_id" class="block text-gray-700 font-medium mb-2">Role</label>
+          <select id="role_id" name="role_id"
+            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            {{ range .Roles }}
+            <option value="{{ .ID }}" {{if eq $.User.RoleID .ID}}selected{{end}}>{{ .Role }}</option>
+            {{ end }}
+          </select>
+        </div>
+        <label class="flex items-center gap-2 pb-2">
+          <input type="checkbox" name="status" {{if eq .User.Status 1}}checked{{end}} {{if not .User.ID}}checked{{end}}>
+          <span class="text-gray-700">Active</span>
+        </label>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-4 border-t border-gray-200">
+        <a href="/admin/users" class="px-6 py-2 border border-gray-300 rounded hover:bg-gray-50">Cancel</a>
+        <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 transition-colors">
+          💾 Save
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{{ end }}

@@ -1,0 +1,26 @@
+{{ define "content" }}
+<div class="w-full mx-auto py-8 space-y-6">
+
+  <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <a href="/admin/pages" class="bg-white shadow rounded-lg p-6 hover:shadow-md transition-shadow">
+      <p class="text-sm text-gray-500">Pages</p>
+      <p class="text-3xl font-bold text-gray-800">{{ .PageCount }}</p>
+    </a>
+    <a href="/admin/layouts" class="bg-white shadow rounded-lg p-6 hover:shadow-md transition-shadow">
+      <p class="text-sm text-gray-500">Layouts</p>
+      <p class="text-3xl font-bold text-gray-800">{{ .LayoutCount }}</p>
+    </a>
+    <a href="/admin/components" class="bg-white shadow rounded-lg p-6 hover:shadow-md transition-shadow">
+      <p class="text-sm text-gray-500">Components</p>
+      <p class="text-3xl font-bold text-gray-800">{{ .ComponentCount }}</p>
+    </a>
+    <a href="/admin/users" class="bg-white shadow rounded-lg p-6 hover:shadow-md transition-shadow">
+      <p class="text-sm text-gray-500">Users</p>
+      <p class="text-3xl font-bold text-gray-800">{{ .UserCount }}</p>
+    </a>
+  </div>
+
+</div>
+{{ end }}

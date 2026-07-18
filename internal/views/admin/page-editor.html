@@ -27,6 +27,11 @@
             <li class="mr-2">
               <button type="button"
                 class="inline-block p-4 rounded-t-lg border-b-2 border-transparent hover:text-gray-600 hover:border-gray-300 text-gray-500"
+                data-tab="seo">SEO</button>
+            </li>
+            <li class="mr-2">
+              <button type="button"
+                class="inline-block p-4 rounded-t-lg border-b-2 border-transparent hover:text-gray-600 hover:border-gray-300 text-gray-500"
                 data-tab="editor">Editor</button>
             </li>
           </ul>
@@ -65,6 +70,131 @@
               {{ end }}
             </select>
           </div>
+        </div>
+
+        <!-- SEO TAB -->
+        <div id="tabSeo" class="tab-content hidden space-y-6 h-full overflow-y-auto pb-4">
+
+          <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <p class="text-sm font-medium text-gray-700 mb-2">Search preview</p>
+            <div class="bg-white border border-gray-200 rounded px-3 py-2">
+              <div id="serpTitle" class="text-blue-700 text-lg leading-tight truncate"></div>
+              <div id="serpUrl" class="text-green-700 text-sm"></div>
+              <div id="serpDescription" class="text-sm text-gray-600 mt-1"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="flex justify-between mb-2">
+              <label for="meta_title" class="block text-gray-700 font-medium">SEO Title</label>
+              <span id="metaTitleCount" class="text-xs text-gray-400"></span>
+            </div>
+            <input type="text" id="meta_title" name="meta_title"
+              class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="{{if .Page}}{{.Page.Title}}{{end}}"
+              value="{{if .Page}}{{.Page.MetaTitle}}{{end}}">
+            <p class="text-xs text-gray-400 mt-1">Falls back to the page title if left blank. ~50-60 characters recommended.</p>
+          </div>
+
+          <div>
+            <div class="flex justify-between mb-2">
+              <label for="meta_description" class="block text-gray-700 font-medium">Meta Description</label>
+              <span id="metaDescriptionCount" class="text-xs text-gray-400"></span>
+            </div>
+            <textarea id="meta_description" name="meta_description" rows="3"
+              class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">{{if .Page}}{{.Page.MetaDescription}}{{end}}</textarea>
+            <p class="text-xs text-gray-400 mt-1">~150-160 characters recommended.</p>
+          </div>
+
+          <div>
+            <label for="focus_keyword" class="block text-gray-700 font-medium mb-2">Focus Keyword</label>
+            <input type="text" id="focus_keyword" name="focus_keyword"
+              class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value="{{if .Page}}{{.Page.FocusKeyword}}{{end}}">
+          </div>
+
+          <div>
+            <label for="canonical_url" class="block text-gray-700 font-medium mb-2">Canonical URL</label>
+            <input type="text" id="canonical_url" name="canonical_url"
+              class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Auto-generated from the site URL + slug"
+              value="{{if .Page}}{{.Page.CanonicalURL}}{{end}}">
+          </div>
+
+          <div class="space-y-2">
+            <label class="flex items-center gap-2">
+              <input type="checkbox" id="meta_robots_noindex" name="meta_robots_noindex"
+                {{if .Page}}{{if .Page.MetaRobotsNoindex}}checked{{end}}{{end}}>
+              <span class="text-gray-700">Discourage search engines from indexing this page</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" id="meta_robots_nofollow" name="meta_robots_nofollow"
+                {{if .Page}}{{if .Page.MetaRobotsNofollow}}checked{{end}}{{end}}>
+              <span class="text-gray-700">Don't follow links on this page</span>
+            </label>
+          </div>
+
+          <div class="border-t border-gray-200 pt-6">
+            <p class="font-medium text-gray-700 mb-4">Social sharing (Open Graph)</p>
+            <div class="space-y-4">
+              <div>
+                <label for="og_title" class="block text-gray-700 mb-2">OG Title</label>
+                <input type="text" id="og_title" name="og_title"
+                  class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Falls back to SEO title"
+                  value="{{if .Page}}{{.Page.OGTitle}}{{end}}">
+              </div>
+              <div>
+                <label for="og_description" class="block text-gray-700 mb-2">OG Description</label>
+                <textarea id="og_description" name="og_description" rows="2"
+                  class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Falls back to meta description">{{if .Page}}{{.Page.OGDescription}}{{end}}</textarea>
+              </div>
+              <div>
+                <label for="og_image" class="block text-gray-700 mb-2">OG Image URL</label>
+                <input type="text" id="og_image" name="og_image"
+                  class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value="{{if .Page}}{{.Page.OGImage}}{{end}}">
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t border-gray-200 pt-6">
+            <p class="font-medium text-gray-700 mb-4">Twitter Card</p>
+            <div class="space-y-4">
+              <div>
+                <label for="twitter_card" class="block text-gray-700 mb-2">Card Type</label>
+                <select id="twitter_card" name="twitter_card"
+                  class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option value="">Auto</option>
+                  <option value="summary" {{if eq .Page.TwitterCard "summary" }}selected{{end}}>Summary</option>
+                  <option value="summary_large_image" {{if eq .Page.TwitterCard "summary_large_image" }}selected{{end}}>
+                    Summary with large image</option>
+                </select>
+              </div>
+              <div>
+                <label for="twitter_title" class="block text-gray-700 mb-2">Twitter Title</label>
+                <input type="text" id="twitter_title" name="twitter_title"
+                  class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Falls back to OG title"
+                  value="{{if .Page}}{{.Page.TwitterTitle}}{{end}}">
+              </div>
+              <div>
+                <label for="twitter_description" class="block text-gray-700 mb-2">Twitter Description</label>
+                <textarea id="twitter_description" name="twitter_description" rows="2"
+                  class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Falls back to OG description">{{if .Page}}{{.Page.TwitterDescription}}{{end}}</textarea>
+              </div>
+              <div>
+                <label for="twitter_image" class="block text-gray-700 mb-2">Twitter Image URL</label>
+                <input type="text" id="twitter_image" name="twitter_image"
+                  class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Falls back to OG image"
+                  value="{{if .Page}}{{.Page.TwitterImage}}{{end}}">
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <!-- EDITOR TAB -->
@@ -160,6 +290,7 @@
     const tabButtons = document.querySelectorAll('#tabNav button');
     const tabContents = {
       meta: document.getElementById('tabMeta'),
+      seo: document.getElementById('tabSeo'),
       editor: document.getElementById('tabEditor')
     };
     tabButtons.forEach(btn => {
@@ -173,12 +304,39 @@
         this.classList.add('border-blue-600', 'text-blue-600');
         const tab = this.dataset.tab;
         if (tab === 'meta') tabContents.meta.classList.remove('hidden');
+        else if (tab === 'seo') tabContents.seo.classList.remove('hidden');
         else if (tab === 'editor') {
           tabContents.editor.classList.remove('hidden');
           contentEditor.resize();
         }
       });
     });
+
+    // --- SEO tab: character counters + live SERP preview ---
+    const titleInput = document.getElementById('title');
+    const slugInput = document.getElementById('slug');
+    const metaTitleInput = document.getElementById('meta_title');
+    const metaDescriptionInput = document.getElementById('meta_description');
+    const metaTitleCount = document.getElementById('metaTitleCount');
+    const metaDescriptionCount = document.getElementById('metaDescriptionCount');
+    const serpTitle = document.getElementById('serpTitle');
+    const serpUrl = document.getElementById('serpUrl');
+    const serpDescription = document.getElementById('serpDescription');
+
+    function updateSerpPreview() {
+      const title = metaTitleInput.value.trim() || titleInput.value.trim() || 'Page title';
+      const description = metaDescriptionInput.value.trim() || 'Add a meta description to control how this page appears in search results.';
+      serpTitle.textContent = title;
+      serpUrl.textContent = window.location.origin + '/' + (slugInput.value.trim() || '');
+      serpDescription.textContent = description;
+      metaTitleCount.textContent = metaTitleInput.value.length + ' / 60';
+      metaDescriptionCount.textContent = metaDescriptionInput.value.length + ' / 160';
+    }
+
+    [titleInput, slugInput, metaTitleInput, metaDescriptionInput].forEach(el => {
+      el.addEventListener('input', updateSerpPreview);
+    });
+    updateSerpPreview();
 
     window.addEventListener("resize", () => {
       contentEditor.resize();

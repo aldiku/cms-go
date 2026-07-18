@@ -1,0 +1,71 @@
+{{ define "content" }}
+<div class="w-full mx-auto py-8 space-y-6">
+
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Permissions</h1>
+  </div>
+
+  <form method="GET" action="/admin/permissions" class="max-w-sm flex items-center gap-3">
+    <label for="role_id" class="text-gray-700 font-medium">Role</label>
+    <select id="role_id" name="role_id" onchange="this.form.submit()"
+      class="flex-1 border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      {{ range .Roles }}
+      <option value="{{ .ID }}" {{if eq $.SelectedRoleID .ID}}selected{{end}}>{{ .Role }}</option>
+      {{ end }}
+    </select>
+  </form>
+
+  <form method="POST" action="/admin/permissions">
+    <input type="hidden" name="role_id" value="{{ .SelectedRoleID }}">
+
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-800 text-white">
+            <tr>
+              <th class="px-6 py-3 text-left text-sm font-semibold">Menu</th>
+              <th class="px-6 py-3 text-center text-sm font-semibold">Create</th>
+              <th class="px-6 py-3 text-center text-sm font-semibold">Read</th>
+              <th class="px-6 py-3 text-center text-sm font-semibold">Update</th>
+              <th class="px-6 py-3 text-center text-sm font-semibold">Delete</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {{ range .Rows }}
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                {{ if .Menu.Icon }}{{ .Menu.Icon }} {{ end }}{{ .Menu.Menu }}
+                <span class="block text-xs text-gray-400 font-mono">{{ .Menu.Path }}</span>
+              </td>
+              <td class="px-6 py-4 text-center">
+                <input type="checkbox" name="perm_{{ .Menu.ID }}_create" {{if .Perm.CanCreate}}checked{{end}}>
+              </td>
+              <td class="px-6 py-4 text-center">
+                <input type="checkbox" name="perm_{{ .Menu.ID }}_read" {{if .Perm.CanRead}}checked{{end}}>
+              </td>
+              <td class="px-6 py-4 text-center">
+                <input type="checkbox" name="perm_{{ .Menu.ID }}_update" {{if .Perm.CanUpdate}}checked{{end}}>
+              </td>
+              <td class="px-6 py-4 text-center">
+                <input type="checkbox" name="perm_{{ .Menu.ID }}_delete" {{if .Perm.CanDelete}}checked{{end}}>
+              </td>
+            </tr>
+            {{ else }}
+            <tr>
+              <td colspan="5" class="px-6 py-4 text-sm text-gray-500 text-center">No menus found.</td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="flex justify-end pt-4">
+      <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 transition-colors">
+        💾 Save Permissions
+      </button>
+    </div>
+  </form>
+
+</div>
+{{ end }}
