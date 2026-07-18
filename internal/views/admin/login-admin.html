@@ -15,6 +15,7 @@
         <h1 class="text-lg font-semibold">Admin CMS</h1>
       </div>
       <form method="POST" action="/admin/login" class="p-6 space-y-4">
+        <input type="hidden" name="_csrf" value="{{.CSRF}}">
         {{if .Error}}
         <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded px-4 py-3">{{.Error}}</div>
         {{end}}

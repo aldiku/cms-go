@@ -10,6 +10,15 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// csrfToken returns the token issued by the CSRF middleware for this request
+// (empty when the middleware isn't attached to the route).
+func csrfToken(c echo.Context) string {
+	if token, ok := c.Get("csrf").(string); ok {
+		return token
+	}
+	return ""
+}
+
 // GET /admin/login
 func AdminLoginForm(c echo.Context) error {
 	// Already logged in? Straight to the panel.
@@ -18,7 +27,9 @@ func AdminLoginForm(c echo.Context) error {
 			return c.Redirect(http.StatusFound, "/admin")
 		}
 	}
-	return c.Render(http.StatusOK, "login-admin.html", map[string]interface{}{})
+	return c.Render(http.StatusOK, "login-admin.html", map[string]interface{}{
+		"CSRF": csrfToken(c),
+	})
 }
 
 // POST /admin/login
@@ -32,6 +43,7 @@ func AdminLogin(c echo.Context) error {
 		return c.Render(http.StatusUnauthorized, "login-admin.html", map[string]interface{}{
 			"Error": "Invalid email or password",
 			"Email": email,
+			"CSRF":  csrfToken(c),
 		})
 	}
 
@@ -40,6 +52,7 @@ func AdminLogin(c echo.Context) error {
 		return c.Render(http.StatusInternalServerError, "login-admin.html", map[string]interface{}{
 			"Error": "Could not start session, please try again",
 			"Email": email,
+			"CSRF":  csrfToken(c),
 		})
 	}
 

@@ -2,14 +2,19 @@ package server
 
 import (
 	"cms-go/internal/auth"
+	"cms-go/internal/config"
 	"cms-go/internal/db"
 	"cms-go/internal/generator"
 	"cms-go/internal/handlers"
 	"cms-go/internal/models"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"golang.org/x/time/rate"
 )
 
 func New() *echo.Echo {
@@ -30,9 +35,31 @@ func New() *echo.Echo {
 	}
 	e.Renderer = NewRenderer()
 
+	// CSRF for the login form: double-submit cookie, token read from the
+	// _csrf form field. The cookie is deliberately not HttpOnly and scoped to
+	// "/" so a CMS-built /login page can copy it into its hidden field via JS.
+	loginCSRF := middleware.CSRFWithConfig(middleware.CSRFConfig{
+		TokenLookup:    "form:_csrf",
+		CookiePath:     "/",
+		CookieSameSite: http.SameSiteLaxMode,
+		CookieSecure:   strings.HasPrefix(config.SiteURL(), "https://"),
+	})
+
+	// Rate limit login attempts per IP: burst of 5, then ~1 attempt per 12s.
+	loginRateLimit := middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
+		Store: middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
+			Rate:      rate.Limit(5.0 / 60.0),
+			Burst:     5,
+			ExpiresIn: 3 * time.Minute,
+		}),
+		IdentifierExtractor: func(c echo.Context) (string, error) {
+			return c.RealIP(), nil
+		},
+	})
+
 	// Auth (public)
-	e.GET("/admin/login", handlers.AdminLoginForm)
-	e.POST("/admin/login", handlers.AdminLogin)
+	e.GET("/admin/login", handlers.AdminLoginForm, loginCSRF)
+	e.POST("/admin/login", handlers.AdminLogin, loginRateLimit, loginCSRF)
 	e.POST("/admin/logout", handlers.AdminLogout)
 
 	// Admin panel (HTML forms) — session required, RBAC per menu

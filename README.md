@@ -80,10 +80,36 @@ The admin panel is protected by session auth + role-based access control, modele
 
 **Management UIs** (all under the same RBAC): `/admin/users`, `/admin/roles`, `/admin/menus`, and `/admin/permissions` — a per-role matrix editor showing every menu × C/R/U/D checkboxes, saved in one click.
 
+**Login hardening**: `POST /admin/login` is protected by **CSRF** (double-submit cookie, token read from the `_csrf` form field) and **per-IP rate limiting** (burst of 5 attempts, then ~1 per 12 seconds; over-limit requests get `429`). The CSRF cookie is scoped to `/` and intentionally not `HttpOnly` so a CMS-built login page can read it from JS.
+
 **Two login surfaces, one endpoint** — both submit to `POST /admin/login`:
 
-1. **Built-in admin login** (`GET /admin/login`) — the fallback template [internal/views/admin/login-admin.html](internal/views/admin/login-admin.html), always available. Failed logins re-render it with the error message.
-2. **Public `/login` CMS page** (optional) — a regular DB-stored page (type `html`) whose content is a login form styled to match your site. Because it's CMS content it can be fully customized in the page editor; it just needs its `<form>` to declare `method="POST" action="/admin/login"` and `name="email"` / `name="password"` on the inputs. Go template placeholders (`{{.Error}}`) don't work in CMS content, so failed logins from this form land on the built-in admin login page with the error shown there.
+1. **Built-in admin login** (`GET /admin/login`) — the fallback template [internal/views/admin/login-admin.html](internal/views/admin/login-admin.html), always available. It carries the CSRF token in a hidden `_csrf` field automatically; failed logins re-render it with the error message.
+2. **Public `/login` CMS page** (optional) — a regular DB-stored page (type `html`) whose content is a login form styled to match your site. Because it's CMS content it can be fully customized in the page editor. Requirements for the form to work:
+   - `<form method="POST" action="/admin/login">` with `name="email"` / `name="password"` on the inputs;
+   - a hidden `<input type="hidden" name="_csrf" id="csrf">` populated from the `_csrf` cookie via a small script (see below) — static CMS content can't use Go template placeholders, so the token must come from JS:
+
+   ```html
+   <script>
+   (function () {
+     function getCookie(name) {
+       var m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+       return m ? m.pop() : '';
+     }
+     async function ensureCsrf() {
+       var token = getCookie('_csrf');
+       if (!token) { // first visit: let the server issue the cookie
+         await fetch('/admin/login', { credentials: 'same-origin' });
+         token = getCookie('_csrf');
+       }
+       document.getElementById('csrf').value = token;
+     }
+     ensureCsrf();
+   })();
+   </script>
+   ```
+
+   Failed logins from this form land on the built-in admin login page with the error shown there.
 
 **First login**: on an empty database the app seeds role `superadmin`, a user from `ADMIN_EMAIL`/`ADMIN_PASSWORD`, the eight admin menus, and full permissions. Log in at `/admin/login` and change the password immediately.
 
@@ -237,7 +263,8 @@ internal/
 
 ## Notes & known limitations
 
-- **Change the seeded admin password** — the default `admin123` is for local bootstrapping only; there's no CSRF protection or rate limiting on the login form yet.
+- **Change the seeded admin password** — the default `admin123` is for local bootstrapping only. The login form has CSRF protection and per-IP rate limiting, but the other admin POST forms don't carry CSRF tokens yet.
+- **Rate-limit state is in-memory** — login attempt counters reset on restart and aren't shared between instances.
 - **404s hit the DB** — unknown slugs cause one indexed DB lookup per request (no negative caching yet).
 - **Single-node assumption** — the disk cache is local; running multiple instances would need shared storage or per-node regeneration.
 - `internal/views/generated/` is disposable output; safe to delete (it rebuilds on boot + on demand).
