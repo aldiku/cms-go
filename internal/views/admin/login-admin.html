@@ -6,34 +6,59 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login — Admin CMS</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+    body { font-family: 'Outfit', sans-serif; }
+  </style>
 </head>
 
-<body class="h-screen flex items-center justify-center bg-gray-100">
-  <div class="w-full max-w-sm">
-    <div class="bg-white shadow rounded-lg overflow-hidden">
-      <div class="bg-gray-800 text-white px-6 py-4">
-        <h1 class="text-lg font-semibold">Admin CMS</h1>
+<body class="bg-gray-50">
+  <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+      <div class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <!-- Header -->
+        <div class="px-6 py-8 text-center border-b border-gray-100">
+          <div class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-100 mb-4">
+            <span class="text-xl font-bold text-indigo-600">C</span>
+          </div>
+          <h1 class="text-xl font-semibold text-gray-800">Admin CMS</h1>
+          <p class="text-sm text-gray-500 mt-1">Sign in to your account</p>
+        </div>
+
+        <form method="POST" action="/admin/login" class="p-6 space-y-5">
+          <input type="hidden" name="_csrf" value="{{.CSRF}}">
+
+          {{if .Error}}
+          <div class="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <svg class="fill-current shrink-0" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M8 1.5C4.41015 1.5 1.5 4.41015 1.5 8C1.5 11.5899 4.41015 14.5 8 14.5C11.5899 14.5 14.5 11.5899 14.5 8C14.5 4.41015 11.5899 1.5 8 1.5ZM0.5 8C0.5 3.85786 3.85786 0.5 8 0.5C12.1421 0.5 15.5 3.85786 15.5 8C15.5 12.1421 12.1421 15.5 8 15.5C3.85786 15.5 0.5 12.1421 0.5 8ZM8 4.5C8.41421 4.5 8.75 4.83579 8.75 5.25V8.5C8.75 8.91421 8.41421 9.25 8 9.25C7.58579 9.25 7.25 8.91421 7.25 8.5V5.25C7.25 4.83579 7.58579 4.5 8 4.5ZM8 10.5C8.41421 10.5 8.75 10.8358 8.75 11.25V11.255C8.75 11.6692 8.41421 12.005 8 12.005C7.58579 12.005 7.25 11.6692 7.25 11.255V11.25C7.25 10.8358 7.58579 10.5 8 10.5Z" fill="currentColor"/>
+            </svg>
+            {{.Error}}
+          </div>
+          {{end}}
+
+          <div>
+            <label for="email" class="mb-1.5 block text-sm font-medium text-gray-700">Email</label>
+            <input type="email" id="email" name="email" required autofocus value="{{if .Email}}{{.Email}}{{end}}"
+              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+              placeholder="you@example.com">
+          </div>
+
+          <div>
+            <label for="password" class="mb-1.5 block text-sm font-medium text-gray-700">Password</label>
+            <input type="password" id="password" name="password" required
+              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+              placeholder="Enter your password">
+          </div>
+
+          <button type="submit"
+            class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors">
+            Sign in
+          </button>
+        </form>
       </div>
-      <form method="POST" action="/admin/login" class="p-6 space-y-4">
-        <input type="hidden" name="_csrf" value="{{.CSRF}}">
-        {{if .Error}}
-        <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded px-4 py-3">{{.Error}}</div>
-        {{end}}
-        <div>
-          <label for="email" class="block text-gray-700 font-medium mb-2">Email</label>
-          <input type="email" id="email" name="email" required autofocus value="{{if .Email}}{{.Email}}{{end}}"
-            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-        </div>
-        <div>
-          <label for="password" class="block text-gray-700 font-medium mb-2">Password</label>
-          <input type="password" id="password" name="password" required
-            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-        </div>
-        <button type="submit"
-          class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
-          Sign in
-        </button>
-      </form>
+
+      <p class="mt-4 text-center text-xs text-gray-400">&copy; Admin CMS</p>
     </div>
   </div>
 </body>

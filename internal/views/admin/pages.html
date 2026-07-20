@@ -1,73 +1,84 @@
 {{ define "content" }}
-<div class="w-full mx-auto py-8 space-y-6">
+<div class="space-y-6">
 
-  <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-gray-800">Pages</h1>
-    <a href="/admin/pages/new" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800">Pages</h2>
+    <a href="/admin/pages/new" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
+      <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
+      </svg>
       + New Page
     </a>
   </div>
 
-  <form method="GET" action="/admin/pages" class="max-w-sm">
-    <input
-      type="text"
-      name="q"
-      value="{{ .Query }}"
-      placeholder="Search pages by title or slug..."
-      class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-    >
-  </form>
+  <div class="max-w-sm">
+    <div class="relative">
+      <span class="absolute top-1/2 left-4 -translate-y-1/2 text-gray-400">
+        <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M3.04175 9.37363C3.04175 5.87693 5.87711 3.04199 9.37508 3.04199C12.8731 3.04199 15.7084 5.87693 15.7084 9.37363C15.7084 12.8703 12.8731 15.7053 9.37508 15.7053C5.87711 15.7053 3.04175 12.8703 3.04175 9.37363ZM9.37508 1.54199C5.04902 1.54199 1.54175 5.04817 1.54175 9.37363C1.54175 13.6991 5.04902 17.2053 9.37508 17.2053C11.2674 17.2053 13.003 16.5344 14.357 15.4176L17.177 18.238C17.4699 18.5309 17.9448 18.5309 18.2377 18.238C18.5306 17.9451 18.5306 17.4703 18.2377 17.1774L15.418 14.3573C16.5365 13.0033 17.2084 11.2669 17.2084 9.37363C17.2084 5.04817 13.7011 1.54199 9.37508 1.54199Z" fill=""/>
+        </svg>
+      </span>
+      <form method="GET" action="/admin/pages">
+        <input type="text" name="q" value="{{ .Query }}" placeholder="Search pages by title or slug..."
+          class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pl-12 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+      </form>
+    </div>
+  </div>
 
-  <div class="bg-white shadow rounded-lg overflow-hidden">
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-800 text-white">
-          <tr>
-            <th class="px-6 py-3 text-left text-sm font-semibold">ID</th>
-            <th class="px-6 py-3 text-left text-sm font-semibold">Title</th>
-            <th class="px-6 py-3 text-left text-sm font-semibold">Slug</th>
-            <th class="px-6 py-3 text-left text-sm font-semibold">Type</th>
-            <th class="px-6 py-3 text-left text-sm font-semibold">Action</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          {{ range .Pages }}
-          <tr class="hover:bg-gray-50">
-            <td class="px-6 py-4 text-sm text-gray-700">{{ .ID }}</td>
-            <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ .Title }}</td>
-            <td class="px-6 py-4 text-sm text-gray-700 font-mono">{{ .Slug }}</td>
-            <td class="px-6 py-4 text-sm text-gray-700">{{ .Type }}</td>
-            <td class="px-6 py-4 text-sm">
-              <div class="flex space-x-4">
-                <a href="/admin/pages/{{ .ID }}/edit" class="text-blue-500 hover:underline">Edit</a>
-                <form method="POST" action="/admin/pages/{{ .ID }}/delete" onsubmit="return confirm('Are you sure?');">
-                  <button type="submit" class="text-red-500 hover:underline">Delete</button>
-                </form>
-              </div>
-            </td>
-          </tr>
-          {{ else }}
-          <tr>
-            <td colspan="5" class="px-6 py-4 text-sm text-gray-500 text-center">No pages found.</td>
-          </tr>
-          {{ end }}
-        </tbody>
-      </table>
+  <div class="rounded-2xl border border-gray-200 bg-white">
+    <div class="px-5 py-4 sm:px-6 sm:py-5">
+      <h3 class="text-base font-medium text-gray-800">All Pages</h3>
+    </div>
+    <div class="border-t border-gray-100 p-5 sm:p-6">
+      <div class="w-full overflow-x-auto">
+        <table class="min-w-full">
+          <thead>
+            <tr class="border-y border-gray-100">
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">ID</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Title</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Slug</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Type</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Action</p></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {{ range .Pages }}
+            <tr>
+              <td class="py-4 text-sm text-gray-500">{{ .ID }}</td>
+              <td class="py-4 text-sm font-medium text-gray-800">{{ .Title }}</td>
+              <td class="py-4 text-sm text-gray-500 font-mono">{{ .Slug }}</td>
+              <td class="py-4 text-sm text-gray-500">{{ .Type }}</td>
+              <td class="py-4 text-sm">
+                <div class="flex items-center gap-3">
+                  <a href="/admin/pages/{{ .ID }}/edit" class="text-indigo-600 hover:text-indigo-800 font-medium">Edit</a>
+                  <form method="POST" action="/admin/pages/{{ .ID }}/delete" onsubmit="return confirm('Are you sure?');">
+                    <button type="submit" class="text-red-500 hover:text-red-700 font-medium">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {{ else }}
+            <tr>
+              <td colspan="5" class="py-8 text-sm text-gray-500 text-center">No pages found.</td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- Pagination -->
-    <div class="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
-      <p class="text-sm text-gray-600">Page {{ .CurrentPage }} of {{ .TotalPages }}</p>
-      <div class="flex space-x-2">
+    <div class="flex items-center justify-between border-t border-gray-100 px-5 py-4 sm:px-6">
+      <p class="text-sm text-gray-500">Page {{ .CurrentPage }} of {{ .TotalPages }}</p>
+      <div class="flex gap-2">
         {{ if .HasPrev }}
-        <a href="/admin/pages?q={{ .Query }}&page={{ .PrevPage }}" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100">Previous</a>
+        <a href="/admin/pages?q={{ .Query }}&page={{ .PrevPage }}" class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">Previous</a>
         {{ else }}
-        <span class="px-3 py-1.5 text-sm border border-gray-200 rounded text-gray-400">Previous</span>
+        <span class="inline-flex items-center rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-400">Previous</span>
         {{ end }}
         {{ if .HasNext }}
-        <a href="/admin/pages?q={{ .Query }}&page={{ .NextPage }}" class="px-3 py-1.5 text-sm border border-gray-300 rounded hover:bg-gray-100">Next</a>
+        <a href="/admin/pages?q={{ .Query }}&page={{ .NextPage }}" class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">Next</a>
         {{ else }}
-        <span class="px-3 py-1.5 text-sm border border-gray-200 rounded text-gray-400">Next</span>
+        <span class="inline-flex items-center rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-400">Next</span>
         {{ end }}
       </div>
     </div>

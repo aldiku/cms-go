@@ -1,73 +1,67 @@
 {{ define "content" }}
-<div class="w-full mx-auto py-8 space-y-8">
+<div class="space-y-8">
 
-  <h1 class="text-2xl font-bold text-gray-800 mb-4">Layouts</h1>
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800">Layouts</h2>
+  </div>
 
-  <!-- Layouts Table -->
-  <div class="bg-white shadow rounded-lg overflow-hidden">
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-800 text-white">
-          <tr>
-            <th class="px-6 py-3 text-left text-sm font-semibold">ID</th>
-            <th class="px-6 py-3 text-left text-sm font-semibold">Name</th>
-            <th class="px-6 py-3 text-left text-sm font-semibold">Structure</th>
-            <th class="px-6 py-3 text-left text-sm font-semibold">Action</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          {{ range .Layouts }}
-          <tr class="hover:bg-gray-50">
-            <td class="px-6 py-4 text-sm text-gray-700">{{ .ID }}</td>
-            <td class="px-6 py-4 text-sm font-medium text-gray-900">{{ .Name }}</td>
-            <td class="px-6 py-4 text-sm text-gray-700 whitespace-pre-wrap"><code>{{ .Structure }}</code></td>
-            <td class="px-6 py-4 text-sm">
-              <a href="/admin/layouts/{{ .ID }}/edit" class="text-blue-500 hover:underline">Edit</a>
-            </td>
-          </tr>
-          {{ end }}
-        </tbody>
-      </table>
+  <!-- Existing Layouts -->
+  <div class="rounded-2xl border border-gray-200 bg-white">
+    <div class="px-5 py-4 sm:px-6 sm:py-5">
+      <h3 class="text-base font-medium text-gray-800">All Layouts</h3>
+    </div>
+    <div class="border-t border-gray-100 p-5 sm:p-6">
+      <div class="w-full overflow-x-auto">
+        <table class="min-w-full">
+          <thead>
+            <tr class="border-y border-gray-100">
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">ID</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Name</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Structure</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Action</p></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {{ range .Layouts }}
+            <tr>
+              <td class="py-4 text-sm text-gray-500">{{ .ID }}</td>
+              <td class="py-4 text-sm font-medium text-gray-800">{{ .Name }}</td>
+              <td class="py-4 text-sm text-gray-500 whitespace-pre-wrap"><code>{{ .Structure }}</code></td>
+              <td class="py-4 text-sm">
+                <a href="/admin/layouts/{{ .ID }}/edit" class="text-indigo-600 hover:text-indigo-800 font-medium">Edit</a>
+              </td>
+            </tr>
+            {{ else }}
+            <tr>
+              <td colspan="4" class="py-8 text-sm text-gray-500 text-center">No layouts found.</td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- Create Layout Form -->
-  <div class="bg-white shadow rounded-lg">
-    <div class="bg-blue-600 text-white px-6 py-4 rounded-t-lg font-semibold">
-      Create New Layout
+  <!-- Create New Layout -->
+  <div class="rounded-2xl border border-gray-200 bg-white">
+    <div class="px-5 py-4 sm:px-6 sm:py-5">
+      <h3 class="text-base font-medium text-gray-800">Create New Layout</h3>
     </div>
-    <div class="px-6 py-6">
+    <div class="border-t border-gray-100 p-5 sm:p-6">
       <form method="POST" action="/admin/layouts/new" class="space-y-4">
-
         <div>
-          <label for="name" class="block text-gray-700 font-medium mb-2">Layout Name</label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            placeholder="Enter layout name"
-            required
-            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
+          <label for="name" class="mb-1.5 block text-sm font-medium text-gray-700">Layout Name</label>
+          <input type="text" id="name" name="name" placeholder="Enter layout name" required
+            class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
         </div>
-
         <div>
-          <label for="structure" class="block text-gray-700 font-medium mb-2">Layout Structure (JSON/HTML)</label>
-          <textarea
-            id="structure"
-            name="structure"
-            rows="5"
-            placeholder="Enter layout structure"
-            class="w-full border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          ></textarea>
+          <label for="structure" class="mb-1.5 block text-sm font-medium text-gray-700">Layout Structure (JSON/HTML)</label>
+          <textarea id="structure" name="structure" rows="5" placeholder="Enter layout structure"
+            class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"></textarea>
         </div>
-
         <div class="flex justify-end">
-          <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 transition-colors">
-            Create Layout
-          </button>
+          <button type="submit" class="rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">Create Layout</button>
         </div>
-
       </form>
     </div>
   </div>
