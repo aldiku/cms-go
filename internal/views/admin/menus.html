@@ -2,7 +2,7 @@
 <div class="space-y-6">
 
   <div class="flex flex-wrap items-center justify-between gap-3">
-    <h2 class="text-xl font-semibold text-gray-800">Menus</h2>
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Menus</h2>
     <a href="/admin/menus/new" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
       <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
@@ -11,37 +11,37 @@
     </a>
   </div>
 
-  <div class="rounded-2xl border border-gray-200 bg-white">
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
     <div class="px-5 py-4 sm:px-6 sm:py-5">
-      <h3 class="text-base font-medium text-gray-800">All Menus</h3>
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">All Menus</h3>
     </div>
-    <div class="border-t border-gray-100 p-5 sm:p-6">
+    <div class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
       <div class="w-full overflow-x-auto">
         <table class="min-w-full">
           <thead>
-            <tr class="border-y border-gray-100">
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Order</p></th>
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Menu</p></th>
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Path</p></th>
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Parent</p></th>
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Type</p></th>
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Status</p></th>
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Action</p></th>
+            <tr class="border-y border-gray-100 dark:border-gray-800">
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Order</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Menu</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Path</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Parent</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Type</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Status</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Action</p></th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100">
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
             {{ range .Menus }}
             <tr>
-              <td class="py-4 text-sm text-gray-500">{{ .ListOrder }}</td>
-              <td class="py-4 text-sm font-medium text-gray-800">{{ if .Icon }}{{ .Icon }} {{ end }}{{ .Menu.Menu }}</td>
-              <td class="py-4 text-sm text-gray-500 font-mono">{{ .Path }}</td>
-              <td class="py-4 text-sm text-gray-500">{{ if .ParentName }}{{ .ParentName }}{{ else }}&mdash;{{ end }}</td>
-              <td class="py-4 text-sm text-gray-500">{{ .MenuType }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .ListOrder }}</td>
+              <td class="py-4 text-sm font-medium text-gray-800 dark:text-white/90">{{ if .Icon }}{{ .Icon }} {{ end }}{{ .Menu.Menu }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ .Path }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ if .ParentName }}{{ .ParentName }}{{ else }}&mdash;{{ end }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .MenuType }}</td>
               <td class="py-4 text-sm">
                 {{ if eq .Status 1 }}
-                <span class="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-600">Active</span>
+                <span class="rounded-full bg-green-50 dark:bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-600 dark:text-green-400">Active</span>
                 {{ else }}
-                <span class="rounded-full bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500">Inactive</span>
+                <span class="rounded-full bg-gray-50 dark:bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">Inactive</span>
                 {{ end }}
               </td>
               <td class="py-4 text-sm">
@@ -55,7 +55,7 @@
             </tr>
             {{ else }}
             <tr>
-              <td colspan="7" class="py-8 text-sm text-gray-500 text-center">No menus found.</td>
+              <td colspan="7" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No menus found.</td>
             </tr>
             {{ end }}
           </tbody>

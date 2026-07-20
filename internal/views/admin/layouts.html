@@ -2,38 +2,38 @@
 <div class="space-y-8">
 
   <div class="flex flex-wrap items-center justify-between gap-3">
-    <h2 class="text-xl font-semibold text-gray-800">Layouts</h2>
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Layouts</h2>
   </div>
 
   <!-- Existing Layouts -->
-  <div class="rounded-2xl border border-gray-200 bg-white">
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
     <div class="px-5 py-4 sm:px-6 sm:py-5">
-      <h3 class="text-base font-medium text-gray-800">All Layouts</h3>
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">All Layouts</h3>
     </div>
-    <div class="border-t border-gray-100 p-5 sm:p-6">
+    <div class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
       <div class="w-full overflow-x-auto">
         <table class="min-w-full">
           <thead>
-            <tr class="border-y border-gray-100">
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">ID</p></th>
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Name</p></th>
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Structure</p></th>
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Action</p></th>
+            <tr class="border-y border-gray-100 dark:border-gray-800">
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">ID</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Name</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Structure</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Action</p></th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-100">
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
             {{ range .Layouts }}
             <tr>
-              <td class="py-4 text-sm text-gray-500">{{ .ID }}</td>
-              <td class="py-4 text-sm font-medium text-gray-800">{{ .Name }}</td>
-              <td class="py-4 text-sm text-gray-500 whitespace-pre-wrap"><code>{{ .Structure }}</code></td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .ID }}</td>
+              <td class="py-4 text-sm font-medium text-gray-800 dark:text-white/90">{{ .Name }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap"><code>{{ .Structure }}</code></td>
               <td class="py-4 text-sm">
                 <a href="/admin/layouts/{{ .ID }}/edit" class="text-indigo-600 hover:text-indigo-800 font-medium">Edit</a>
               </td>
             </tr>
             {{ else }}
             <tr>
-              <td colspan="4" class="py-8 text-sm text-gray-500 text-center">No layouts found.</td>
+              <td colspan="4" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No layouts found.</td>
             </tr>
             {{ end }}
           </tbody>
@@ -43,21 +43,21 @@
   </div>
 
   <!-- Create New Layout -->
-  <div class="rounded-2xl border border-gray-200 bg-white">
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
     <div class="px-5 py-4 sm:px-6 sm:py-5">
-      <h3 class="text-base font-medium text-gray-800">Create New Layout</h3>
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Create New Layout</h3>
     </div>
-    <div class="border-t border-gray-100 p-5 sm:p-6">
+    <div class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
       <form method="POST" action="/admin/layouts/new" class="space-y-4">
         <div>
-          <label for="name" class="mb-1.5 block text-sm font-medium text-gray-700">Layout Name</label>
+          <label for="name" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Layout Name</label>
           <input type="text" id="name" name="name" placeholder="Enter layout name" required
-            class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+            class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
         </div>
         <div>
-          <label for="structure" class="mb-1.5 block text-sm font-medium text-gray-700">Layout Structure (JSON/HTML)</label>
+          <label for="structure" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Layout Structure (JSON/HTML)</label>
           <textarea id="structure" name="structure" rows="5" placeholder="Enter layout structure"
-            class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"></textarea>
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"></textarea>
         </div>
         <div class="flex justify-end">
           <button type="submit" class="rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">Create Layout</button>

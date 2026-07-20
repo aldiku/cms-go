@@ -4,33 +4,33 @@
 <div class="max-w-4xl mx-auto space-y-6">
 
   <div class="flex flex-wrap items-center justify-between gap-3">
-    <h2 class="text-xl font-semibold text-gray-800">Edit Layout: {{.Layout.Name}}</h2>
-    <a href="/admin/layouts" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">&larr; Back to Layouts</a>
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Edit Layout: {{.Layout.Name}}</h2>
+    <a href="/admin/layouts" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">&larr; Back to Layouts</a>
   </div>
 
-  <div class="rounded-2xl border border-gray-200 bg-white">
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
     <div class="p-5 sm:p-6">
       <form method="POST" action="/admin/layouts/{{.Layout.ID}}/edit" class="space-y-6">
 
         <div>
-          <label for="name" class="mb-1.5 block text-sm font-medium text-gray-700">Name</label>
+          <label for="name" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Name</label>
           <input type="text" id="name" name="name" value="{{.Layout.Name}}" required
-            class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+            class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
         </div>
 
         <div>
-          <label for="structure" class="mb-1.5 block text-sm font-medium text-gray-700">Structure (JSON)</label>
+          <label for="structure" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Structure (JSON)</label>
           <textarea id="structure" name="structure" style="display:none;">{{.Layout.Structure}}</textarea>
-          <div id="editor-structure" class="h-64 border border-gray-300 rounded-lg shadow-sm">{{.Layout.Structure}}</div>
+          <div id="editor-structure" class="h-64 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm">{{.Layout.Structure}}</div>
         </div>
 
         <div>
-          <label for="template" class="mb-1.5 block text-sm font-medium text-gray-700">Template (HTML with Go syntax)</label>
+          <label for="template" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Template (HTML with Go syntax)</label>
           <textarea id="template" name="template" style="display:none;">{{.Layout.Template}}</textarea>
-          <div id="editor-template" class="h-64 border border-gray-300 rounded-lg shadow-sm">{{.Layout.Template}}</div>
+          <div id="editor-template" class="h-64 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm">{{.Layout.Template}}</div>
         </div>
 
-        <div class="flex justify-end pt-4 border-t border-gray-100">
+        <div class="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
           <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
             <svg class="fill-current" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>

@@ -2,20 +2,20 @@
 <div class="space-y-6">
 
   <div class="flex flex-wrap items-center justify-between gap-3">
-    <h2 class="text-xl font-semibold text-gray-800">Permissions</h2>
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Permissions</h2>
   </div>
 
   <div class="max-w-sm">
     <form method="GET" action="/admin/permissions">
-      <label for="role_id" class="mb-1.5 block text-sm font-medium text-gray-700">Role</label>
+      <label for="role_id" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Role</label>
       <div class="relative">
         <select id="role_id" name="role_id" onchange="this.form.submit()"
-          class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          class="h-11 w-full appearance-none rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 pr-11 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
           {{ range .Roles }}
           <option value="{{ .ID }}" {{if eq $.SelectedRoleID .ID}}selected{{end}}>{{ .Role }}</option>
           {{ end }}
         </select>
-        <span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-400">
+        <span class="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-gray-400 dark:text-gray-500">
           <svg class="stroke-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -27,49 +27,49 @@
   <form method="POST" action="/admin/permissions">
     <input type="hidden" name="role_id" value="{{ .SelectedRoleID }}">
 
-    <div class="rounded-2xl border border-gray-200 bg-white">
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
       <div class="px-5 py-4 sm:px-6 sm:py-5">
-        <h3 class="text-base font-medium text-gray-800">Permission Matrix</h3>
+        <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Permission Matrix</h3>
       </div>
-      <div class="border-t border-gray-100 p-5 sm:p-6">
+      <div class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
         <div class="w-full overflow-x-auto">
           <table class="min-w-full">
             <thead>
-              <tr class="border-y border-gray-100">
-                <th class="py-3 text-left"><p class="font-medium text-gray-500 text-xs">Menu</p></th>
-                <th class="py-3 text-center"><p class="font-medium text-gray-500 text-xs">Create</p></th>
-                <th class="py-3 text-center"><p class="font-medium text-gray-500 text-xs">Read</p></th>
-                <th class="py-3 text-center"><p class="font-medium text-gray-500 text-xs">Update</p></th>
-                <th class="py-3 text-center"><p class="font-medium text-gray-500 text-xs">Delete</p></th>
+              <tr class="border-y border-gray-100 dark:border-gray-800">
+                <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Menu</p></th>
+                <th class="py-3 text-center"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Create</p></th>
+                <th class="py-3 text-center"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Read</p></th>
+                <th class="py-3 text-center"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Update</p></th>
+                <th class="py-3 text-center"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Delete</p></th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
               {{ range .Rows }}
               <tr>
-                <td class="py-4 text-sm font-medium text-gray-800">
+                <td class="py-4 text-sm font-medium text-gray-800 dark:text-white/90">
                   {{ if .Menu.Icon }}{{ .Menu.Icon }} {{ end }}{{ .Menu.Menu }}
-                  <span class="block text-xs text-gray-400 font-mono">{{ .Menu.Path }}</span>
+                  <span class="block text-xs text-gray-400 dark:text-gray-500 font-mono">{{ .Menu.Path }}</span>
                 </td>
                 <td class="py-4 text-center">
                   <input type="checkbox" name="perm_{{ .Menu.ID }}_create" {{if .Perm.CanCreate}}checked{{end}}
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                    class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
                 </td>
                 <td class="py-4 text-center">
                   <input type="checkbox" name="perm_{{ .Menu.ID }}_read" {{if .Perm.CanRead}}checked{{end}}
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                    class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
                 </td>
                 <td class="py-4 text-center">
                   <input type="checkbox" name="perm_{{ .Menu.ID }}_update" {{if .Perm.CanUpdate}}checked{{end}}
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                    class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
                 </td>
                 <td class="py-4 text-center">
                   <input type="checkbox" name="perm_{{ .Menu.ID }}_delete" {{if .Perm.CanDelete}}checked{{end}}
-                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                    class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
                 </td>
               </tr>
               {{ else }}
               <tr>
-                <td colspan="5" class="py-8 text-sm text-gray-500 text-center">No menus found.</td>
+                <td colspan="5" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No menus found.</td>
               </tr>
               {{ end }}
             </tbody>

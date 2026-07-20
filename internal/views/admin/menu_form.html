@@ -2,39 +2,39 @@
 <div class="max-w-2xl mx-auto space-y-6">
 
   <div class="flex flex-wrap items-center justify-between gap-3">
-    <h2 class="text-xl font-semibold text-gray-800">{{if .Menu.ID}}Edit Menu: {{.Menu.Menu}}{{else}}Create New Menu{{end}}</h2>
-    <a href="/admin/menus" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">&larr; Back to Menus</a>
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">{{if .Menu.ID}}Edit Menu: {{.Menu.Menu}}{{else}}Create New Menu{{end}}</h2>
+    <a href="/admin/menus" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">&larr; Back to Menus</a>
   </div>
 
-  <div class="rounded-2xl border border-gray-200 bg-white">
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
     <div class="p-5 sm:p-6">
       <form method="POST" action="{{if .Menu.ID}}/admin/menus/{{.Menu.ID}}/edit{{else}}/admin/menus/new{{end}}" class="space-y-6">
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label for="menu" class="mb-1.5 block text-sm font-medium text-gray-700">Menu name</label>
+            <label for="menu" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Menu name</label>
             <input type="text" id="menu" name="menu" required value="{{.Menu.Menu}}"
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
           </div>
           <div>
-            <label for="icon" class="mb-1.5 block text-sm font-medium text-gray-700">Icon</label>
+            <label for="icon" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Icon</label>
             <input type="text" id="icon" name="icon" value="{{.Menu.Icon}}" placeholder="e.g. 📄"
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
           </div>
         </div>
 
         <div>
-          <label for="path" class="mb-1.5 block text-sm font-medium text-gray-700">Path</label>
+          <label for="path" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Path</label>
           <input type="text" id="path" name="path" required value="{{.Menu.Path}}" placeholder="/admin/example"
-            class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 font-mono placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
-          <p class="mt-1 text-xs text-gray-400">Admin routes are matched to this path by prefix for permission checks.</p>
+            class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 font-mono placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Admin routes are matched to this path by prefix for permission checks.</p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label for="parent_id" class="mb-1.5 block text-sm font-medium text-gray-700">Parent</label>
+            <label for="parent_id" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Parent</label>
             <select id="parent_id" name="parent_id"
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
               <option value="0">— None —</option>
               {{ range .Parents }}
               <option value="{{ .ID }}" {{if eq $.Menu.ParentID .ID}}selected{{end}}>{{ .Menu }}</option>
@@ -42,31 +42,31 @@
             </select>
           </div>
           <div>
-            <label for="list_order" class="mb-1.5 block text-sm font-medium text-gray-700">Order</label>
+            <label for="list_order" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Order</label>
             <input type="number" id="list_order" name="list_order" min="0" value="{{.Menu.ListOrder}}"
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
           </div>
           <div>
-            <label for="menu_type" class="mb-1.5 block text-sm font-medium text-gray-700">Type</label>
+            <label for="menu_type" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Type</label>
             <input type="text" id="menu_type" name="menu_type" value="{{.Menu.MenuType}}" placeholder="module / settings"
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
           </div>
         </div>
 
         <div>
-          <label for="menu_description" class="mb-1.5 block text-sm font-medium text-gray-700">Description</label>
+          <label for="menu_description" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Description</label>
           <textarea id="menu_description" name="menu_description" rows="2"
-            class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">{{.Menu.MenuDescription}}</textarea>
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">{{.Menu.MenuDescription}}</textarea>
         </div>
 
         <label class="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" name="status" {{if eq .Menu.Status 1}}checked{{end}} {{if not .Menu.ID}}checked{{end}}
-            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-          <span class="text-sm text-gray-700">Active (visible in sidebar and routable)</span>
+            class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-gray-400">Active (visible in sidebar and routable)</span>
         </label>
 
-        <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
-          <a href="/admin/menus" class="inline-flex items-center rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</a>
+        <div class="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <a href="/admin/menus" class="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</a>
           <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
             <svg class="fill-current" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
