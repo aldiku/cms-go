@@ -33,6 +33,7 @@ func New() *echo.Echo {
 	if err := generator.GenerateTemplatesFromDB(); err != nil {
 		fmt.Println("template generation error:", err)
 	}
+
 	e.Renderer = NewRenderer()
 
 	// CSRF for the login form: double-submit cookie, token read from the
@@ -113,6 +114,12 @@ func New() *echo.Echo {
 	// Permissions (matrix editor per role)
 	admin.GET("/permissions", handlers.AdminPermissions)
 	admin.POST("/permissions", handlers.AdminSavePermissions)
+
+	// File Manager
+	admin.GET("/file-manager", handlers.AdminFileManager)
+	admin.GET("/file-manager/edit/*", handlers.AdminFileEdit)
+	admin.POST("/file-manager/save", handlers.AdminFileSave)
+	admin.POST("/file-manager/delete", handlers.AdminFileDelete)
 
 	// Public frontend routes
 	e.Static("/assets", "assets")
