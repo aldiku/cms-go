@@ -81,7 +81,7 @@
       </div>
 
       <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 flex-1 flex flex-col min-h-0 p-4">
-        <form method="POST" action="/admin/file-manager/save" class="flex-1 flex flex-col gap-3 min-h-0">
+        <form method="POST" action="/admin/file-manager/save" class="flex-1 flex flex-col gap-3 min-h-0" id="fmSaveForm">
           <input type="hidden" name="path" value="{{ .FilePath }}">
           <div id="fmEditor" class="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">{{ .FileContent }}</div>
           <textarea id="fmContent" name="content" hidden></textarea>
@@ -133,7 +133,12 @@
             editor.setTheme("ace/theme/tomorrow_night");
           }
 
-          document.querySelector("form").addEventListener("submit", function() {
+          // admin-layout.html renders a logout <form> in the sidebar before
+          // this page's content, so document.querySelector("form") used to
+          // grab that form instead of this one — the submit sync never
+          // fired and the file silently saved as an empty string. Target
+          // this form by id instead.
+          document.getElementById("fmSaveForm").addEventListener("submit", function() {
             document.getElementById("fmContent").value = editor.getValue();
           });
 

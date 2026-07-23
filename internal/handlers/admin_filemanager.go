@@ -4,6 +4,7 @@ import (
 	"cms-go/internal/db"
 	"cms-go/internal/models"
 	"fmt"
+	"html/template"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -94,7 +95,15 @@ func AdminFileEdit(c echo.Context) error {
 	data := map[string]interface{}{
 		"FilePath":    rel,
 		"FileName":    info.Name(),
-		"FileContent": string(content),
+		// renderWithLayout auto-wraps every top-level string in the data map
+		// as template.HTML (unescaped) for pages that legitimately inject
+		// raw HTML. That's wrong here: the file's own <html>/<head>/<script>
+		// tags would be parsed as real markup instead of shown as literal
+		// editable text. Escape it ourselves first — the auto-wrap then just
+		// marks the (already-escaped) text safe, so it isn't escaped twice.
+		// The browser decodes the entities back into the div's textContent,
+		// which is what Ace reads as its initial value.
+		"FileContent": template.HTMLEscapeString(string(content)),
 		"FileExt":     ext,
 		"Tree":        tree,
 		"Files":       parentFiles,
@@ -152,38 +161,37 @@ func AdminFileDelete(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/admin/file-manager?path="+dir)
 }
 
-// resolvePath validates that the requested path is within one of the allowed
-// root directories and returns the absolute safe path + the relative path.
-func resolvePath(requested string) (safePath, relativePath string, err error) {
-	// Sanitize: strip leading slashes, prevent traversal
-	requested = filepath.Clean(strings.TrimPrefix(requested, "/"))
-	if requested == "." || requested == "" {
-		requested = ""
-	}
-
-	// Check against allowed roots
+// matchRoot reports whether p (already cleaned) is one of the allowed root
+// directories or a path inside one — p is expected to already carry its root
+// prefix (e.g. "internal/views/admin/x.html"), as built by listFiles/
+// buildTree, so this never joins a root onto it.
+func matchRoot(p string) (string, bool) {
 	for _, root := range fmRoots {
 		base := filepath.Clean(root)
-		candidate := filepath.Join(base, requested)
-
-		// Prevent escaping the root
-		absCandidate, _ := filepath.Abs(candidate)
-		absRoot, _ := filepath.Abs(base)
-
-		// Ensure candidate is within root
-		if !strings.HasPrefix(absCandidate, absRoot) {
-			continue
+		if p == base || strings.HasPrefix(p, base+string(filepath.Separator)) {
+			return base, true
 		}
+	}
+	return "", false
+}
 
-		// Check it doesn't contain .. tricks after resolution
-		if strings.Contains(requested, "..") {
-			continue
-		}
-
-		return candidate, filepath.Join(root, requested), nil
+// resolvePath validates that the requested path is within one of the allowed
+// root directories and returns the safe path + the relative path. requested
+// already includes its root prefix (links are built from listFiles/
+// buildTree's Path field, which is root-inclusive) — it must NOT be
+// re-joined onto a root here, or "internal/views/x" becomes the
+// nonexistent "internal/views/internal/views/x".
+func resolvePath(requested string) (safePath, relativePath string, err error) {
+	requested = filepath.Clean(strings.TrimPrefix(requested, "/"))
+	if requested == "." || requested == "" || strings.Contains(requested, "..") {
+		return "", "", echo.NewHTTPError(http.StatusForbidden, "Path not allowed")
 	}
 
-	return "", "", echo.NewHTTPError(http.StatusForbidden, "Path not allowed")
+	if _, ok := matchRoot(requested); !ok {
+		return "", "", echo.NewHTTPError(http.StatusForbidden, "Path not allowed")
+	}
+
+	return requested, requested, nil
 }
 
 // listFiles lists files in a subdirectory relative to the allowed roots.
@@ -206,63 +214,54 @@ func listFiles(sub string) ([]FileEntry, string, error) {
 		return entries, "", nil
 	}
 
-	// Try each root prefix
-	for _, root := range fmRoots {
-		base := filepath.Clean(root)
-		dir := filepath.Join(base, sub)
-
-		absDir, _ := filepath.Abs(dir)
-		absRoot, _ := filepath.Abs(base)
-		if !strings.HasPrefix(absDir, absRoot) {
-			continue
-		}
-
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			continue
-		}
-
-		var files []FileEntry
-		for _, e := range entries {
-			info, _ := e.Info()
-			size := int64(0)
-			modTime := ""
-			if info != nil {
-				size = info.Size()
-				modTime = info.ModTime().Format("Jan 02 15:04")
-			}
-			files = append(files, FileEntry{
-				Name:    e.Name(),
-				Path:    filepath.Join(sub, e.Name()),
-				IsDir:   e.IsDir(),
-				Size:    size,
-				SizeStr: formatSize(size),
-				ModTime: modTime,
-				Ext:     filepath.Ext(e.Name()),
-			})
-		}
-
-		// parent path for "go up"
-		parentPath := filepath.Dir(sub)
-		if parentPath == "." {
-			parentPath = ""
-		}
-		// Only allow parent if it's still within our roots
-		allowed := false
-		for _, r := range fmRoots {
-			if strings.HasPrefix(filepath.Join(r, parentPath)+"/", filepath.Join(r)+"/") {
-				allowed = true
-				break
-			}
-		}
-		if !allowed {
-			parentPath = ""
-		}
-
-		return files, parentPath, nil
+	// sub is already root-inclusive (e.g. "internal/views/admin"), as built
+	// by this same function's Path field and by buildTree — do not join a
+	// root onto it again, or it becomes a nonexistent doubled path.
+	sub = filepath.Clean(sub)
+	if strings.Contains(sub, "..") {
+		return nil, "", echo.NewHTTPError(http.StatusForbidden, "Path not allowed")
+	}
+	if _, ok := matchRoot(sub); !ok {
+		return nil, "", echo.NewHTTPError(http.StatusNotFound, "Directory not found")
 	}
 
-	return nil, "", echo.NewHTTPError(http.StatusNotFound, "Directory not found")
+	entries, err := os.ReadDir(sub)
+	if err != nil {
+		return nil, "", echo.NewHTTPError(http.StatusNotFound, "Directory not found")
+	}
+
+	var files []FileEntry
+	for _, e := range entries {
+		info, _ := e.Info()
+		size := int64(0)
+		modTime := ""
+		if info != nil {
+			size = info.Size()
+			modTime = info.ModTime().Format("Jan 02 15:04")
+		}
+		files = append(files, FileEntry{
+			Name:    e.Name(),
+			Path:    filepath.Join(sub, e.Name()),
+			IsDir:   e.IsDir(),
+			Size:    size,
+			SizeStr: formatSize(size),
+			ModTime: modTime,
+			Ext:     filepath.Ext(e.Name()),
+		})
+	}
+
+	// parent path for "go up"
+	parentPath := filepath.Dir(sub)
+	if parentPath == "." {
+		parentPath = ""
+	}
+	// Only allow parent if it's still within an allowed root itself;
+	// otherwise "go up" lands back on the top-level roots listing.
+	if _, ok := matchRoot(parentPath); !ok {
+		parentPath = ""
+	}
+
+	return files, parentPath, nil
 }
 
 // TreeNode represents a node in the directory tree sidebar.
