@@ -1,0 +1,38 @@
+{{ define "content" }}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">
+      Revision #{{ .Revision.ID }} &mdash; {{ .Revision.EntityType }} #{{ .Revision.EntityID }}
+    </h2>
+    <a href="{{ .BackURL }}" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">&larr; Back</a>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="px-5 py-4 sm:px-6 sm:py-5 border-b border-gray-100 dark:border-gray-800 flex flex-wrap gap-x-8 gap-y-2 text-sm">
+      <div>
+        <span class="text-gray-400 dark:text-gray-500">Saved at</span>
+        <p class="font-medium text-gray-800 dark:text-white/90">{{ .Revision.CreatedAt.Format "2006-01-02 15:04:05" }}</p>
+      </div>
+      <div>
+        <span class="text-gray-400 dark:text-gray-500">Saved by</span>
+        <p class="font-medium text-gray-800 dark:text-white/90">{{ if .Revision.UserName }}{{ .Revision.UserName }}{{ else }}&mdash;{{ end }}</p>
+      </div>
+    </div>
+
+    <div class="p-5 sm:p-6 space-y-5">
+      {{ range .Fields }}
+      <div>
+        <p class="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-400">{{ .Key }}</p>
+        {{ if .IsLong }}
+        <pre class="w-full max-h-80 overflow-auto rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 px-4 py-3 text-xs text-gray-800 dark:text-gray-300 whitespace-pre-wrap font-mono">{{ .Value }}</pre>
+        {{ else }}
+        <p class="text-sm text-gray-800 dark:text-white/90 break-words">{{ .Value }}</p>
+        {{ end }}
+      </div>
+      {{ end }}
+    </div>
+  </div>
+
+</div>
+{{ end }}

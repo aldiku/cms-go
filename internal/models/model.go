@@ -61,3 +61,16 @@ type Component struct {
 	Schema   string // JSON schema untuk props
 	Template string // HTML template (Go template syntax)
 }
+
+// Revision is a point-in-time snapshot of a Page/Layout/Component, captured
+// right before an update overwrites it. Only the last maxRevisionsPerEntity
+// (see handlers.saveRevision) are kept per entity.
+type Revision struct {
+	ID         uint   `gorm:"primaryKey"`
+	EntityType string `gorm:"index:idx_revision_lookup"` // "page" | "layout" | "component"
+	EntityID   uint   `gorm:"index:idx_revision_lookup"`
+	Data       string // JSON snapshot of the entity as it was before the update
+	UserID     uint
+	UserName   string
+	CreatedAt  time.Time
+}

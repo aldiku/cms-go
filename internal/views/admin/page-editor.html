@@ -7,40 +7,50 @@
     <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">
       {{if .Page.ID}}Edit Page: {{.Page.Title}}{{else}}Create New Page{{end}}
     </h2>
-    <a href="/admin/pages" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">&larr; Back to Pages</a>
+    <a href="/admin/pages"
+      class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">&larr;
+      Back to Pages</a>
   </div>
 
-  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 flex-1 flex flex-col min-h-0">
-    <div class="px-5 py-4 sm:px-6 sm:py-5 border-b border-gray-100 dark:border-gray-800 shrink-0">
-      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Page Editor</h3>
+  <div
+    class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 flex-1 flex flex-col min-h-0">
+    <div class="px-5 py-2 sm:px-6 shrink-0">
+      <!-- Tabs -->
+      <div class="border-b border-gray-200 dark:border-gray-700 shrink-0">
+        <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="tabNav">
+          <li class="mr-2">
+            <button type="button"
+              class="inline-block p-3 rounded-t-lg border-b-2 border-indigo-600 text-indigo-600 active-tab"
+              data-tab="meta">Meta</button>
+          </li>
+          <li class="mr-2">
+            <button type="button"
+              class="inline-block p-3 rounded-t-lg border-b-2 border-transparent hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700 text-gray-500 dark:text-gray-400"
+              data-tab="seo">SEO</button>
+          </li>
+          <li class="mr-2">
+            <button type="button"
+              class="inline-block p-3 rounded-t-lg border-b-2 border-transparent hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700 text-gray-500 dark:text-gray-400"
+              data-tab="editor">Editor</button>
+          </li>
+          {{ if .Page.ID }}
+          <li class="mr-2">
+            <button type="button"
+              class="inline-block p-3 rounded-t-lg border-b-2 border-transparent hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700 text-gray-500 dark:text-gray-400"
+              data-tab="log">Log</button>
+          </li>
+          {{ end }}
+        </ul>
+      </div>
+
     </div>
 
-    <div class="p-4 sm:p-5 flex-1 flex flex-col min-h-0 overflow-hidden">
+    <div class="px-5 py-2 flex-1 flex flex-col min-h-0 overflow-hidden">
       <form method="POST" action="{{if .Page.ID}}/admin/pages/{{.Page.ID}}/edit{{else}}/admin/pages/new{{end}}"
         class="space-y-3 flex flex-col h-full" id="pageForm">
 
         <textarea id="content" name="content" hidden>{{if .Page}}{{.Page.Content}}{{end}}</textarea>
 
-        <!-- Tabs -->
-        <div class="border-b border-gray-200 dark:border-gray-700 shrink-0">
-          <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="tabNav">
-            <li class="mr-2">
-              <button type="button"
-                class="inline-block p-3 rounded-t-lg border-b-2 border-indigo-600 text-indigo-600 active-tab"
-                data-tab="meta">Meta</button>
-            </li>
-            <li class="mr-2">
-              <button type="button"
-                class="inline-block p-3 rounded-t-lg border-b-2 border-transparent hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700 text-gray-500 dark:text-gray-400"
-                data-tab="seo">SEO</button>
-            </li>
-            <li class="mr-2">
-              <button type="button"
-                class="inline-block p-3 rounded-t-lg border-b-2 border-transparent hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700 text-gray-500 dark:text-gray-400"
-                data-tab="editor">Editor</button>
-            </li>
-          </ul>
-        </div>
 
         <!-- META TAB -->
         <div id="tabMeta" class="tab-content space-y-4 overflow-y-auto flex-1">
@@ -96,14 +106,15 @@
             </div>
             <input type="text" id="meta_title" name="meta_title"
               class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
-              placeholder="{{if .Page}}{{.Page.Title}}{{end}}"
-              value="{{if .Page}}{{.Page.MetaTitle}}{{end}}">
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Falls back to the page title if left blank. ~50-60 characters recommended.</p>
+              placeholder="{{if .Page}}{{.Page.Title}}{{end}}" value="{{if .Page}}{{.Page.MetaTitle}}{{end}}">
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Falls back to the page title if left blank. ~50-60
+              characters recommended.</p>
           </div>
 
           <div>
             <div class="flex justify-between mb-1.5">
-              <label for="meta_description" class="text-sm font-medium text-gray-700 dark:text-gray-400">Meta Description</label>
+              <label for="meta_description" class="text-sm font-medium text-gray-700 dark:text-gray-400">Meta
+                Description</label>
               <span id="metaDescriptionCount" class="text-xs text-gray-400 dark:text-gray-500"></span>
             </div>
             <textarea id="meta_description" name="meta_description" rows="3"
@@ -112,30 +123,32 @@
           </div>
 
           <div>
-            <label for="focus_keyword" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Focus Keyword</label>
+            <label for="focus_keyword" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Focus
+              Keyword</label>
             <input type="text" id="focus_keyword" name="focus_keyword"
               class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
               value="{{if .Page}}{{.Page.FocusKeyword}}{{end}}">
           </div>
 
           <div>
-            <label for="canonical_url" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Canonical URL</label>
+            <label for="canonical_url"
+              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Canonical URL</label>
             <input type="text" id="canonical_url" name="canonical_url"
               class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 font-mono placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
-              placeholder="Auto-generated from the site URL + slug"
-              value="{{if .Page}}{{.Page.CanonicalURL}}{{end}}">
+              placeholder="Auto-generated from the site URL + slug" value="{{if .Page}}{{.Page.CanonicalURL}}{{end}}">
           </div>
 
           <div class="space-y-2">
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" id="meta_robots_noindex" name="meta_robots_noindex"
-                {{if .Page}}{{if .Page.MetaRobotsNoindex}}checked{{end}}{{end}}
+              <input type="checkbox" id="meta_robots_noindex" name="meta_robots_noindex" {{if .Page}}{{if
+                .Page.MetaRobotsNoindex}}checked{{end}}{{end}}
                 class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
-              <span class="text-sm text-gray-700 dark:text-gray-400">Discourage search engines from indexing this page</span>
+              <span class="text-sm text-gray-700 dark:text-gray-400">Discourage search engines from indexing this
+                page</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" id="meta_robots_nofollow" name="meta_robots_nofollow"
-                {{if .Page}}{{if .Page.MetaRobotsNofollow}}checked{{end}}{{end}}
+              <input type="checkbox" id="meta_robots_nofollow" name="meta_robots_nofollow" {{if .Page}}{{if
+                .Page.MetaRobotsNofollow}}checked{{end}}{{end}}
                 class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
               <span class="text-sm text-gray-700 dark:text-gray-400">Don't follow links on this page</span>
             </label>
@@ -145,20 +158,22 @@
             <p class="font-medium text-gray-700 dark:text-gray-400 mb-4">Social sharing (Open Graph)</p>
             <div class="space-y-4">
               <div>
-                <label for="og_title" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">OG Title</label>
+                <label for="og_title" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">OG
+                  Title</label>
                 <input type="text" id="og_title" name="og_title"
                   class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
-                  placeholder="Falls back to SEO title"
-                  value="{{if .Page}}{{.Page.OGTitle}}{{end}}">
+                  placeholder="Falls back to SEO title" value="{{if .Page}}{{.Page.OGTitle}}{{end}}">
               </div>
               <div>
-                <label for="og_description" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">OG Description</label>
+                <label for="og_description" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">OG
+                  Description</label>
                 <textarea id="og_description" name="og_description" rows="2"
                   class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
                   placeholder="Falls back to meta description">{{if .Page}}{{.Page.OGDescription}}{{end}}</textarea>
               </div>
               <div>
-                <label for="og_image" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">OG Image URL</label>
+                <label for="og_image" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">OG Image
+                  URL</label>
                 <input type="text" id="og_image" name="og_image"
                   class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
                   value="{{if .Page}}{{.Page.OGImage}}{{end}}">
@@ -170,33 +185,36 @@
             <p class="font-medium text-gray-700 dark:text-gray-400 mb-4">Twitter Card</p>
             <div class="space-y-4">
               <div>
-                <label for="twitter_card" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Card Type</label>
+                <label for="twitter_card" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Card
+                  Type</label>
                 <select id="twitter_card" name="twitter_card"
                   class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
                   <option value="">Auto</option>
                   <option value="summary" {{if eq .Page.TwitterCard "summary" }}selected{{end}}>Summary</option>
-                  <option value="summary_large_image" {{if eq .Page.TwitterCard "summary_large_image" }}selected{{end}}>Summary with large image</option>
+                  <option value="summary_large_image" {{if eq .Page.TwitterCard "summary_large_image" }}selected{{end}}>
+                    Summary with large image</option>
                 </select>
               </div>
               <div>
-                <label for="twitter_title" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Twitter Title</label>
+                <label for="twitter_title"
+                  class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Twitter Title</label>
                 <input type="text" id="twitter_title" name="twitter_title"
                   class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
-                  placeholder="Falls back to OG title"
-                  value="{{if .Page}}{{.Page.TwitterTitle}}{{end}}">
+                  placeholder="Falls back to OG title" value="{{if .Page}}{{.Page.TwitterTitle}}{{end}}">
               </div>
               <div>
-                <label for="twitter_description" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Twitter Description</label>
+                <label for="twitter_description"
+                  class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Twitter Description</label>
                 <textarea id="twitter_description" name="twitter_description" rows="2"
                   class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
                   placeholder="Falls back to OG description">{{if .Page}}{{.Page.TwitterDescription}}{{end}}</textarea>
               </div>
               <div>
-                <label for="twitter_image" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Twitter Image URL</label>
+                <label for="twitter_image"
+                  class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Twitter Image URL</label>
                 <input type="text" id="twitter_image" name="twitter_image"
                   class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
-                  placeholder="Falls back to OG image"
-                  value="{{if .Page}}{{.Page.TwitterImage}}{{end}}">
+                  placeholder="Falls back to OG image" value="{{if .Page}}{{.Page.TwitterImage}}{{end}}">
               </div>
             </div>
           </div>
@@ -208,11 +226,13 @@
 
           <div id="jsonTools" class="hidden flex items-center gap-2">
             <span class="text-sm font-medium text-gray-700 dark:text-gray-400">JSON</span>
-            <button type="button" id="beautifyJson" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">Beautify</button>
-            <button type="button" id="compactJson" class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">Compact</button>
+            <button type="button" id="beautifyJson"
+              class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">Beautify</button>
+            <button type="button" id="compactJson"
+              class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">Compact</button>
           </div>
 
-          <div id="layoutToggle" class="flex items-center space-x-4 {{if ne .Page.Type "html"}}hidden{{end}}">
+          <div id="layoutToggle" class="flex items-center space-x-4 {{if ne .Page.Type " html"}}hidden{{end}}">
             <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Editor layout:</span>
             <div class="flex rounded-lg shadow-sm" role="group">
               <button type="button"
@@ -224,21 +244,23 @@
             </div>
           </div>
 
-          <div id="editorPreviewContainer" class="flex-1 flex flex-col {{if eq .Page.Type "html"}}md:flex-row{{end}} gap-4 min-h-0">
+          <div id="editorPreviewContainer" class="flex-1 flex flex-col {{if eq .Page.Type " html"}}md:flex-row{{end}}
+            gap-4 min-h-0">
             <div id="editorPanel" class="flex-1 flex flex-col min-h-0">
               <div id="contentEditor" class="flex-1 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm">
                 {{if .Page}}{{.Page.Content}}{{end}}
               </div>
             </div>
 
-            <div id="previewPanel" class="flex-1 flex flex-col min-h-0 {{if ne .Page.Type "html"}}hidden{{end}}">
+            <div id="previewPanel" class="flex-1 flex flex-col min-h-0 {{if ne .Page.Type " html"}}hidden{{end}}">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Preview</span>
                 <div class="flex space-x-1">
                   <button type="button"
                     class="text-xs px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 viewport-btn active-viewport"
                     data-viewport="desktop">Desktop</button>
-                  <button type="button" class="text-xs px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 viewport-btn"
+                  <button type="button"
+                    class="text-xs px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 viewport-btn"
                     data-viewport="mobile">Mobile</button>
                 </div>
               </div>
@@ -251,10 +273,44 @@
           </div>
         </div>
 
+        {{ if .Page.ID }}
+        <!-- LOG TAB -->
+        <div id="tabLog" class="tab-content hidden space-y-4 overflow-y-auto flex-1">
+          <div class="w-full overflow-x-auto">
+            <table class="min-w-full">
+              <thead>
+                <tr class="border-y border-gray-100 dark:border-gray-800">
+                  <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Date</p></th>
+                  <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">User</p></th>
+                  <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Action</p></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                {{ range .Revisions }}
+                <tr>
+                  <td class="py-3 text-sm text-gray-500 dark:text-gray-400">{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
+                  <td class="py-3 text-sm text-gray-500 dark:text-gray-400">{{ if .UserName }}{{ .UserName }}{{ else }}&mdash;{{ end }}</td>
+                  <td class="py-3 text-sm"><a href="/admin/revisions/{{ .ID }}" class="text-indigo-600 hover:text-indigo-800 font-medium">View</a></td>
+                </tr>
+                {{ else }}
+                <tr>
+                  <td colspan="3" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No revisions yet.</td>
+                </tr>
+                {{ end }}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {{ end }}
+
         <div class="flex justify-end pt-3 border-t border-gray-100 dark:border-gray-800 shrink-0">
-          <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
-            <svg class="fill-current" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
+          <button type="submit"
+            class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
+            <svg class="fill-current" width="16" height="16" viewBox="0 0 20 20" fill="none"
+              xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd"
+                d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z"
+                fill="" />
             </svg>
             Save
           </button>
@@ -287,7 +343,8 @@
     const tabContents = {
       meta: document.getElementById('tabMeta'),
       seo: document.getElementById('tabSeo'),
-      editor: document.getElementById('tabEditor')
+      editor: document.getElementById('tabEditor'),
+      log: document.getElementById('tabLog')
     };
     tabButtons.forEach(btn => {
       btn.addEventListener('click', function () {
@@ -295,7 +352,7 @@
           b.classList.remove('border-indigo-600', 'text-indigo-600');
           b.classList.add('border-transparent', 'text-gray-500');
         });
-        Object.values(tabContents).forEach(el => el.classList.add('hidden'));
+        Object.values(tabContents).forEach(el => el && el.classList.add('hidden'));
         this.classList.remove('border-transparent', 'text-gray-500');
         this.classList.add('border-indigo-600', 'text-indigo-600');
         const tab = this.dataset.tab;
@@ -305,6 +362,7 @@
           tabContents.editor.classList.remove('hidden');
           contentEditor.resize();
         }
+        else if (tab === 'log' && tabContents.log) tabContents.log.classList.remove('hidden');
       });
     });
 

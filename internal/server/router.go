@@ -27,6 +27,7 @@ func New() *echo.Echo {
 	db.DB.AutoMigrate(
 		&models.Page{}, &models.Layout{}, &models.Menu{}, &models.Component{},
 		&models.User{}, &models.Role{}, &models.Permission{}, &models.Session{},
+		&models.Revision{},
 	)
 	auth.SeedAuth()
 	// generate templates from DB into views/generated
@@ -110,6 +111,9 @@ func New() *echo.Echo {
 	admin.GET("/menus/:id/edit", handlers.AdminMenuForm)
 	admin.POST("/menus/:id/edit", handlers.AdminUpdateMenu)
 	admin.POST("/menus/:id/delete", handlers.AdminDeleteMenu)
+
+	// Revision history (read-only detail view; shared by pages/layouts/components)
+	admin.GET("/revisions/:id", handlers.AdminViewRevision)
 
 	// Permissions (matrix editor per role)
 	admin.GET("/permissions", handlers.AdminPermissions)

@@ -50,6 +50,13 @@ func AdminPages(c echo.Context) error {
 		Offset((pageNum - 1) * adminPagesPerPage).
 		Find(&pages)
 
+	var layouts []models.Layout
+	db.DB.Find(&layouts)
+	layoutNames := make(map[uint]string, len(layouts))
+	for _, l := range layouts {
+		layoutNames[l.ID] = l.Name
+	}
+
 	data := map[string]interface{}{
 		"Pages":       pages,
 		"Query":       query,
@@ -59,6 +66,7 @@ func AdminPages(c echo.Context) error {
 		"HasNext":     pageNum < totalPages,
 		"PrevPage":    pageNum - 1,
 		"NextPage":    pageNum + 1,
+		"LayoutNames": layoutNames,
 	}
 
 	return renderWithLayout(c, "internal/views/admin/admin-layout.html", "internal/views/admin/pages.html", data)
@@ -115,6 +123,9 @@ func AdminPageEditor(c echo.Context) error {
 		"Page":    page,
 		"Layouts": layouts,
 	}
+	if page.ID != 0 {
+		data["Revisions"] = loadRevisions("page", page.ID)
+	}
 
 	return renderWithLayout(
 		c,
@@ -146,6 +157,7 @@ func AdminUpdatePage(c echo.Context) error {
 	if err := db.DB.First(&page, id).Error; err != nil {
 		return c.String(http.StatusNotFound, "Page not found")
 	}
+	before := page
 
 	bindPageFromForm(c, &page)
 	page.Type = c.FormValue("type")
@@ -161,6 +173,7 @@ func AdminUpdatePage(c echo.Context) error {
 	if err := db.DB.Save(&page).Error; err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to update page")
 	}
+	saveRevision(c, "page", page.ID, before)
 
 	if err := generator.GenerateTemplatesFromDB(); err != nil {
 		fmt.Println("template generation error:", err)

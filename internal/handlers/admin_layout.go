@@ -52,6 +52,8 @@ func AdminEditLayout(c echo.Context) error {
 	}
 
 	if c.Request().Method == http.MethodPost {
+		before := layout
+
 		// Update layout with form values
 		layout.Name = c.FormValue("name")
 		layout.Structure = c.FormValue("structure")
@@ -60,6 +62,7 @@ func AdminEditLayout(c echo.Context) error {
 		if err := db.DB.Save(&layout).Error; err != nil {
 			return c.String(http.StatusInternalServerError, "Failed to update layout")
 		}
+		saveRevision(c, "layout", layout.ID, before)
 		if err := generator.GenerateTemplatesFromDB(); err != nil {
 			fmt.Println("template generation error:", err)
 		}
@@ -70,7 +73,8 @@ func AdminEditLayout(c echo.Context) error {
 	// Render edit page
 
 	data := map[string]interface{}{
-		"Layout": layout,
+		"Layout":    layout,
+		"Revisions": loadRevisions("layout", layout.ID),
 	}
 
 	return renderWithLayout(c, "internal/views/admin/admin-layout.html", "internal/views/admin/edit_layout.html", data)

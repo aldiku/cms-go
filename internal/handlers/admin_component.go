@@ -50,6 +50,7 @@ func AdminEditComponent(c echo.Context) error {
 
 	data := map[string]interface{}{
 		"Component": comp,
+		"Revisions": loadRevisions("component", comp.ID),
 	}
 
 	return renderWithLayout(c, "internal/views/admin/admin-layout.html", "internal/views/admin/component_form.html", data)
@@ -61,11 +62,13 @@ func AdminUpdateComponent(c echo.Context) error {
 	if err := db.DB.First(&comp, id).Error; err != nil {
 		return c.NoContent(http.StatusNotFound)
 	}
+	before := comp
 
 	comp.Name = c.FormValue("name")
 	comp.Schema = c.FormValue("schema")
 	comp.Template = c.FormValue("template")
 	db.DB.Save(&comp)
+	saveRevision(c, "component", comp.ID, before)
 	if err := generator.GenerateTemplatesFromDB(); err != nil {
 		fmt.Println("template generation error:", err)
 	}

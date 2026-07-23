@@ -38,6 +38,7 @@
               <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Title</p></th>
               <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Slug</p></th>
               <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Type</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Layout</p></th>
               <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Action</p></th>
             </tr>
           </thead>
@@ -48,6 +49,9 @@
               <td class="py-4 text-sm font-medium text-gray-800 dark:text-white/90">{{ .Title }}</td>
               <td class="py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ .Slug }}</td>
               <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .Type }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">
+                {{ with index $.LayoutNames .LayoutID }}{{ . }}{{ else }}<span class="text-gray-400 dark:text-gray-600">&mdash;</span>{{ end }}
+              </td>
               <td class="py-4 text-sm">
                 <div class="flex items-center gap-3">
                   <a href="/admin/pages/{{ .ID }}/edit" class="text-indigo-600 hover:text-indigo-800 font-medium">Edit</a>
@@ -59,7 +63,7 @@
             </tr>
             {{ else }}
             <tr>
-              <td colspan="5" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No pages found.</td>
+              <td colspan="6" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No pages found.</td>
             </tr>
             {{ end }}
           </tbody>
