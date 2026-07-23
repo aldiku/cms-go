@@ -27,7 +27,7 @@ func New() *echo.Echo {
 	db.DB.AutoMigrate(
 		&models.Page{}, &models.Layout{}, &models.Menu{}, &models.Component{},
 		&models.User{}, &models.Role{}, &models.Permission{}, &models.Session{},
-		&models.Revision{},
+		&models.Revision{}, &models.ApiEndpoint{},
 	)
 	auth.SeedAuth()
 	// generate templates from DB into views/generated
@@ -115,6 +115,14 @@ func New() *echo.Echo {
 	// Revision history (read-only detail view; shared by pages/layouts/components)
 	admin.GET("/revisions/:id", handlers.AdminViewRevision)
 
+	// API Builder — split-view editor uses JSON request bodies, not form posts
+	admin.GET("/api-builder", handlers.AdminAPIBuilder)
+	admin.GET("/api-builder/:id/json", handlers.AdminAPIEndpointJSON)
+	admin.POST("/api-builder/new", handlers.AdminCreateAPIEndpoint)
+	admin.POST("/api-builder/:id/edit", handlers.AdminUpdateAPIEndpoint)
+	admin.POST("/api-builder/:id/delete", handlers.AdminDeleteAPIEndpoint)
+	admin.POST("/api-builder/test", handlers.AdminTestAPIEndpoint)
+
 	// Permissions (matrix editor per role)
 	admin.GET("/permissions", handlers.AdminPermissions)
 	admin.POST("/permissions", handlers.AdminSavePermissions)
@@ -127,6 +135,7 @@ func New() *echo.Echo {
 
 	// Public frontend routes
 	e.Static("/assets", "assets")
+	e.Any(config.APIBasePath()+"/*", handlers.PublicAPIDispatch)
 	e.GET("/*", DynamicPage)
 
 	return e

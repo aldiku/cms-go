@@ -73,6 +73,8 @@ func revisionEditURL(rev models.Revision) string {
 		return "/admin/layouts/" + id + "/edit"
 	case "component":
 		return "/admin/components/" + id + "/edit"
+	case "api_endpoint":
+		return "/admin/api-builder?id=" + id
 	default:
 		return "/admin"
 	}

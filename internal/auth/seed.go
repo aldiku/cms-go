@@ -111,4 +111,17 @@ func SeedAuth() {
 			log.Printf("seed: created %d permissions for %s", len(perms), role.Role)
 		}
 	}
+
+	// The menu-seed block above only runs once, on a fully empty menus
+	// table, so it won't fire for installs that predate a given feature.
+	// Ensure newer menus exist idempotently, outside that one-time gate.
+	apiBuilderMenu := models.Menu{
+		Menu: "API Builder", Path: "/admin/api-builder", Icon: "🔌",
+		MenuType: "module", Status: 1, ListOrder: 9,
+	}
+	db.DB.Where("path = ?", apiBuilderMenu.Path).FirstOrCreate(&apiBuilderMenu, apiBuilderMenu)
+
+	if os.Getenv("API_KEY") == "" {
+		log.Println("⚠️  seed: API_KEY is not set — all \"auth\"-tagged API Builder endpoints will reject every request")
+	}
 }
