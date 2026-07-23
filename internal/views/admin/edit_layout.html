@@ -10,7 +10,7 @@
 
   <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
     <div class="p-5 sm:p-6">
-      <form method="POST" action="/admin/layouts/{{.Layout.ID}}/edit" class="space-y-6">
+      <form method="POST" action="/admin/layouts/{{.Layout.ID}}/edit" class="space-y-6" id="layoutForm">
 
         <div>
           <label for="name" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Name</label>
@@ -19,7 +19,13 @@
         </div>
 
         <div>
-          <label for="structure" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Structure (JSON)</label>
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="structure" class="block text-sm font-medium text-gray-700 dark:text-gray-400">Structure (JSON)</label>
+            <div id="jsonTools" class="flex items-center gap-2">
+              <button type="button" id="beautifyJson" class="px-3 py-1 text-xs border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">Beautify</button>
+              <button type="button" id="compactJson" class="px-3 py-1 text-xs border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">Compact</button>
+            </div>
+          </div>
           <textarea id="structure" name="structure" style="display:none;">{{.Layout.Structure}}</textarea>
           <div id="editor-structure" class="h-64 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm">{{.Layout.Structure}}</div>
         </div>
@@ -56,10 +62,42 @@
   editorTemplate.session.setMode("ace/mode/html");
   editorTemplate.setOption("wrap", true);
 
-  var form = document.querySelector("form");
+  // Keep the hidden textareas (the actual form fields) in sync with the Ace
+  // editors as the user types, not just on submit — belt and suspenders.
+  editorStructure.session.on("change", function () {
+    document.getElementById("structure").value = editorStructure.getValue();
+  });
+  editorTemplate.session.on("change", function () {
+    document.getElementById("template").value = editorTemplate.getValue();
+  });
+
+  // IMPORTANT: admin-layout.html renders a logout <form> in the sidebar
+  // before this page's content, so document.querySelector("form") used to
+  // grab that form instead of this one — the submit sync never fired and
+  // structure/template silently saved their original, unedited values.
+  // Target this form by id instead.
+  var form = document.getElementById("layoutForm");
   form.addEventListener("submit", function() {
     document.getElementById("structure").value = editorStructure.getValue();
     document.getElementById("template").value = editorTemplate.getValue();
+  });
+
+  document.getElementById("beautifyJson").addEventListener("click", function () {
+    try {
+      var obj = JSON.parse(editorStructure.getValue());
+      editorStructure.setValue(JSON.stringify(obj, null, 2), -1);
+    } catch (err) {
+      alert("Invalid JSON");
+    }
+  });
+
+  document.getElementById("compactJson").addEventListener("click", function () {
+    try {
+      var obj = JSON.parse(editorStructure.getValue());
+      editorStructure.setValue(JSON.stringify(obj), -1);
+    } catch (err) {
+      alert("Invalid JSON");
+    }
   });
 </script>
 {{ end }}
