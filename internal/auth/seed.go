@@ -121,6 +121,16 @@ func SeedAuth() {
 	}
 	db.DB.Where("path = ?", apiBuilderMenu.Path).FirstOrCreate(&apiBuilderMenu, apiBuilderMenu)
 
+	// Granting CanUpdate here grants full arbitrary SQL execution (including
+	// DDL) — there's no separate "execute" RBAC verb in this app. Treat
+	// granting DB Manager access at all as a superadmin-tier decision.
+	dbManagerMenu := models.Menu{
+		Menu: "DB Manager", Path: "/admin/db-manager", Icon: "🗄️",
+		MenuType: "module", Status: 1, ListOrder: 10,
+		MenuDescription: "Direct Postgres table browser and SQL console — grants full arbitrary-SQL execution to any role with update access.",
+	}
+	db.DB.Where("path = ?", dbManagerMenu.Path).FirstOrCreate(&dbManagerMenu, dbManagerMenu)
+
 	if os.Getenv("API_KEY") == "" {
 		log.Println("⚠️  seed: API_KEY is not set — all \"auth\"-tagged API Builder endpoints will reject every request")
 	}

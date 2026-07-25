@@ -123,6 +123,15 @@ func New() *echo.Echo {
 	admin.POST("/api-builder/:id/delete", handlers.AdminDeleteAPIEndpoint)
 	admin.POST("/api-builder/test", handlers.AdminTestAPIEndpoint)
 
+	// DB Manager — native Postgres table browser/editor + SQL console
+	admin.GET("/db-manager", handlers.AdminDBManager)
+	admin.GET("/db-manager/tables/:table/json", handlers.AdminDBManagerTableJSON)
+	admin.GET("/db-manager/tables/:table/rows", handlers.AdminDBManagerBrowseRows)
+	admin.POST("/db-manager/tables/:table/rows/new", handlers.AdminDBManagerInsertRow)
+	admin.POST("/db-manager/tables/:table/rows/edit", handlers.AdminDBManagerUpdateRow)
+	admin.POST("/db-manager/tables/:table/rows/delete", handlers.AdminDBManagerDeleteRow)
+	admin.POST("/db-manager/sql", handlers.AdminDBManagerRunSQL)
+
 	// Permissions (matrix editor per role)
 	admin.GET("/permissions", handlers.AdminPermissions)
 	admin.POST("/permissions", handlers.AdminSavePermissions)

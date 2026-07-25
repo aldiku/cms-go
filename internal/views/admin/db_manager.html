@@ -1,0 +1,453 @@
+{{ define "content" }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js"></script>
+
+<script type="application/json" id="dbTablesData">{{ .TablesJSON }}</script>
+
+<div class="mx-auto h-[calc(100vh-80px)] flex flex-col">
+  <div id="dbManagerApp" x-data="dbManagerApp()" x-init="init()" class="flex-1 flex gap-4 min-h-0">
+
+    <!-- SIDEBAR -->
+    <div
+      class="w-64 shrink-0 flex flex-col rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+      <div class="p-3 border-b border-gray-100 dark:border-gray-800 space-y-2">
+        <input type="text" x-model="search" @input="filterTables()" placeholder="Search tables..."
+          class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+        <button type="button" @click="switchTab('console')"
+          :class="activeTab === 'console' ? 'bg-indigo-600 text-white' : 'border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'"
+          class="w-full inline-flex items-center justify-center gap-1.5 rounded-lg text-sm font-medium py-2 transition-colors">
+          SQL Console
+        </button>
+      </div>
+      <div class="flex-1 overflow-y-auto">
+        <template x-for="t in filteredTables" :key="t">
+          <button type="button" @click="selectTable(t)"
+            :class="t === activeTable ? 'bg-indigo-50 dark:bg-gray-800' : ''"
+            class="w-full text-left px-3 py-2.5 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/60">
+            <span class="text-sm font-mono text-gray-800 dark:text-white/90 truncate" x-text="t"></span>
+          </button>
+        </template>
+        <template x-if="filteredTables.length === 0">
+          <p class="text-sm text-gray-400 dark:text-gray-500 text-center py-8">No tables found.</p>
+        </template>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div
+      class="flex-1 flex flex-col min-h-0 rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 overflow-auto">
+      <div class="px-4 pt-3 border-b border-gray-200 dark:border-gray-700 shrink-0">
+        <ul class="flex flex-wrap -mb-px text-sm font-medium text-center">
+          <li class="mr-2">
+            <button type="button" @click="switchTab('browse')"
+              :class="activeTab === 'browse' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700'"
+              class="inline-block p-3 rounded-t-lg border-b-2">Browse</button>
+          </li>
+          <li class="mr-2">
+            <button type="button" @click="switchTab('structure')"
+              :class="activeTab === 'structure' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700'"
+              class="inline-block p-3 rounded-t-lg border-b-2">Structure</button>
+          </li>
+          <li class="mr-2">
+            <button type="button" @click="switchTab('console')"
+              :class="activeTab === 'console' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700'"
+              class="inline-block p-3 rounded-t-lg border-b-2">SQL Console</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- BROWSE -->
+      <div class="flex-1 min-h-0 flex flex-col p-4 gap-3" x-show="activeTab === 'browse'">
+        <template x-if="!activeTable">
+          <div class="flex-1 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">
+            Select a table on the left.
+          </div>
+        </template>
+
+        <template x-if="activeTable">
+          <div class="flex-1 flex flex-col min-h-0 gap-3">
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <input type="text" x-model="whereFilter" @keydown.enter="applyFilter()"
+                placeholder="Optional raw WHERE expression, e.g. status = 'active'"
+                class="h-9 flex-1 min-w-[240px] rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm font-mono">
+              <button type="button" @click="applyFilter()"
+                class="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Apply</button>
+              <button type="button" @click="openInsert()"
+                class="rounded-lg bg-indigo-600 text-white px-3 py-1.5 text-sm font-medium hover:bg-indigo-700">+ Insert
+                Row</button>
+              <span class="text-xs text-gray-400 dark:text-gray-500" x-show="!hasPrimaryKey">No primary key detected —
+                editing/deleting disabled for this table.</span>
+            </div>
+
+            <div class="flex-1 min-h-0 overflow-auto border border-gray-100 dark:border-gray-800 rounded-lg">
+              <table class="min-w-full text-sm">
+                <thead class="sticky top-0 bg-gray-50 dark:bg-gray-950">
+                  <tr>
+                    <template x-for="col in columns" :key="col.name">
+                      <th
+                        class="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800 cursor-pointer select-none whitespace-nowrap"
+                        @click="toggleSort(col.name)">
+                        <span x-text="col.name"></span>
+                        <span x-show="col.is_primary_key" class="text-amber-500" title="Primary key"> 🔑</span>
+                        <span x-show="sortCol === col.name" x-text="sortDir === 'asc' ? ' ▲' : ' ▼'"></span>
+                      </th>
+                    </template>
+                    <th class="px-3 py-2 border-b border-gray-200 dark:border-gray-800"></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                  <template x-for="(row, rowIndex) in rows" :key="rowIndex">
+                    <tr>
+                      <template x-for="col in columns" :key="col.name">
+                        <td
+                          class="px-3 py-1.5 font-mono text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap max-w-xs truncate"
+                          @dblclick="hasPrimaryKey && startEdit(rowIndex, col.name)">
+                          <template x-if="editing && editing.rowIndex === rowIndex && editing.col === col.name">
+                            <div class="flex items-center gap-1">
+                              <input type="text" x-model="editing.value" @keydown.enter="saveEdit()"
+                                @keydown.escape="cancelEdit()"
+                                class="h-7 w-32 rounded border border-indigo-400 px-1.5 text-xs"
+                                :disabled="editing.null">
+                              <label class="flex items-center gap-0.5 text-[10px] text-gray-500"><input type="checkbox"
+                                  x-model="editing.null" class="h-3 w-3">NULL</label>
+                              <button type="button" @click="saveEdit()" class="text-green-600 text-xs">✓</button>
+                              <button type="button" @click="cancelEdit()" class="text-red-500 text-xs">✕</button>
+                            </div>
+                          </template>
+                          <template x-if="!(editing && editing.rowIndex === rowIndex && editing.col === col.name)">
+                            <span x-text="row[col.name] === null ? 'NULL' : row[col.name]"
+                              :class="row[col.name] === null ? 'italic text-gray-400' : ''"></span>
+                          </template>
+                        </td>
+                      </template>
+                      <td class="px-3 py-1.5">
+                        <button type="button" x-show="hasPrimaryKey" @click="deleteRow(rowIndex)"
+                          class="text-red-500 hover:text-red-700 text-xs font-medium">Delete</button>
+                      </td>
+                    </tr>
+                  </template>
+                  <template x-if="rows.length === 0">
+                    <tr>
+                      <td :colspan="columns.length + 1" class="py-8 text-center text-gray-400 dark:text-gray-500">No
+                        rows.</td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="flex items-center justify-between shrink-0 text-sm">
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500 dark:text-gray-400" x-text="total + ' rows'"></span>
+                <select x-model.number="pageSize" @change="page = 1; loadRows()"
+                  class="h-8 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-2 text-xs">
+                  <option value="25">25 / page</option>
+                  <option value="50">50 / page</option>
+                  <option value="100">100 / page</option>
+                  <option value="200">200 / page</option>
+                </select>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" @click="changePage(-1)" :disabled="page <= 1"
+                  class="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1 disabled:opacity-40">&larr;
+                  Prev</button>
+                <span class="text-gray-500 dark:text-gray-400" x-text="'Page ' + page"></span>
+                <button type="button" @click="changePage(1)" :disabled="page * pageSize >= total"
+                  class="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1 disabled:opacity-40">Next
+                  &rarr;</button>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- STRUCTURE -->
+      <div class="flex-1 min-h-0 overflow-y-auto p-4" x-show="activeTab === 'structure'">
+        <template x-if="!activeTable">
+          <div class="flex-1 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500">Select a table
+            on the left.</div>
+        </template>
+        <template x-if="activeTable">
+          <table class="min-w-full text-sm">
+            <thead>
+              <tr
+                class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
+                <th class="py-2 pr-4">Column</th>
+                <th class="py-2 pr-4">Type</th>
+                <th class="py-2 pr-4">Nullable</th>
+                <th class="py-2 pr-4">Default</th>
+                <th class="py-2">Primary Key</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+              <template x-for="col in columns" :key="col.name">
+                <tr>
+                  <td class="py-2 pr-4 font-mono text-gray-800 dark:text-white/90" x-text="col.name"></td>
+                  <td class="py-2 pr-4 font-mono text-gray-500 dark:text-gray-400"
+                    x-text="col.udt_name + (col.is_array ? '[]' : '')"></td>
+                  <td class="py-2 pr-4 text-gray-500 dark:text-gray-400" x-text="col.nullable ? 'YES' : 'NO'"></td>
+                  <td class="py-2 pr-4 font-mono text-xs text-gray-400 dark:text-gray-500" x-text="col.default || '—'">
+                  </td>
+                  <td class="py-2" x-text="col.is_primary_key ? '🔑' : ''"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </template>
+      </div>
+
+      <!-- SQL CONSOLE -->
+      <div class="flex-1 min-h-0 flex flex-col p-4 gap-2" x-show="activeTab === 'console'">
+        <div
+          class="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40 px-3 py-2 text-xs text-amber-800 dark:text-amber-300 shrink-0">
+          This runs directly against your live database with full credentials — no query-type restriction, no undo. One
+          statement per run.
+        </div>
+        <div id="dbConsoleEditor"
+          class="flex-1 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm min-h-[160px]"></div>
+        <div class="shrink-0">
+          <button type="button" @click="runConsole()"
+            class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
+            Run <span class="opacity-70 text-xs">(Ctrl+Enter)</span>
+          </button>
+        </div>
+        <template x-if="consoleResult">
+          <div class="flex-1 min-h-0 overflow-auto space-y-2">
+            <template x-if="consoleResult.error">
+              <div
+                class="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-3 py-2 text-sm text-red-700 dark:text-red-400"
+                x-text="consoleResult.error"></div>
+            </template>
+            <p class="text-xs text-gray-400 dark:text-gray-500"
+              x-text="(consoleResult.rows ? consoleResult.rows.length : 0) + ' rows · ' + consoleResult.elapsed_ms + ' ms'">
+            </p>
+            <template x-if="consoleResult.rows && consoleResult.rows.length > 0">
+              <div class="overflow-auto border border-gray-100 dark:border-gray-800 rounded-lg">
+                <table class="min-w-full text-xs">
+                  <thead class="bg-gray-50 dark:bg-gray-950">
+                    <tr>
+                      <template x-for="k in Object.keys(consoleResult.rows[0])" :key="k">
+                        <th
+                          class="px-2 py-1.5 text-left font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800"
+                          x-text="k"></th>
+                      </template>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                    <template x-for="(r, i) in consoleResult.rows" :key="i">
+                      <tr>
+                        <template x-for="k in Object.keys(consoleResult.rows[0])" :key="k">
+                          <td
+                            class="px-2 py-1 font-mono text-gray-700 dark:text-gray-300 whitespace-nowrap max-w-xs truncate"
+                            x-text="r[k] === null ? 'NULL' : r[k]"></td>
+                        </template>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- INSERT MODAL -->
+    <div x-show="insertOpen" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+      style="display:none;">
+      <div
+        class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 w-full max-w-lg max-h-[80vh] overflow-y-auto space-y-3"
+        @click.outside="closeInsert()">
+        <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Insert row into <span class="font-mono"
+            x-text="activeTable"></span></h3>
+        <template x-for="col in columns" :key="col.name">
+          <div class="flex items-center gap-2">
+            <label class="w-32 shrink-0 text-xs font-mono text-gray-500 dark:text-gray-400 truncate" :title="col.name"
+              x-text="col.name"></label>
+            <input type="text" x-model="insertValues[col.name].value" @input="insertValues[col.name].touched = true"
+              :disabled="insertValues[col.name].null"
+              :placeholder="col.default || (col.nullable ? '(null)' : '(required)')"
+              class="h-9 flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-2 text-sm">
+            <label class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <input type="checkbox" x-model="insertValues[col.name].null"
+                @change="insertValues[col.name].touched = true" class="h-3.5 w-3.5">NULL
+            </label>
+          </div>
+        </template>
+        <p class="text-xs text-red-500" x-show="insertError" x-text="insertError"></p>
+        <div class="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+          <button type="button" @click="closeInsert()"
+            class="rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm">Cancel</button>
+          <button type="button" @click="submitInsert()"
+            class="rounded-lg bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-700">Insert</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function dbManagerApp() {
+    return {
+      tables: JSON.parse(document.getElementById('dbTablesData').textContent || '[]'),
+      filteredTables: [],
+      search: '',
+      activeTable: null,
+      activeTab: 'console',
+      columns: [],
+      hasPrimaryKey: false,
+      rows: [],
+      total: 0,
+      page: 1,
+      pageSize: 50,
+      sortCol: '',
+      sortDir: 'asc',
+      whereFilter: '',
+      editing: null,
+      insertOpen: false,
+      insertValues: {},
+      insertError: '',
+      consoleResult: null,
+
+      init() {
+        this.filteredTables = this.tables;
+        document.addEventListener('keydown', (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && this.activeTab === 'console') {
+            e.preventDefault();
+            this.runConsole();
+          }
+        });
+      },
+
+      filterTables() {
+        const q = this.search.toLowerCase();
+        this.filteredTables = this.tables.filter(t => t.toLowerCase().includes(q));
+      },
+
+      switchTab(tab) {
+        this.activeTab = tab;
+        if (tab === 'console') this.$nextTick(() => dbConsoleEditor.resize());
+      },
+
+      async selectTable(t) {
+        this.activeTable = t;
+        this.page = 1;
+        this.sortCol = '';
+        this.sortDir = 'asc';
+        this.whereFilter = '';
+        this.editing = null;
+        this.activeTab = 'browse';
+        await this.loadColumns();
+        await this.loadRows();
+      },
+
+      async loadColumns() {
+        const res = await fetch('/admin/db-manager/tables/' + encodeURIComponent(this.activeTable) + '/json');
+        const data = await res.json();
+        this.columns = data.columns || [];
+        this.hasPrimaryKey = !!data.has_primary_key;
+      },
+
+      async loadRows() {
+        const params = new URLSearchParams({ page: this.page, page_size: this.pageSize });
+        if (this.sortCol) { params.set('sort', this.sortCol); params.set('dir', this.sortDir); }
+        if (this.whereFilter) params.set('where', this.whereFilter);
+        const res = await fetch('/admin/db-manager/tables/' + encodeURIComponent(this.activeTable) + '/rows?' + params.toString());
+        const data = await res.json();
+        if (!res.ok) { alert(data.error || 'Failed to load rows'); return; }
+        this.rows = data.rows || [];
+        this.total = data.total || 0;
+        this.page = data.page;
+        this.pageSize = data.page_size;
+      },
+
+      toggleSort(col) {
+        if (this.sortCol === col) { this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'; }
+        else { this.sortCol = col; this.sortDir = 'asc'; }
+        this.loadRows();
+      },
+
+      applyFilter() { this.page = 1; this.loadRows(); },
+      changePage(delta) { this.page += delta; this.loadRows(); },
+
+      pkForRow(row) {
+        const pk = {};
+        this.columns.forEach(c => { if (c.is_primary_key) pk[c.name] = row[c.name] === null ? '' : String(row[c.name]); });
+        return pk;
+      },
+
+      startEdit(rowIndex, col) {
+        const val = this.rows[rowIndex][col];
+        this.editing = { rowIndex, col, value: val === null ? '' : String(val), null: val === null };
+      },
+      cancelEdit() { this.editing = null; },
+
+      async saveEdit() {
+        const e = this.editing;
+        const row = this.rows[e.rowIndex];
+        const pk = this.pkForRow(row);
+        const changes = {};
+        changes[e.col] = { value: e.value, null: e.null };
+        const res = await fetch('/admin/db-manager/tables/' + encodeURIComponent(this.activeTable) + '/rows/edit', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ changes, pk }),
+        });
+        const data = await res.json();
+        if (!res.ok) { alert(data.error || 'Failed to save'); return; }
+        if (data.row) this.rows[e.rowIndex] = data.row;
+        this.editing = null;
+      },
+
+      async deleteRow(rowIndex) {
+        if (!confirm('Delete this row? This cannot be undone.')) return;
+        const pk = this.pkForRow(this.rows[rowIndex]);
+        const res = await fetch('/admin/db-manager/tables/' + encodeURIComponent(this.activeTable) + '/rows/delete', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pk }),
+        });
+        if (!res.ok) { const data = await res.json(); alert(data.error || 'Failed to delete'); return; }
+        this.rows.splice(rowIndex, 1);
+        this.total -= 1;
+      },
+
+      openInsert() {
+        const values = {};
+        this.columns.forEach(c => { values[c.name] = { value: '', null: false, touched: false }; });
+        this.insertValues = values;
+        this.insertError = '';
+        this.insertOpen = true;
+      },
+      closeInsert() { this.insertOpen = false; },
+
+      async submitInsert() {
+        const values = {};
+        for (const name in this.insertValues) {
+          const v = this.insertValues[name];
+          if (v.touched || v.null || v.value !== '') values[name] = { value: v.value, null: v.null };
+        }
+        const res = await fetch('/admin/db-manager/tables/' + encodeURIComponent(this.activeTable) + '/rows/new', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ values }),
+        });
+        const data = await res.json();
+        if (!res.ok) { this.insertError = data.error || 'Failed to insert'; return; }
+        this.insertOpen = false;
+        await this.loadRows();
+      },
+
+      async runConsole() {
+        const res = await fetch('/admin/db-manager/sql', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sql: dbConsoleEditor.getValue() }),
+        });
+        this.consoleResult = await res.json();
+      },
+    };
+  }
+
+  const dbConsoleEditor = ace.edit('dbConsoleEditor');
+  dbConsoleEditor.setTheme('ace/theme/github');
+  dbConsoleEditor.session.setMode('ace/mode/sql');
+  dbConsoleEditor.setOption('wrap', true);
+</script>
+{{ end }}
