@@ -64,6 +64,18 @@ func New() *echo.Echo {
 	e.POST("/admin/login", handlers.AdminLogin, loginRateLimit, loginCSRF)
 	e.POST("/admin/logout", handlers.AdminLogout)
 
+	// Self-service account pages — session required, but NOT RBAC-gated by
+	// menu permission: every logged-in user needs their own profile/settings
+	// regardless of what their role's menus allow.
+	account := e.Group("/auth", auth.RequireAuth)
+	account.GET("/profile", handlers.AuthProfileForm)
+	account.POST("/profile", handlers.AuthUpdateProfile)
+	account.POST("/profile/password", handlers.AuthChangePassword)
+	account.GET("/setting", handlers.AuthSettingsForm)
+	account.POST("/setting/sessions/:token/revoke", handlers.AuthRevokeSession)
+	account.POST("/setting/sessions/revoke-others", handlers.AuthRevokeOtherSessions)
+	account.POST("/setting/api-key/reset", handlers.AuthResetAPIKey)
+
 	// Admin panel (HTML forms) — session required, RBAC per menu
 	admin := e.Group("/admin", auth.RequireAuth, auth.RequirePermission)
 	admin.GET("", handlers.AdminDashboard)

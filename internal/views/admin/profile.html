@@ -1,0 +1,128 @@
+{{ define "content" }}
+<div class="max-w-2xl mx-auto space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Edit Profile</h2>
+  </div>
+
+  {{ if .Saved }}
+  <div class="rounded-lg border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/40 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+    Changes saved.
+  </div>
+  {{ end }}
+
+  <!-- Profile information -->
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="px-5 py-4 sm:px-6 border-b border-gray-100 dark:border-gray-800">
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Profile information</h3>
+    </div>
+    <div class="p-5 sm:p-6">
+      {{ if .Error }}
+      <div class="mb-4 rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+        {{ .Error }}
+      </div>
+      {{ end }}
+      <form method="POST" action="/auth/profile" class="space-y-6">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="firstname" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">First name</label>
+            <input type="text" id="firstname" name="firstname" required value="{{.Profile.Firstname}}"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <div>
+            <label for="lastname" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Last name</label>
+            <input type="text" id="lastname" name="lastname" value="{{.Profile.Lastname}}"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label for="email" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Email</label>
+          <input type="email" id="email" name="email" required value="{{.Profile.Email}}"
+            class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="phone" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Phone</label>
+            <input type="text" id="phone" name="phone" value="{{.Profile.Phone}}"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <div>
+            <label for="employee_id" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Employee ID</label>
+            <input type="text" id="employee_id" name="employee_id" value="{{.Profile.EmployeeID}}"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label for="company" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Company</label>
+          <input type="text" id="company" name="company" value="{{.Profile.Company}}"
+            class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+        </div>
+
+        <div>
+          <label for="address" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Address</label>
+          <textarea id="address" name="address" rows="2"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">{{.Profile.Address}}</textarea>
+        </div>
+
+        <div>
+          <label for="avatar" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Avatar URL</label>
+          <input type="text" id="avatar" name="avatar" value="{{.Profile.Avatar}}"
+            class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+        </div>
+
+        <div class="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
+          <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
+            <svg class="fill-current" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
+            </svg>
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Change password -->
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="px-5 py-4 sm:px-6 border-b border-gray-100 dark:border-gray-800">
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Change password</h3>
+    </div>
+    <div class="p-5 sm:p-6">
+      {{ if .PasswordError }}
+      <div class="mb-4 rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+        {{ .PasswordError }}
+      </div>
+      {{ end }}
+      <form method="POST" action="/auth/profile/password" class="space-y-6">
+        <div>
+          <label for="current_password" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Current password</label>
+          <input type="password" id="current_password" name="current_password" required
+            class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="new_password" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">New password</label>
+            <input type="password" id="new_password" name="new_password" required minlength="8"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <div>
+            <label for="confirm_password" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Confirm new password</label>
+            <input type="password" id="confirm_password" name="confirm_password" required minlength="8"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+        </div>
+        <div class="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800">
+          <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
+            Update password
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{{ end }}

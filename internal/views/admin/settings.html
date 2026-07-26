@@ -1,0 +1,109 @@
+{{ define "content" }}
+<div class="max-w-3xl mx-auto space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Account Settings</h2>
+  </div>
+
+  {{ if .Reset }}
+  <div class="rounded-lg border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/40 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+    API key generated. Update any integrations using the previous key — it no longer works.
+  </div>
+  {{ end }}
+
+  <!-- Active sessions -->
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="px-5 py-4 sm:px-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Active sessions</h3>
+      {{ if gt (len .Sessions) 1 }}
+      <form method="POST" action="/auth/setting/sessions/revoke-others" onsubmit="return confirm('Sign out every other device? This cannot be undone.');">
+        <button type="submit" class="text-sm text-red-500 hover:text-red-700 font-medium">Revoke all other sessions</button>
+      </form>
+      {{ end }}
+    </div>
+    <div class="p-5 sm:p-6">
+      <div class="w-full overflow-x-auto">
+        <table class="min-w-full">
+          <thead>
+            <tr class="border-y border-gray-100 dark:border-gray-800">
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Device</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">IP Address</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Signed in</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Expires</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Action</p></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            {{ range .Sessions }}
+            <tr>
+              <td class="py-4 text-sm text-gray-800 dark:text-white/90">
+                {{ .Browser }} on {{ .OS }}
+                {{ if .IsCurrent }}<span class="ml-1.5 rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">This device</span>{{ end }}
+              </td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ .IPAddress }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .CreatedAt.Format "2006-01-02 15:04" }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .ExpiresAt.Format "2006-01-02 15:04" }}</td>
+              <td class="py-4 text-sm">
+                <form method="POST" action="/auth/setting/sessions/{{ .Token }}/revoke"
+                  onsubmit="return confirm('{{ if .IsCurrent }}This will sign you out of this device right now. Continue?{{ else }}Revoke this session?{{ end }}');">
+                  <button type="submit" class="text-red-500 hover:text-red-700 font-medium">Revoke</button>
+                </form>
+              </td>
+            </tr>
+            {{ else }}
+            <tr>
+              <td colspan="5" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No active sessions.</td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- API access key -->
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="px-5 py-4 sm:px-6 border-b border-gray-100 dark:border-gray-800">
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">API access key</h3>
+    </div>
+    <div class="p-5 sm:p-6 space-y-4">
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        Send this key as the <span class="font-mono">X-API-Key</span> header to call any API Builder endpoint tagged <span class="font-mono">auth</span>.
+      </p>
+
+      {{ if .APIKey }}
+      <div class="flex items-center gap-2">
+        <input type="text" id="apiKeyField" readonly value="{{ .APIKey }}"
+          class="h-11 flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-4 py-2.5 text-sm font-mono text-gray-800 dark:text-white/90">
+        <button type="button" id="copyApiKeyBtn"
+          class="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Copy</button>
+      </div>
+      {{ else }}
+      <p class="text-sm text-gray-400 dark:text-gray-500 italic">No API key generated yet.</p>
+      {{ end }}
+
+      <form method="POST" action="/auth/setting/api-key/reset"
+        onsubmit="return confirm('{{ if .APIKey }}This will invalidate the current key immediately — anything using it will stop working until updated. Continue?{{ else }}Generate a new API key?{{ end }}');">
+        <button type="submit" class="inline-flex items-center gap-2 rounded-lg {{ if .APIKey }}border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20{{ else }}bg-indigo-600 text-white hover:bg-indigo-700{{ end }} px-4 py-2.5 text-sm font-medium transition-colors">
+          {{ if .APIKey }}Reset Key{{ else }}Generate Key{{ end }}
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  var copyBtn = document.getElementById("copyApiKeyBtn");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", function () {
+      var field = document.getElementById("apiKeyField");
+      navigator.clipboard.writeText(field.value).then(function () {
+        var original = copyBtn.textContent;
+        copyBtn.textContent = "Copied!";
+        setTimeout(function () { copyBtn.textContent = original; }, 1500);
+      });
+    });
+  }
+</script>
+{{ end }}

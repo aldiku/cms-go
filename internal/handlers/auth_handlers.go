@@ -47,7 +47,7 @@ func AdminLogin(c echo.Context) error {
 		})
 	}
 
-	token, err := auth.CreateSession(user.ID)
+	token, err := auth.CreateSession(user.ID, c.RealIP(), c.Request().UserAgent())
 	if err != nil {
 		return c.Render(http.StatusInternalServerError, "login-admin.html", map[string]interface{}{
 			"Error": "Could not start session, please try again",

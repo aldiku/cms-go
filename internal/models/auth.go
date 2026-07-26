@@ -7,7 +7,7 @@ import (
 )
 
 type User struct {
-	ID         uint   `gorm:"primaryKey"`
+	ID         uint `gorm:"primaryKey"`
 	Firstname  string
 	Lastname   string
 	Email      string `gorm:"uniqueIndex"`
@@ -18,7 +18,8 @@ type User struct {
 	EmployeeID string
 	Avatar     string
 	RoleID     uint
-	Status     uint8 // 1 = active
+	Status     uint8   // 1 = active
+	APIKey     *string `gorm:"uniqueIndex"` // nil = not generated; personal token for the "auth"-tagged API Builder header
 	VerifiedAt *time.Time
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
@@ -36,7 +37,7 @@ func (u User) FullName() string {
 type Role struct {
 	ID        uint   `gorm:"primaryKey"`
 	Role      string `gorm:"uniqueIndex"`
-	Status    uint8 // 1 = active
+	Status    uint8  // 1 = active
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -57,6 +58,8 @@ type Permission struct {
 type Session struct {
 	Token     string `gorm:"primaryKey;size:64"` // hex of 32 random bytes
 	UserID    uint   `gorm:"index"`
+	IPAddress string
+	UserAgent string
 	ExpiresAt time.Time
 	CreatedAt time.Time
 }
