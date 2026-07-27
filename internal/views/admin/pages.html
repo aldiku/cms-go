@@ -47,7 +47,21 @@
             <tr>
               <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .ID }}</td>
               <td class="py-4 text-sm font-medium text-gray-800 dark:text-white/90">{{ .Title }}</td>
-              <td class="py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ .Slug }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">
+                <div class="flex items-center gap-2">
+                  <span>{{ .Slug }}</span>
+                  <button type="button" class="copy-slug-btn text-gray-400 hover:text-indigo-600" data-slug="{{ .Slug }}" title="Copy slug">
+                    <svg class="fill-current" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M8.125 3.125C7.29657 3.125 6.625 3.79657 6.625 4.625V5.125H5.875C5.04657 5.125 4.375 5.79657 4.375 6.625V15.375C4.375 16.2034 5.04657 16.875 5.875 16.875H12.875C13.7034 16.875 14.375 16.2034 14.375 15.375V14.875H14.875C15.7034 14.875 16.375 14.2034 16.375 13.375V4.625C16.375 3.79657 15.7034 3.125 14.875 3.125H8.125ZM12.875 13.125V6.625C12.875 5.79657 12.2034 5.125 11.375 5.125H8.125V4.625C8.125 4.55 8.19 4.5 8.25 4.5H14.75C14.81 4.5 14.875 4.55 14.875 4.625V13.25C14.875 13.325 14.81 13.375 14.75 13.375H12.875V13.125ZM5.875 6.625C5.875 6.55 5.94 6.5 6 6.5H12.5C12.56 6.5 12.625 6.55 12.625 6.625V15.25C12.625 15.325 12.56 15.375 12.5 15.375H6C5.94 15.375 5.875 15.325 5.875 15.25V6.625Z" fill=""/>
+                    </svg>
+                  </button>
+                  <button type="button" class="view-slug-btn text-gray-400 hover:text-indigo-600" data-slug="{{ .Slug }}" title="Open page">
+                    <svg class="fill-current" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M10.833 4.167a.833.833 0 0 1 .834-.834h4.166a.833.833 0 0 1 .834.834v4.166a.833.833 0 1 1-1.667 0V6.178l-5.245 5.244a.833.833 0 1 1-1.178-1.178l5.244-5.245h-2.155a.833.833 0 0 1-.833-.833Zm-6.666.833c-.92 0-1.667.746-1.667 1.667v8.333c0 .92.746 1.667 1.667 1.667h8.333c.92 0 1.667-.746 1.667-1.667v-3.333a.833.833 0 1 0-1.667 0v3.333H4.167V6.667H7.5a.833.833 0 0 0 0-1.667H4.167Z" fill=""/>
+                    </svg>
+                  </button>
+                </div>
+              </td>
               <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .Type }}</td>
               <td class="py-4 text-sm text-gray-500 dark:text-gray-400">
                 {{ with index $.LayoutNames .LayoutID }}{{ . }}{{ else }}<span class="text-gray-400 dark:text-gray-600">&mdash;</span>{{ end }}
@@ -89,4 +103,24 @@
   </div>
 
 </div>
+
+<script>
+  document.addEventListener("click", function (e) {
+    var copyBtn = e.target.closest(".copy-slug-btn");
+    if (copyBtn) {
+      var slug = copyBtn.getAttribute("data-slug");
+      navigator.clipboard.writeText(slug).then(function () {
+        var original = copyBtn.title;
+        copyBtn.title = "Copied!";
+        setTimeout(function () { copyBtn.title = original; }, 1500);
+      });
+      return;
+    }
+    var viewBtn = e.target.closest(".view-slug-btn");
+    if (viewBtn) {
+      var path = viewBtn.getAttribute("data-slug");
+      window.open(window.location.origin + "/" + path.replace(/^\/+/, ""), "_blank");
+    }
+  });
+</script>
 {{ end }}
