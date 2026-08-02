@@ -2,21 +2,36 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
 	"gorm.io/gorm"
 )
 
+// Page statuses, WordPress-style.
+const (
+	PageStatusDraft   = "draft"
+	PageStatusPending = "pending"
+	PageStatusPublish = "publish"
+)
+
 type Page struct {
 	ID        uint `gorm:"primaryKey"`
 	Title     string
 	Slug      string `gorm:"uniqueIndex"`
-	Type      string // "page" | "post"
-	Content   string // JSON or markdown
+	Type      string // "page" | "post" | "html" | "builder" (legacy JSON page-builder content)
+	Content   string // HTML content ("page"/"post"/"html") or JSON schema ("builder")
 	LayoutID  uint
 	CreatedAt time.Time
 	UpdatedAt time.Time
+
+	// WordPress-style authoring metadata
+	AuthorID   uint
+	Author     User       `gorm:"foreignKey:AuthorID"`
+	Status     string     // "draft" | "pending" | "publish"
+	Categories []Category `gorm:"many2many:page_categories;"` // "post" type only, WP-style
+	Tags       []Tag      `gorm:"many2many:page_tags;"`       // "post" type only, WP-style
 
 	// SEO
 	MetaTitle          string // overrides <title> / og:title / twitter:title if set
@@ -32,6 +47,70 @@ type Page struct {
 	TwitterTitle       string // falls back to OGTitle
 	TwitterDescription string // falls back to OGDescription
 	TwitterImage       string // falls back to OGImage
+}
+
+// Media types, WordPress-style Media Library buckets.
+const (
+	MediaTypeImage    = "image"
+	MediaTypeVideo    = "video"
+	MediaTypeAudio    = "audio"
+	MediaTypeDocument = "document"
+	MediaTypeArchive  = "archive"
+	MediaTypeOther    = "other"
+)
+
+// Media is an uploaded file (image/video/audio/document/archive) stored on
+// disk under assets/uploads/ and served publicly at URL via the existing
+// "/assets" static route.
+type Media struct {
+	ID           uint   `gorm:"primaryKey"`
+	FileName     string // sanitized on-disk filename
+	OriginalName string // filename as uploaded
+	Path         string `gorm:"uniqueIndex"` // relative to assets/, e.g. "uploads/2026/08/foo-a1b2c3.jpg"
+	URL          string // public URL, e.g. "/assets/uploads/2026/08/foo-a1b2c3.jpg"
+	MimeType     string
+	Type         string // "image" | "video" | "audio" | "document" | "archive" | "other"
+	Size         int64  // bytes
+	Width        int    // images only; 0 if unknown/not an image
+	Height       int
+	Title        string
+	AltText      string
+	UploaderID   uint
+	Uploader     User `gorm:"foreignKey:UploaderID"`
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+// SizeStr renders m.Size as a human-readable "12.3 KB"-style string.
+func (m Media) SizeStr() string {
+	const unit = 1024
+	if m.Size < unit {
+		return fmt.Sprintf("%d B", m.Size)
+	}
+	div, exp := int64(unit), 0
+	for n := m.Size / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(m.Size)/float64(div), "KMGTPE"[exp])
+}
+
+// Category is a WP-style hierarchical taxonomy term for "post"-type pages.
+type Category struct {
+	ID          uint   `gorm:"primaryKey"`
+	Name        string `gorm:"uniqueIndex"`
+	Slug        string `gorm:"uniqueIndex"`
+	Description string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+// Tag is a WP-style flat taxonomy term for "post"-type pages.
+type Tag struct {
+	ID        uint   `gorm:"primaryKey"`
+	Name      string `gorm:"uniqueIndex"`
+	Slug      string `gorm:"uniqueIndex"`
+	CreatedAt time.Time
 }
 
 type Layout struct {

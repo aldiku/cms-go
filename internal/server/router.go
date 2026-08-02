@@ -7,6 +7,7 @@ import (
 	"cms-go/internal/generator"
 	"cms-go/internal/handlers"
 	"cms-go/internal/models"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -16,6 +17,46 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"golang.org/x/time/rate"
 )
+
+// migratePageDefaults runs idempotent one-time backfills needed by the
+// WordPress-style Page fields (Author/Status/Type) added after pages already
+// existed in the DB. Safe to run on every boot.
+func migratePageDefaults() {
+	// Pre-existing rows predate the Status column: treat them as already
+	// published so they stay publicly visible instead of silently 404ing.
+	db.DB.Model(&models.Page{}).
+		Where("status = '' OR status IS NULL").
+		Update("status", models.PageStatusPublish)
+
+	// "page"/"post" used to be rendered via the JSON page-builder schema
+	// (rows/columns/components) by default; they're now plain HTML content,
+	// like "html". Retag any row whose content is still that JSON schema as
+	// "builder" so it keeps rendering through the old code path.
+	var candidates []models.Page
+	db.DB.Where("type IN ?", []string{"page", "post"}).Find(&candidates)
+	for _, p := range candidates {
+		var schema map[string]interface{}
+		if err := json.Unmarshal([]byte(p.Content), &schema); err != nil {
+			continue
+		}
+		if _, ok := schema["rows"]; !ok {
+			continue
+		}
+		db.DB.Model(&models.Page{}).Where("id = ?", p.ID).Update("type", "builder")
+	}
+
+	// The page editor template used to wrap {{.Page.Content}} in extra
+	// indentation/newlines, which the Ace editor picked up as literal
+	// leading/trailing whitespace on every load. Trim whatever that already
+	// baked into saved rows; new saves are trimmed at the handler level.
+	var allPages []models.Page
+	db.DB.Select("id", "content").Find(&allPages)
+	for _, p := range allPages {
+		if trimmed := strings.TrimSpace(p.Content); trimmed != p.Content {
+			db.DB.Model(&models.Page{}).Where("id = ?", p.ID).Update("content", trimmed)
+		}
+	}
+}
 
 func New() *echo.Echo {
 	e := echo.New()
@@ -27,9 +68,11 @@ func New() *echo.Echo {
 	db.DB.AutoMigrate(
 		&models.Page{}, &models.Layout{}, &models.Menu{}, &models.Component{},
 		&models.User{}, &models.Role{}, &models.Permission{}, &models.Session{},
-		&models.Revision{}, &models.ApiEndpoint{},
+		&models.Revision{}, &models.ApiEndpoint{}, &models.Category{}, &models.Tag{},
+		&models.Media{},
 	)
 	auth.SeedAuth()
+	migratePageDefaults()
 	// generate templates from DB into views/generated
 	if err := generator.GenerateTemplatesFromDB(); err != nil {
 		fmt.Println("template generation error:", err)
@@ -86,6 +129,27 @@ func New() *echo.Echo {
 	admin.POST("/pages/new", handlers.AdminCreatePage)
 	admin.GET("/pages/:id/edit", handlers.AdminPageEditor)
 	admin.POST("/pages/:id/edit", handlers.AdminUpdatePage)
+
+	// Categories & Tags (post taxonomy)
+	admin.GET("/categories", handlers.AdminCategories)
+	admin.GET("/categories/new", handlers.AdminCategoryForm)
+	admin.POST("/categories/new", handlers.AdminCreateCategory)
+	admin.GET("/categories/:id/edit", handlers.AdminCategoryForm)
+	admin.POST("/categories/:id/edit", handlers.AdminUpdateCategory)
+	admin.POST("/categories/:id/delete", handlers.AdminDeleteCategory)
+
+	admin.GET("/tags", handlers.AdminTags)
+	admin.GET("/tags/new", handlers.AdminTagForm)
+	admin.POST("/tags/new", handlers.AdminCreateTag)
+	admin.GET("/tags/:id/edit", handlers.AdminTagForm)
+	admin.POST("/tags/:id/edit", handlers.AdminUpdateTag)
+	admin.POST("/tags/:id/delete", handlers.AdminDeleteTag)
+
+	// Media Library — image/video/audio/document/archive uploads
+	admin.GET("/medias", handlers.AdminMedias)
+	admin.GET("/medias/json", handlers.AdminMediasJSON)
+	admin.POST("/medias/upload", handlers.AdminMediaUpload, middleware.BodyLimit("50M"))
+	admin.POST("/medias/:id/delete", handlers.AdminDeleteMedia)
 
 	// Layouts
 	admin.GET("/layouts", handlers.AdminLayouts)

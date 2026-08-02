@@ -131,6 +131,24 @@ func SeedAuth() {
 	}
 	db.DB.Where("path = ?", dbManagerMenu.Path).FirstOrCreate(&dbManagerMenu, dbManagerMenu)
 
+	categoriesMenu := models.Menu{
+		Menu: "Categories", Path: "/admin/categories", Icon: "🗂️",
+		MenuType: "module", Status: 1, ListOrder: 11,
+	}
+	db.DB.Where("path = ?", categoriesMenu.Path).FirstOrCreate(&categoriesMenu, categoriesMenu)
+
+	tagsMenu := models.Menu{
+		Menu: "Tags", Path: "/admin/tags", Icon: "🏷️",
+		MenuType: "module", Status: 1, ListOrder: 12,
+	}
+	db.DB.Where("path = ?", tagsMenu.Path).FirstOrCreate(&tagsMenu, tagsMenu)
+
+	mediasMenu := models.Menu{
+		Menu: "Medias", Path: "/admin/medias", Icon: "🖼️",
+		MenuType: "module", Status: 1, ListOrder: 13,
+	}
+	db.DB.Where("path = ?", mediasMenu.Path).FirstOrCreate(&mediasMenu, mediasMenu)
+
 	if os.Getenv("API_KEY") == "" {
 		log.Println("⚠️  seed: API_KEY is not set — all \"auth\"-tagged API Builder endpoints will reject every request")
 	}

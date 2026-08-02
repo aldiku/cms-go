@@ -73,6 +73,7 @@
               <option value="page" {{if eq .Page.Type "page" }}selected{{end}}>Page</option>
               <option value="post" {{if eq .Page.Type "post" }}selected{{end}}>Post</option>
               <option value="html" {{if eq .Page.Type "html" }}selected{{end}}>Html</option>
+              {{if eq .Page.Type "builder" }}<option value="builder" selected>Builder (legacy JSON)</option>{{end}}
             </select>
           </div>
           <div>
@@ -84,6 +85,48 @@
               </option>
               {{ end }}
             </select>
+          </div>
+          <div>
+            <label for="author_id" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Author</label>
+            <select id="author_id" name="author_id"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              {{ range .Users }}
+              <option value="{{ .ID }}" {{if eq $.Page.AuthorID .ID}}selected{{else if and (not $.Page.ID) (eq $.CurrentUser.ID .ID)}}selected{{end}}>{{ .FullName }}</option>
+              {{ end }}
+            </select>
+          </div>
+          <div>
+            <label for="status" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Status</label>
+            <select id="status" name="status"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              <option value="draft" {{if eq .Page.Status "draft" }}selected{{end}}>Draft</option>
+              <option value="pending" {{if eq .Page.Status "pending" }}selected{{end}}>Pending Review</option>
+              <option value="publish" {{if eq .Page.Status "publish" }}selected{{end}}>Publish</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="taxonomyFields" class="space-y-4 {{if ne .Page.Type "post"}}hidden{{end}}">
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Categories</label>
+            <div class="rounded-lg border border-gray-300 dark:border-gray-700 p-3 max-h-40 overflow-y-auto space-y-1.5">
+              {{ range .Categories }}
+              <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                <input type="checkbox" name="category_ids" value="{{ .ID }}"
+                  {{if index $.SelectedCategories .ID}}checked{{end}}
+                  class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
+                {{ .Name }}
+              </label>
+              {{ else }}
+              <p class="text-sm text-gray-400 dark:text-gray-500">No categories yet. <a href="/admin/categories/new" class="text-indigo-600 hover:text-indigo-800">Create one</a>.</p>
+              {{ end }}
+            </div>
+          </div>
+          <div>
+            <label for="tags" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tags</label>
+            <input type="text" id="tags" name="tags" value="{{ .TagsCSV }}" placeholder="e.g. news, tutorial, release"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Comma-separated. New tags are created automatically.</p>
           </div>
         </div>
 
@@ -232,7 +275,7 @@
               class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">Compact</button>
           </div>
 
-          <div id="layoutToggle" class="flex items-center space-x-4 {{if ne .Page.Type " html"}}hidden{{end}}">
+          <div id="layoutToggle" class="flex items-center space-x-4 {{if not (or (eq .Page.Type "html") (eq .Page.Type "post") (eq .Page.Type "page"))}}hidden{{end}}">
             <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Editor layout:</span>
             <div class="flex rounded-lg shadow-sm" role="group">
               <button type="button"
@@ -242,19 +285,21 @@
                 class="px-4 py-2 text-sm font-medium border border-l-0 border-gray-300 dark:border-gray-700 rounded-r-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 focus:z-10 layout-btn"
                 data-layout="row">Rows</button>
             </div>
+            <button type="button" id="addBlockBtn" disabled title="Click inside the editor first to place your cursor"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
+              <span class="text-base leading-none">+</span> Add Block
+            </button>
           </div>
 
-          <div id="editorPreviewContainer" class="flex-1 flex flex-col {{if eq .Page.Type " html"}}md:flex-row{{end}}
+          <div id="editorPreviewContainer" class="flex-1 flex flex-col {{if or (eq .Page.Type "html") (eq .Page.Type "post") (eq .Page.Type "page")}}md:flex-row{{end}}
             gap-4 min-h-0">
             <div id="editorPanel" class="flex-1 flex flex-col min-h-0">
-              <div id="contentEditor" class="flex-1 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm">
-                {{if .Page}}{{.Page.Content}}{{end}}
-              </div>
+              <div id="contentEditor" class="flex-1 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm"></div>
             </div>
 
-            <div id="previewPanel" class="flex-1 flex flex-col min-h-0 {{if ne .Page.Type " html"}}hidden{{end}}">
+            <div id="previewPanel" class="flex-1 flex flex-col min-h-0 {{if not (or (eq .Page.Type "html") (eq .Page.Type "post") (eq .Page.Type "page"))}}hidden{{end}}">
               <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Preview</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Preview <span class="font-normal text-gray-400 dark:text-gray-500">(editable — typing here updates the HTML editor)</span></span>
                 <div class="flex space-x-1">
                   <button type="button"
                     class="text-xs px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 viewport-btn active-viewport"
@@ -321,6 +366,34 @@
   </div>
 </div>
 
+<!-- Block Inserter Modal -->
+<div id="blockModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  <div class="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl bg-white dark:bg-gray-900 shadow-xl">
+    <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-5 py-4 shrink-0">
+      <div class="flex items-center gap-2">
+        <button type="button" id="blockBackBtn" class="hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" title="Back">&larr;</button>
+        <h3 id="blockModalTitle" class="text-base font-medium text-gray-800 dark:text-white/90">Add a block</h3>
+      </div>
+      <button type="button" id="closeBlockModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">&#10005;</button>
+    </div>
+
+    <!-- Step 1: block grid -->
+    <div id="blockGridStep" class="p-5 overflow-y-auto">
+      <div id="blockGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-3"></div>
+    </div>
+
+    <!-- Step 2: per-block props -->
+    <div id="blockPropsStep" class="hidden flex-1 flex flex-col min-h-0">
+      <div id="blockPropsBody" class="p-5 overflow-y-auto flex-1 space-y-4"></div>
+      <div class="flex justify-end gap-3 px-5 py-4 border-t border-gray-100 dark:border-gray-800 shrink-0">
+        <button type="button" id="blockCancelBtn" class="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</button>
+        <button type="button" id="blockInsertBtn" disabled
+          class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Insert</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   (function () {
     const jsonTools = document.getElementById("jsonTools");
@@ -335,9 +408,22 @@
     const previewIframe = document.getElementById('previewIframe');
     const contentTextarea = document.getElementById('content');
 
+    const taxonomyFields = document.getElementById('taxonomyFields');
+
+    // True while a change is being pushed from the live preview into the Ace
+    // editor, so the reverse (Ace -> preview) sync doesn't rebuild the
+    // iframe's srcdoc mid-keystroke and blow away the user's cursor/focus.
+    let syncingFromPreview = false;
+
     contentEditor.setTheme("ace/theme/github");
     contentEditor.setOption("wrap", true);
     setAceMode('{{ .Page.Type }}' || 'page');
+    // Load from the hidden textarea (not the contentEditor div's own text)
+    // and trim it: older rows can carry leading/trailing whitespace picked
+    // up from the template's own indentation before this fix, and pasted
+    // content can carry it too. -1 puts the cursor at the very start
+    // instead of leaving everything selected.
+    contentEditor.setValue((contentTextarea.value || '').trim(), -1);
 
     const tabButtons = document.querySelectorAll('#tabNav button');
     const tabContents = {
@@ -446,10 +532,17 @@
       }
     });
 
+    // "page"/"post"/"html" are all plain HTML content with the dual Ace +
+    // live-preview editor; "builder" is the legacy JSON page-builder schema
+    // (rows/columns/components) and keeps the JSON-only editor.
+    function isHtmlLikeType(type) {
+      return type === 'html' || type === 'post' || type === 'page';
+    }
+
     typeSelect.addEventListener('change', function () {
       const newType = this.value;
       setAceMode(newType);
-      if (newType === "html") {
+      if (isHtmlLikeType(newType)) {
         jsonTools.classList.add("hidden");
         layoutToggle.classList.remove("hidden");
         previewPanel.classList.remove("hidden");
@@ -462,25 +555,28 @@
         editorPreviewContainer.classList.remove("md:flex-row", "flex-row");
         editorPreviewContainer.classList.add("flex-col");
       }
+      taxonomyFields?.classList.toggle("hidden", newType !== "post");
       setTimeout(() => contentEditor.resize(), 100);
     });
 
     function setAceMode(type) {
-      let mode = 'json';
-      if (type === 'html') mode = 'html';
-      else if (type === 'page' || type === 'post') mode = 'json';
-      contentEditor.session.setMode("ace/mode/" + mode);
+      contentEditor.session.setMode("ace/mode/" + (isHtmlLikeType(type) ? 'html' : 'json'));
     }
 
     contentEditor.session.on('change', function () {
       const val = contentEditor.getValue();
       contentTextarea.value = val;
-      if (typeSelect.value === 'html') {
+      if (isHtmlLikeType(typeSelect.value)) {
         updatePreview(val);
       }
     });
 
+    // Rebuilds the iframe's srcdoc from the Ace editor's content. Skipped
+    // while a preview-originated edit is in flight (see syncingFromPreview)
+    // since the DOM there already reflects the change and a rebuild would
+    // just reset the user's cursor position.
     function updatePreview(htmlContent) {
+      if (syncingFromPreview) return;
       previewIframe.srcdoc = `
         <!DOCTYPE html>
         <html lang="en">
@@ -497,9 +593,29 @@
       `;
     }
 
+    // Makes the preview a live visual (WYSIWYG-ish) editor: typing directly
+    // in the rendered preview pushes the resulting HTML back into the Ace
+    // editor (and the hidden textarea actually submitted with the form).
+    // Re-attached on every "load" event since assigning srcdoc replaces the
+    // iframe's document, discarding any previously attached listeners.
+    previewIframe.addEventListener("load", function () {
+      const doc = previewIframe.contentDocument;
+      if (!doc || !doc.body || !isHtmlLikeType(typeSelect.value)) return;
+
+      doc.body.contentEditable = "true";
+      doc.body.style.outline = "none";
+      doc.body.addEventListener("input", function () {
+        const html = doc.body.innerHTML;
+        syncingFromPreview = true;
+        contentEditor.setValue(html, -1);
+        contentTextarea.value = html;
+        syncingFromPreview = false;
+      });
+    });
+
     setTimeout(function () {
       typeSelect.dispatchEvent(new Event('change'));
-      if (typeSelect.value === 'html') {
+      if (isHtmlLikeType(typeSelect.value)) {
         updatePreview(contentEditor.getValue());
         document.querySelector('.layout-btn[data-layout="col"]')?.click();
         document.querySelector('.viewport-btn[data-viewport="desktop"]')?.click();
@@ -508,8 +624,461 @@
     }, 200);
 
     form.addEventListener('submit', function (e) {
-      contentTextarea.value = contentEditor.getValue();
+      contentTextarea.value = contentEditor.getValue().trim();
     });
+
+    // ---------------- Block Inserter ----------------
+    const addBlockBtn = document.getElementById('addBlockBtn');
+    const blockModal = document.getElementById('blockModal');
+    const blockModalTitle = document.getElementById('blockModalTitle');
+    const blockBackBtn = document.getElementById('blockBackBtn');
+    const closeBlockModalBtn = document.getElementById('closeBlockModal');
+    const blockGridStep = document.getElementById('blockGridStep');
+    const blockGrid = document.getElementById('blockGrid');
+    const blockPropsStep = document.getElementById('blockPropsStep');
+    const blockPropsBody = document.getElementById('blockPropsBody');
+    const blockCancelBtn = document.getElementById('blockCancelBtn');
+    const blockInsertBtn = document.getElementById('blockInsertBtn');
+
+    // "Active when cursor is on the editor": disabled until the Ace editor
+    // has been focused at least once, since inserting needs a real cursor
+    // position to insert at.
+    contentEditor.on('focus', function () { addBlockBtn.disabled = false; });
+
+    const BLOCKS = [
+      { id: 'paragraph', label: 'Paragraph', icon: '¶' },
+      { id: 'heading', label: 'Heading', icon: 'H' },
+      { id: 'list', label: 'List', icon: '≡' },
+      { id: 'media', label: 'Media', icon: '🖼️' },
+      { id: 'table', label: 'Table', icon: '▦' },
+      { id: 'quote', label: 'Quote', icon: '❝' },
+      { id: 'button', label: 'Button', icon: '🔘' },
+      { id: 'code', label: 'Code', icon: '&lt;/&gt;' },
+      { id: 'divider', label: 'Divider', icon: '―' },
+    ];
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    let lastCursor = null;
+
+    function insertAtCursor(html) {
+      const pos = lastCursor || contentEditor.getCursorPosition();
+      contentEditor.session.insert(pos, html);
+      contentEditor.focus();
+    }
+
+    function openBlockModal() {
+      lastCursor = contentEditor.getCursorPosition();
+      showGridStep();
+      blockModal.classList.remove('hidden');
+    }
+    function closeBlockModalFn() {
+      blockModal.classList.add('hidden');
+    }
+    addBlockBtn.addEventListener('click', openBlockModal);
+    closeBlockModalBtn.addEventListener('click', closeBlockModalFn);
+    blockCancelBtn.addEventListener('click', closeBlockModalFn);
+    blockModal.addEventListener('click', function (e) { if (e.target === blockModal) closeBlockModalFn(); });
+
+    function showGridStep() {
+      blockModalTitle.textContent = 'Add a block';
+      blockBackBtn.classList.add('hidden');
+      blockGridStep.classList.remove('hidden');
+      blockPropsStep.classList.add('hidden');
+    }
+    blockBackBtn.addEventListener('click', showGridStep);
+
+    BLOCKS.forEach(function (block) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'flex flex-col items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-gray-700 dark:text-gray-300';
+      btn.innerHTML = '<span class="text-2xl">' + block.icon + '</span><span class="text-xs font-medium">' + block.label + '</span>';
+      btn.addEventListener('click', function () {
+        if (block.id === 'divider') {
+          insertAtCursor('<hr>\n');
+          closeBlockModalFn();
+          return;
+        }
+        blockModalTitle.textContent = block.label;
+        blockBackBtn.classList.remove('hidden');
+        blockGridStep.classList.add('hidden');
+        blockPropsStep.classList.remove('hidden');
+        blockInsertBtn.disabled = true;
+        blockInsertBtn.onclick = null;
+        blockPropsBody.innerHTML = '';
+        renderBlockProps(block.id);
+      });
+      blockGrid.appendChild(btn);
+    });
+
+    // ---- small form-field builders shared by the prop panels ----
+    function fieldRow(labelText, inputEl) {
+      const wrap = document.createElement('div');
+      const label = document.createElement('label');
+      label.className = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400';
+      label.textContent = labelText;
+      wrap.appendChild(label);
+      wrap.appendChild(inputEl);
+      return wrap;
+    }
+    const fieldClass = 'h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none';
+    function textInputEl(value, placeholder) {
+      const el = document.createElement('input');
+      el.type = 'text';
+      el.value = value || '';
+      if (placeholder) el.placeholder = placeholder;
+      el.className = fieldClass;
+      return el;
+    }
+    function textAreaEl(value, rows, placeholder) {
+      const el = document.createElement('textarea');
+      el.rows = rows || 4;
+      el.value = value || '';
+      if (placeholder) el.placeholder = placeholder;
+      el.className = fieldClass.replace('h-11', '') + ' font-mono';
+      return el;
+    }
+    function selectEl(options, selectedValue) {
+      const el = document.createElement('select');
+      el.className = fieldClass;
+      options.forEach(function (opt) {
+        const o = document.createElement('option');
+        o.value = opt.value;
+        o.textContent = opt.label;
+        if (opt.value === selectedValue) o.selected = true;
+        el.appendChild(o);
+      });
+      return el;
+    }
+
+    function renderBlockProps(blockId) {
+      const renderers = {
+        paragraph: renderParagraphProps,
+        heading: renderHeadingProps,
+        list: renderListProps,
+        quote: renderQuoteProps,
+        button: renderButtonProps,
+        code: renderCodeProps,
+        table: renderTableProps,
+        media: renderMediaProps,
+      };
+      (renderers[blockId] || function () {})();
+    }
+
+    function renderParagraphProps() {
+      const text = textAreaEl('Your paragraph text here.', 4);
+      blockPropsBody.appendChild(fieldRow('Text', text));
+      blockInsertBtn.disabled = false;
+      blockInsertBtn.onclick = function () {
+        insertAtCursor('<p>' + escapeHtml(text.value || 'Your paragraph text here.') + '</p>\n');
+        closeBlockModalFn();
+      };
+    }
+
+    function renderHeadingProps() {
+      const level = selectEl([2, 1, 3, 4, 5, 6].map(function (n) { return { value: String(n), label: 'H' + n }; }), '2');
+      const text = textInputEl('', 'Heading text');
+      blockPropsBody.appendChild(fieldRow('Level', level));
+      blockPropsBody.appendChild(fieldRow('Text', text));
+      blockInsertBtn.disabled = false;
+      blockInsertBtn.onclick = function () {
+        const lvl = level.value;
+        insertAtCursor('<h' + lvl + '>' + escapeHtml(text.value || 'Heading text') + '</h' + lvl + '>\n');
+        closeBlockModalFn();
+      };
+    }
+
+    function renderListProps() {
+      const type = selectEl([{ value: 'ul', label: 'Unordered (bullets)' }, { value: 'ol', label: 'Ordered (numbers)' }], 'ul');
+      const items = textAreaEl('Item one\nItem two\nItem three', 5, 'One item per line');
+      blockPropsBody.appendChild(fieldRow('List type', type));
+      blockPropsBody.appendChild(fieldRow('Items (one per line)', items));
+      blockInsertBtn.disabled = false;
+      blockInsertBtn.onclick = function () {
+        const lines = (items.value || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+        const tag = type.value;
+        let html = '<' + tag + '>\n';
+        (lines.length ? lines : ['List item']).forEach(function (l) {
+          html += '  <li>' + escapeHtml(l) + '</li>\n';
+        });
+        html += '</' + tag + '>\n';
+        insertAtCursor(html);
+        closeBlockModalFn();
+      };
+    }
+
+    function renderQuoteProps() {
+      const text = textAreaEl('Quote text here.', 3);
+      const cite = textInputEl('', 'Attribution (optional)');
+      blockPropsBody.appendChild(fieldRow('Quote', text));
+      blockPropsBody.appendChild(fieldRow('Citation', cite));
+      blockInsertBtn.disabled = false;
+      blockInsertBtn.onclick = function () {
+        let html = '<blockquote>\n  <p>' + escapeHtml(text.value || 'Quote text here.') + '</p>\n';
+        if (cite.value.trim()) html += '  <cite>' + escapeHtml(cite.value.trim()) + '</cite>\n';
+        html += '</blockquote>\n';
+        insertAtCursor(html);
+        closeBlockModalFn();
+      };
+    }
+
+    function renderButtonProps() {
+      const label = textInputEl('Click me');
+      const url = textInputEl('', 'https://example.com');
+      blockPropsBody.appendChild(fieldRow('Label', label));
+      blockPropsBody.appendChild(fieldRow('Link URL', url));
+      blockInsertBtn.disabled = false;
+      blockInsertBtn.onclick = function () {
+        const href = url.value.trim() || '#';
+        insertAtCursor('<a href="' + escapeHtml(href) + '" class="inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg no-underline">' + escapeHtml(label.value || 'Click me') + '</a>\n');
+        closeBlockModalFn();
+      };
+    }
+
+    function renderCodeProps() {
+      const code = textAreaEl('console.log("hello");', 6);
+      blockPropsBody.appendChild(fieldRow('Code', code));
+      blockInsertBtn.disabled = false;
+      blockInsertBtn.onclick = function () {
+        insertAtCursor('<pre><code>' + escapeHtml(code.value) + '</code></pre>\n');
+        closeBlockModalFn();
+      };
+    }
+
+    function renderTableProps() {
+      const rows = textInputEl('3');
+      rows.type = 'number';
+      rows.min = '1';
+      const cols = textInputEl('3');
+      cols.type = 'number';
+      cols.min = '1';
+      const headerLabel = document.createElement('label');
+      headerLabel.className = 'flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300';
+      const headerCheckbox = document.createElement('input');
+      headerCheckbox.type = 'checkbox';
+      headerCheckbox.checked = true;
+      headerCheckbox.className = 'h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500';
+      headerLabel.appendChild(headerCheckbox);
+      headerLabel.appendChild(document.createTextNode('Include header row'));
+
+      blockPropsBody.appendChild(fieldRow('Rows', rows));
+      blockPropsBody.appendChild(fieldRow('Columns', cols));
+      blockPropsBody.appendChild(headerLabel);
+      blockInsertBtn.disabled = false;
+      blockInsertBtn.onclick = function () {
+        const numRows = Math.max(1, parseInt(rows.value, 10) || 3);
+        const numCols = Math.max(1, parseInt(cols.value, 10) || 3);
+        let html = '<table class="min-w-full border border-gray-300">\n';
+        if (headerCheckbox.checked) {
+          html += '  <thead>\n    <tr>\n';
+          for (let c = 1; c <= numCols; c++) html += '      <th class="border border-gray-300 px-3 py-2">Header ' + c + '</th>\n';
+          html += '    </tr>\n  </thead>\n';
+        }
+        html += '  <tbody>\n';
+        for (let r = 1; r <= numRows; r++) {
+          html += '    <tr>\n';
+          for (let c = 1; c <= numCols; c++) html += '      <td class="border border-gray-300 px-3 py-2">Cell</td>\n';
+          html += '    </tr>\n';
+        }
+        html += '  </tbody>\n</table>\n';
+        insertAtCursor(html);
+        closeBlockModalFn();
+      };
+    }
+
+    function mediaTagFor(item, alt) {
+      if (item.type === 'image') {
+        return '<img src="' + item.url + '" alt="' + escapeHtml(alt || '') + '" class="max-w-full h-auto rounded-lg">\n';
+      }
+      if (item.type === 'video') {
+        return '<video src="' + item.url + '" controls class="max-w-full rounded-lg"></video>\n';
+      }
+      if (item.type === 'audio') {
+        return '<audio src="' + item.url + '" controls></audio>\n';
+      }
+      return '<a href="' + item.url + '" target="_blank" rel="noopener">' + escapeHtml(item.originalName) + '</a>\n';
+    }
+
+    function renderMediaProps() {
+      let selectedItem = null;
+
+      const tabs = document.createElement('div');
+      tabs.className = 'flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-3';
+      const libTab = document.createElement('button');
+      libTab.type = 'button';
+      libTab.textContent = 'Media Library';
+      const uploadTab = document.createElement('button');
+      uploadTab.type = 'button';
+      uploadTab.textContent = 'Upload New';
+      [libTab, uploadTab].forEach(function (btn) {
+        btn.className = 'px-3 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400';
+      });
+      tabs.appendChild(libTab);
+      tabs.appendChild(uploadTab);
+      blockPropsBody.appendChild(tabs);
+
+      const panelWrap = document.createElement('div');
+      blockPropsBody.appendChild(panelWrap);
+
+      function setActiveTab(tab) {
+        [libTab, uploadTab].forEach(function (b) { b.classList.remove('border-indigo-600', 'text-indigo-600'); });
+        tab.classList.add('border-indigo-600', 'text-indigo-600');
+      }
+
+      function showLibrary() {
+        setActiveTab(libTab);
+        panelWrap.innerHTML = '';
+        blockInsertBtn.disabled = true;
+        blockInsertBtn.onclick = null;
+
+        const controls = document.createElement('div');
+        controls.className = 'flex items-center gap-2 mb-3';
+        const search = textInputEl('', 'Search media...');
+        search.className += ' flex-1';
+        const typeFilter = selectEl([
+          { value: '', label: 'All types' },
+          { value: 'image', label: 'Images' },
+          { value: 'video', label: 'Video' },
+          { value: 'audio', label: 'Audio' },
+          { value: 'document', label: 'Documents' },
+          { value: 'archive', label: 'Archives' },
+        ], '');
+        controls.appendChild(search);
+        controls.appendChild(typeFilter);
+        panelWrap.appendChild(controls);
+
+        const grid = document.createElement('div');
+        grid.className = 'grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-64 overflow-y-auto';
+        panelWrap.appendChild(grid);
+
+        const altWrap = document.createElement('div');
+        altWrap.className = 'hidden mt-3';
+        const altInput = textInputEl('', 'Describe this image for accessibility');
+        altWrap.appendChild(fieldRow('Alt text', altInput));
+        panelWrap.appendChild(altWrap);
+
+        function renderGrid(items) {
+          grid.innerHTML = '';
+          selectedItem = null;
+          blockInsertBtn.disabled = true;
+          altWrap.classList.add('hidden');
+          if (!items.length) {
+            grid.innerHTML = '<p class="col-span-full text-sm text-gray-400 py-4 text-center">No media found.</p>';
+            return;
+          }
+          items.forEach(function (item) {
+            const cell = document.createElement('button');
+            cell.type = 'button';
+            cell.title = item.originalName;
+            cell.className = 'relative aspect-square rounded-lg border-2 border-transparent overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center';
+            if (item.type === 'image') {
+              const img = document.createElement('img');
+              img.src = item.url;
+              img.className = 'h-full w-full object-cover';
+              cell.appendChild(img);
+            } else {
+              const icon = document.createElement('span');
+              icon.className = 'text-2xl';
+              icon.textContent = item.type === 'video' ? '🎬' : item.type === 'audio' ? '🎵' : item.type === 'archive' ? '🗄️' : '📄';
+              cell.appendChild(icon);
+            }
+            cell.addEventListener('click', function () {
+              grid.querySelectorAll('button').forEach(function (b) { b.classList.remove('border-indigo-500'); });
+              cell.classList.add('border-indigo-500');
+              selectedItem = item;
+              blockInsertBtn.disabled = false;
+              altWrap.classList.toggle('hidden', item.type !== 'image');
+            });
+            grid.appendChild(cell);
+          });
+        }
+
+        let debounceTimer;
+        function load() {
+          const params = new URLSearchParams();
+          if (search.value.trim()) params.set('q', search.value.trim());
+          if (typeFilter.value) params.set('type', typeFilter.value);
+          fetch('/admin/medias/json?' + params.toString())
+            .then(function (res) { return res.json(); })
+            .then(renderGrid)
+            .catch(function () { grid.innerHTML = '<p class="col-span-full text-sm text-gray-400">Failed to load media.</p>'; });
+        }
+        search.addEventListener('input', function () {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(load, 250);
+        });
+        typeFilter.addEventListener('change', load);
+
+        blockInsertBtn.onclick = function () {
+          if (!selectedItem) return;
+          insertAtCursor(mediaTagFor(selectedItem, altInput.value));
+          closeBlockModalFn();
+        };
+
+        load();
+      }
+
+      function showUpload() {
+        setActiveTab(uploadTab);
+        panelWrap.innerHTML = '';
+        blockInsertBtn.disabled = true;
+        blockInsertBtn.onclick = null;
+
+        const dz = document.createElement('label');
+        dz.className = 'flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 px-6 py-10 text-center cursor-pointer hover:border-indigo-400';
+        dz.innerHTML = '<span class="text-3xl">📤</span><span class="text-sm font-medium text-gray-700 dark:text-gray-300">Drop a file here or click to browse</span>';
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.hidden = true;
+        dz.appendChild(input);
+        panelWrap.appendChild(dz);
+
+        const status = document.createElement('p');
+        status.className = 'text-sm text-gray-400 mt-2';
+        panelWrap.appendChild(status);
+
+        function doUpload(file) {
+          if (!file) return;
+          status.textContent = 'Uploading ' + file.name + '...';
+          const fd = new FormData();
+          fd.append('files', file);
+          fetch('/admin/medias/upload?ajax=1', { method: 'POST', body: fd })
+            .then(function (res) {
+              if (!res.ok) throw new Error('Upload failed');
+              return res.json();
+            })
+            .then(function () {
+              status.textContent = 'Uploaded — pick it from the Media Library tab.';
+              libTab.click();
+            })
+            .catch(function (err) {
+              status.textContent = err.message || 'Upload failed.';
+            });
+        }
+
+        input.addEventListener('change', function () { doUpload(input.files[0]); });
+        ['dragover', 'dragenter'].forEach(function (evt) {
+          dz.addEventListener(evt, function (e) { e.preventDefault(); dz.classList.add('border-indigo-400'); });
+        });
+        ['dragleave', 'drop'].forEach(function (evt) {
+          dz.addEventListener(evt, function (e) { e.preventDefault(); dz.classList.remove('border-indigo-400'); });
+        });
+        dz.addEventListener('drop', function (e) {
+          if (e.dataTransfer && e.dataTransfer.files[0]) doUpload(e.dataTransfer.files[0]);
+        });
+      }
+
+      libTab.addEventListener('click', showLibrary);
+      uploadTab.addEventListener('click', showUpload);
+      showLibrary();
+    }
 
   })();
 </script>

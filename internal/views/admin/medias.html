@@ -1,0 +1,282 @@
+{{ define "content" }}
+<div class="space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Medias</h2>
+    <button type="button" id="openUploadModal" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
+      <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
+      </svg>
+      Add New
+    </button>
+  </div>
+
+  <!-- Type filter tabs -->
+  <div class="flex flex-wrap items-center gap-1 border-b border-gray-200 dark:border-gray-700 text-sm">
+    {{ $q := .Query }}{{ $sort := .Sort }}{{ $view := .View }}
+    <a href="/admin/medias?q={{ $q }}&sort={{ $sort }}&view={{ $view }}&type="
+      class="px-3 py-2 border-b-2 {{if or (eq .Type "") (eq .Type "all")}}border-indigo-600 text-indigo-600{{else}}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{{end}}">
+      All <span class="text-gray-400 dark:text-gray-500">({{ .TotalCount }})</span>
+    </a>
+    <a href="/admin/medias?q={{ $q }}&sort={{ $sort }}&view={{ $view }}&type=image"
+      class="px-3 py-2 border-b-2 {{if eq .Type "image"}}border-indigo-600 text-indigo-600{{else}}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{{end}}">
+      Images <span class="text-gray-400 dark:text-gray-500">({{ index .CountByType "image" }})</span>
+    </a>
+    <a href="/admin/medias?q={{ $q }}&sort={{ $sort }}&view={{ $view }}&type=video"
+      class="px-3 py-2 border-b-2 {{if eq .Type "video"}}border-indigo-600 text-indigo-600{{else}}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{{end}}">
+      Video <span class="text-gray-400 dark:text-gray-500">({{ index .CountByType "video" }})</span>
+    </a>
+    <a href="/admin/medias?q={{ $q }}&sort={{ $sort }}&view={{ $view }}&type=audio"
+      class="px-3 py-2 border-b-2 {{if eq .Type "audio"}}border-indigo-600 text-indigo-600{{else}}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{{end}}">
+      Audio <span class="text-gray-400 dark:text-gray-500">({{ index .CountByType "audio" }})</span>
+    </a>
+    <a href="/admin/medias?q={{ $q }}&sort={{ $sort }}&view={{ $view }}&type=document"
+      class="px-3 py-2 border-b-2 {{if eq .Type "document"}}border-indigo-600 text-indigo-600{{else}}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{{end}}">
+      Documents <span class="text-gray-400 dark:text-gray-500">({{ index .CountByType "document" }})</span>
+    </a>
+    <a href="/admin/medias?q={{ $q }}&sort={{ $sort }}&view={{ $view }}&type=archive"
+      class="px-3 py-2 border-b-2 {{if eq .Type "archive"}}border-indigo-600 text-indigo-600{{else}}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300{{end}}">
+      Archives <span class="text-gray-400 dark:text-gray-500">({{ index .CountByType "archive" }})</span>
+    </a>
+  </div>
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <form method="GET" action="/admin/medias" class="flex items-center gap-2">
+      <input type="hidden" name="type" value="{{ .Type }}">
+      <input type="hidden" name="sort" value="{{ .Sort }}">
+      <input type="hidden" name="view" value="{{ .View }}">
+      <div class="relative">
+        <span class="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 dark:text-gray-500">
+          <svg class="fill-current" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M3.04175 9.37363C3.04175 5.87693 5.87711 3.04199 9.37508 3.04199C12.8731 3.04199 15.7084 5.87693 15.7084 9.37363C15.7084 12.8703 12.8731 15.7053 9.37508 15.7053C5.87711 15.7053 3.04175 12.8703 3.04175 9.37363ZM9.37508 1.54199C5.04902 1.54199 1.54175 5.04817 1.54175 9.37363C1.54175 13.6991 5.04902 17.2053 9.37508 17.2053C11.2674 17.2053 13.003 16.5344 14.357 15.4176L17.177 18.238C17.4699 18.5309 17.9448 18.5309 18.2377 18.238C18.5306 17.9451 18.5306 17.4703 18.2377 17.1774L15.418 14.3573C16.5365 13.0033 17.2084 11.2669 17.2084 9.37363C17.2084 5.04817 13.7011 1.54199 9.37508 1.54199Z" fill=""/>
+          </svg>
+        </span>
+        <input type="text" name="q" value="{{ .Query }}" placeholder="Search media..."
+          class="h-10 w-64 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 pl-9 pr-3 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+      </div>
+    </form>
+
+    <div class="flex items-center gap-3">
+      <form method="GET" action="/admin/medias" id="sortForm">
+        <input type="hidden" name="q" value="{{ .Query }}">
+        <input type="hidden" name="type" value="{{ .Type }}">
+        <input type="hidden" name="view" value="{{ .View }}">
+        <select name="sort" onchange="document.getElementById('sortForm').submit()"
+          class="h-10 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          <option value="" {{if or (eq .Sort "") (eq .Sort "newest")}}selected{{end}}>Newest first</option>
+          <option value="oldest" {{if eq .Sort "oldest"}}selected{{end}}>Oldest first</option>
+          <option value="name_asc" {{if eq .Sort "name_asc"}}selected{{end}}>Name (A-Z)</option>
+          <option value="name_desc" {{if eq .Sort "name_desc"}}selected{{end}}>Name (Z-A)</option>
+          <option value="size_desc" {{if eq .Sort "size_desc"}}selected{{end}}>Largest first</option>
+          <option value="size_asc" {{if eq .Sort "size_asc"}}selected{{end}}>Smallest first</option>
+        </select>
+      </form>
+
+      <div class="flex rounded-lg shadow-sm" role="group">
+        <a href="/admin/medias?q={{ $q }}&type={{ .Type }}&sort={{ $sort }}&view=grid"
+          class="px-3 py-2 text-sm font-medium border border-gray-300 dark:border-gray-700 rounded-l-lg {{if eq .View "grid"}}bg-indigo-50 dark:bg-indigo-500/15 border-indigo-500 text-indigo-600{{else}}bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800{{end}}">Grid</a>
+        <a href="/admin/medias?q={{ $q }}&type={{ .Type }}&sort={{ $sort }}&view=table"
+          class="px-3 py-2 text-sm font-medium border border-l-0 border-gray-300 dark:border-gray-700 rounded-r-lg {{if eq .View "table"}}bg-indigo-50 dark:bg-indigo-500/15 border-indigo-500 text-indigo-600{{else}}bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800{{end}}">Table</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
+
+      {{ if not .Media }}
+      <p class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No media found.</p>
+      {{ else if eq .View "table" }}
+      <!-- TABLE VIEW -->
+      <div class="w-full overflow-x-auto">
+        <table class="min-w-full">
+          <thead>
+            <tr class="border-y border-gray-100 dark:border-gray-800">
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Preview</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">File</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Type</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Size</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Uploader</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Date</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Action</p></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            {{ range .Media }}
+            <tr>
+              <td class="py-3">
+                <div class="h-12 w-12 rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+                  {{ if eq .Type "image" }}
+                  <img src="{{ .URL }}" alt="{{ .AltText }}" class="h-full w-full object-cover">
+                  {{ else if eq .Type "video" }}<span class="text-xl">🎬</span>
+                  {{ else if eq .Type "audio" }}<span class="text-xl">🎵</span>
+                  {{ else if eq .Type "archive" }}<span class="text-xl">🗄️</span>
+                  {{ else }}<span class="text-xl">📄</span>
+                  {{ end }}
+                </div>
+              </td>
+              <td class="py-3 text-sm font-medium text-gray-800 dark:text-white/90 max-w-xs truncate">
+                <a href="{{ .URL }}" target="_blank" class="hover:text-indigo-600" title="{{ .OriginalName }}">{{ .OriginalName }}</a>
+              </td>
+              <td class="py-3 text-sm text-gray-500 dark:text-gray-400 capitalize">{{ .Type }}</td>
+              <td class="py-3 text-sm text-gray-500 dark:text-gray-400">{{ .SizeStr }}</td>
+              <td class="py-3 text-sm text-gray-500 dark:text-gray-400">{{ if .Uploader.ID }}{{ .Uploader.FullName }}{{ else }}&mdash;{{ end }}</td>
+              <td class="py-3 text-sm text-gray-500 dark:text-gray-400">{{ .CreatedAt.Format "2006-01-02" }}</td>
+              <td class="py-3 text-sm">
+                <div class="flex items-center gap-3">
+                  <button type="button" class="copy-url-btn text-gray-400 hover:text-indigo-600" data-url="{{ .URL }}" title="Copy URL">Copy URL</button>
+                  <form method="POST" action="/admin/medias/{{ .ID }}/delete" onsubmit="return confirm('Delete this file? This cannot be undone.');">
+                    <button type="submit" class="text-red-500 hover:text-red-700 font-medium">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+      {{ else }}
+      <!-- GRID VIEW -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        {{ range .Media }}
+        <div class="group relative rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden bg-gray-50 dark:bg-gray-800">
+          <a href="{{ .URL }}" target="_blank" class="block aspect-square flex items-center justify-center overflow-hidden">
+            {{ if eq .Type "image" }}
+            <img src="{{ .URL }}" alt="{{ .AltText }}" class="h-full w-full object-cover">
+            {{ else if eq .Type "video" }}<span class="text-4xl">🎬</span>
+            {{ else if eq .Type "audio" }}<span class="text-4xl">🎵</span>
+            {{ else if eq .Type "archive" }}<span class="text-4xl">🗄️</span>
+            {{ else }}<span class="text-4xl">📄</span>
+            {{ end }}
+          </a>
+          <div class="p-2 bg-white dark:bg-gray-900">
+            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate" title="{{ .OriginalName }}">{{ .OriginalName }}</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500">{{ .SizeStr }}</p>
+          </div>
+          <div class="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+            <button type="button" class="copy-url-btn rounded-md bg-white/90 dark:bg-gray-900/90 p-1.5 text-gray-600 dark:text-gray-300 hover:text-indigo-600 shadow" data-url="{{ .URL }}" title="Copy URL">
+              <svg class="fill-current" width="14" height="14" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M8.125 3.125C7.29657 3.125 6.625 3.79657 6.625 4.625V5.125H5.875C5.04657 5.125 4.375 5.79657 4.375 6.625V15.375C4.375 16.2034 5.04657 16.875 5.875 16.875H12.875C13.7034 16.875 14.375 16.2034 14.375 15.375V14.875H14.875C15.7034 14.875 16.375 14.2034 16.375 13.375V4.625C16.375 3.79657 15.7034 3.125 14.875 3.125H8.125ZM12.875 13.125V6.625C12.875 5.79657 12.2034 5.125 11.375 5.125H8.125V4.625C8.125 4.55 8.19 4.5 8.25 4.5H14.75C14.81 4.5 14.875 4.55 14.875 4.625V13.25C14.875 13.325 14.81 13.375 14.75 13.375H12.875V13.125ZM5.875 6.625C5.875 6.55 5.94 6.5 6 6.5H12.5C12.56 6.5 12.625 6.55 12.625 6.625V15.25C12.625 15.325 12.56 15.375 12.5 15.375H6C5.94 15.375 5.875 15.325 5.875 15.25V6.625Z" fill=""/></svg>
+            </button>
+            <form method="POST" action="/admin/medias/{{ .ID }}/delete" onsubmit="return confirm('Delete this file? This cannot be undone.');">
+              <button type="submit" class="rounded-md bg-white/90 dark:bg-gray-900/90 p-1.5 text-red-500 hover:text-red-700 shadow" title="Delete">
+                <svg class="fill-current" width="14" height="14" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M6.75 3.75C6.75 3.05964 7.30964 2.5 8 2.5H12C12.6904 2.5 13.25 3.05964 13.25 3.75V4.25H16.25C16.6642 4.25 17 4.58579 17 5C17 5.41421 16.6642 5.75 16.25 5.75H15.6883L14.9564 15.5391C14.8797 16.5697 14.0203 17.375 12.9868 17.375H7.01319C5.97972 17.375 5.12026 16.5697 5.04357 15.5391L4.31169 5.75H3.75C3.33579 5.75 3 5.41421 3 5C3 4.58579 3.33579 4.25 3.75 4.25H6.75V3.75ZM8.25 4.25H11.75V3.75L8.25 3.75V4.25Z" fill=""/></svg>
+              </button>
+            </form>
+          </div>
+        </div>
+        {{ end }}
+      </div>
+      {{ end }}
+    </div>
+
+    <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 px-5 py-4 sm:px-6">
+      <p class="text-sm text-gray-500 dark:text-gray-400">Page {{ .CurrentPage }} of {{ .TotalPages }}</p>
+      <div class="flex gap-2">
+        {{ if .HasPrev }}
+        <a href="/admin/medias?q={{ .Query }}&type={{ .Type }}&sort={{ .Sort }}&view={{ .View }}&page={{ .PrevPage }}" class="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Previous</a>
+        {{ else }}
+        <span class="inline-flex items-center rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-1.5 text-sm text-gray-400 dark:text-gray-500">Previous</span>
+        {{ end }}
+        {{ if .HasNext }}
+        <a href="/admin/medias?q={{ .Query }}&type={{ .Type }}&sort={{ .Sort }}&view={{ .View }}&page={{ .NextPage }}" class="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Next</a>
+        {{ else }}
+        <span class="inline-flex items-center rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-1.5 text-sm text-gray-400 dark:text-gray-500">Next</span>
+        {{ end }}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Upload Modal -->
+<div id="uploadModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+  <div class="w-full max-w-lg rounded-2xl bg-white dark:bg-gray-900 shadow-xl">
+    <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-5 py-4">
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Upload media</h3>
+      <button type="button" id="closeUploadModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">&#10005;</button>
+    </div>
+    <form method="POST" action="/admin/medias/upload" enctype="multipart/form-data" id="uploadForm">
+      <div class="p-5 space-y-3">
+        <label id="dropZone" for="fileInput"
+          class="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 px-6 py-10 text-center cursor-pointer hover:border-indigo-400">
+          <span class="text-3xl">📤</span>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Drop files here or click to browse</span>
+          <span class="text-xs text-gray-400 dark:text-gray-500">Images, video, audio, documents, archives — up to 50MB each</span>
+        </label>
+        <input type="file" id="fileInput" name="files" multiple hidden>
+        <ul id="fileList" class="text-sm text-gray-600 dark:text-gray-400 space-y-1"></ul>
+      </div>
+      <div class="flex justify-end gap-3 px-5 py-4 border-t border-gray-100 dark:border-gray-800">
+        <button type="button" id="cancelUpload" class="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</button>
+        <button type="submit" id="submitUpload" disabled
+          class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Upload</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const modal = document.getElementById('uploadModal');
+    const openBtn = document.getElementById('openUploadModal');
+    const closeBtn = document.getElementById('closeUploadModal');
+    const cancelBtn = document.getElementById('cancelUpload');
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const fileList = document.getElementById('fileList');
+    const submitBtn = document.getElementById('submitUpload');
+
+    function openModal() { modal.classList.remove('hidden'); }
+    function closeModal() {
+      modal.classList.add('hidden');
+      fileInput.value = '';
+      fileList.innerHTML = '';
+      submitBtn.disabled = true;
+    }
+
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+
+    function renderFileList() {
+      fileList.innerHTML = '';
+      const files = fileInput.files;
+      submitBtn.disabled = files.length === 0;
+      Array.from(files).forEach(f => {
+        const li = document.createElement('li');
+        li.textContent = f.name + ' (' + Math.ceil(f.size / 1024) + ' KB)';
+        fileList.appendChild(li);
+      });
+    }
+
+    fileInput.addEventListener('change', renderFileList);
+
+    ['dragenter', 'dragover'].forEach(evt => {
+      dropZone.addEventListener(evt, function (e) {
+        e.preventDefault();
+        dropZone.classList.add('border-indigo-400');
+      });
+    });
+    ['dragleave', 'drop'].forEach(evt => {
+      dropZone.addEventListener(evt, function (e) {
+        e.preventDefault();
+        dropZone.classList.remove('border-indigo-400');
+      });
+    });
+    dropZone.addEventListener('drop', function (e) {
+      if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+        fileInput.files = e.dataTransfer.files;
+        renderFileList();
+      }
+    });
+
+    document.addEventListener('click', function (e) {
+      const copyBtn = e.target.closest('.copy-url-btn');
+      if (!copyBtn) return;
+      const url = copyBtn.getAttribute('data-url');
+      navigator.clipboard.writeText(window.location.origin + url);
+    });
+  })();
+</script>
+{{ end }}

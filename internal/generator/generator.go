@@ -148,17 +148,17 @@ func RenderPage(base *template.Template, page models.Page, layout models.Layout)
 	var renderedHTML template.HTML
 
 	switch page.Type {
-	case "html":
-		// Raw HTML stored directly in page.Content
-		renderedHTML = template.HTML(page.Content)
-
-	default: // page, post
+	case "builder":
+		// Legacy JSON page-builder schema (rows/columns/components).
 		var pageSchema map[string]interface{}
 		if err := json.Unmarshal([]byte(page.Content), &pageSchema); err != nil {
 			return "", fmt.Errorf("page parse error: %w", err)
 		}
 
 		renderedHTML = template.HTML(renderPageComponents(pageSchema, tmpl))
+
+	default: // "page", "post", "html" — WordPress-style raw HTML content
+		renderedHTML = template.HTML(page.Content)
 	}
 
 	// Replace the content component with the rendered HTML.
@@ -284,7 +284,8 @@ func GenerateTemplatesFromDB() error {
 	}
 
 	var pages []models.Page
-	if err := db.DB.Order("updated_at DESC").Limit(config.GeneratePageLimit()).Find(&pages).Error; err != nil {
+	if err := db.DB.Where("status = ?", models.PageStatusPublish).
+		Order("updated_at DESC").Limit(config.GeneratePageLimit()).Find(&pages).Error; err != nil {
 		return fmt.Errorf("fetch pages: %w", err)
 	}
 	for _, page := range pages {
@@ -323,8 +324,10 @@ func GenerateTemplatesFromDB() error {
 func GeneratePage(path string) ([]byte, error) {
 	var page models.Page
 	// Slugs are stored with a leading slash ("/about-us"), but match the
-	// trimmed form too in case older rows were saved without it.
-	if err := db.DB.Where("slug = ? OR slug = ?", path, strings.TrimPrefix(path, "/")).First(&page).Error; err != nil {
+	// trimmed form too in case older rows were saved without it. Draft/
+	// pending pages are never publicly servable — they 404 like unknown
+	// slugs, same as gorm.ErrRecordNotFound.
+	if err := db.DB.Where("(slug = ? OR slug = ?) AND status = ?", path, strings.TrimPrefix(path, "/"), models.PageStatusPublish).First(&page).Error; err != nil {
 		return nil, err
 	}
 
