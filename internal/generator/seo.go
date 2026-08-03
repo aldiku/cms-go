@@ -16,9 +16,15 @@ func BuildSEOHead(page models.Page, siteURL string) template.HTML {
 	description := page.MetaDescription
 	canonical := firstNonEmpty(page.CanonicalURL, pageURL(siteURL, page.Slug))
 
+	// Get featured image URL if available
+	featuredImageURL := ""
+	if page.FeaturedImage.URL != "" {
+		featuredImageURL = page.FeaturedImage.URL
+	}
+
 	ogTitle := firstNonEmpty(page.OGTitle, title)
 	ogDescription := firstNonEmpty(page.OGDescription, description)
-	ogImage := page.OGImage
+	ogImage := firstNonEmpty(page.OGImage, featuredImageURL)
 
 	twitterTitle := firstNonEmpty(page.TwitterTitle, ogTitle)
 	twitterDescription := firstNonEmpty(page.TwitterDescription, ogDescription)
