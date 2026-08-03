@@ -30,8 +30,8 @@ func TestBuildSEOHead_FeaturedImageFallback(t *testing.T) {
 				"<title>My Page Title</title>",
 				`<meta property="og:title" content="My Page Title">`,
 				`<meta name="twitter:title" content="My Page Title">`,
-				`<meta property="og:image" content="/assets/uploads/2026/08/featured.jpg">`,
-				`<meta name="twitter:image" content="/assets/uploads/2026/08/featured.jpg">`,
+				`<meta property="og:image" content="https://example.com/assets/uploads/2026/08/featured.jpg">`,
+				`<meta name="twitter:image" content="https://example.com/assets/uploads/2026/08/featured.jpg">`,
 			},
 		},
 		{
@@ -66,8 +66,8 @@ func TestBuildSEOHead_FeaturedImageFallback(t *testing.T) {
 			},
 			siteURL: "https://example.com",
 			want: []string{
-				`<meta property="og:image" content="/assets/custom-og.jpg">`,
-				`<meta name="twitter:image" content="/assets/custom-og.jpg">`,
+				`<meta property="og:image" content="https://example.com/assets/custom-og.jpg">`,
+				`<meta name="twitter:image" content="https://example.com/assets/custom-og.jpg">`,
 			},
 			notWant: []string{
 				"/assets/uploads/2026/08/featured.jpg",
@@ -106,8 +106,8 @@ func TestBuildSEOHead_FeaturedImageFallback(t *testing.T) {
 			},
 			siteURL: "https://example.com",
 			want: []string{
-				`<meta property="og:image" content="/assets/uploads/2026/08/featured.jpg">`,
-				`<meta name="twitter:image" content="/assets/twitter-card.jpg">`,
+				`<meta property="og:image" content="https://example.com/assets/uploads/2026/08/featured.jpg">`,
+				`<meta name="twitter:image" content="https://example.com/assets/twitter-card.jpg">`,
 			},
 		},
 	}

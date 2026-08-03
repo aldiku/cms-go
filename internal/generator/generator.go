@@ -284,7 +284,7 @@ func GenerateTemplatesFromDB() error {
 	}
 
 	var pages []models.Page
-	if err := db.DB.Where("status = ?", models.PageStatusPublish).
+	if err := db.DB.Preload("FeaturedImage").Where("status = ?", models.PageStatusPublish).
 		Order("updated_at DESC").Limit(config.GeneratePageLimit()).Find(&pages).Error; err != nil {
 		return fmt.Errorf("fetch pages: %w", err)
 	}
@@ -327,7 +327,7 @@ func GeneratePage(path string) ([]byte, error) {
 	// trimmed form too in case older rows were saved without it. Draft/
 	// pending pages are never publicly servable — they 404 like unknown
 	// slugs, same as gorm.ErrRecordNotFound.
-	if err := db.DB.Where("(slug = ? OR slug = ?) AND status = ?", path, strings.TrimPrefix(path, "/"), models.PageStatusPublish).First(&page).Error; err != nil {
+	if err := db.DB.Preload("FeaturedImage").Where("(slug = ? OR slug = ?) AND status = ?", path, strings.TrimPrefix(path, "/"), models.PageStatusPublish).First(&page).Error; err != nil {
 		return nil, err
 	}
 

@@ -16,19 +16,15 @@ func BuildSEOHead(page models.Page, siteURL string) template.HTML {
 	description := page.MetaDescription
 	canonical := firstNonEmpty(page.CanonicalURL, pageURL(siteURL, page.Slug))
 
-	// Get featured image URL if available
-	featuredImageURL := ""
-	if page.FeaturedImage.URL != "" {
-		featuredImageURL = page.FeaturedImage.URL
-	}
+	featuredImageURL := absoluteURL(siteURL, page.FeaturedImage.URL)
 
 	ogTitle := firstNonEmpty(page.OGTitle, title)
 	ogDescription := firstNonEmpty(page.OGDescription, description)
-	ogImage := firstNonEmpty(page.OGImage, featuredImageURL)
+	ogImage := absoluteURL(siteURL, firstNonEmpty(page.OGImage, featuredImageURL))
 
 	twitterTitle := firstNonEmpty(page.TwitterTitle, ogTitle)
 	twitterDescription := firstNonEmpty(page.TwitterDescription, ogDescription)
-	twitterImage := firstNonEmpty(page.TwitterImage, ogImage)
+	twitterImage := absoluteURL(siteURL, firstNonEmpty(page.TwitterImage, ogImage))
 	twitterCard := page.TwitterCard
 	if twitterCard == "" {
 		if twitterImage != "" {
@@ -106,6 +102,19 @@ func pageURL(siteURL, slug string) string {
 		return siteURL + "/"
 	}
 	return siteURL + "/" + slug
+}
+
+// absoluteURL qualifies a possibly relative URL (e.g. a Media.URL like
+// "/assets/uploads/foo.jpg") against siteURL, since og:image/twitter:image
+// tags are ignored by most platforms unless the URL is absolute.
+func absoluteURL(siteURL, url string) string {
+	if url == "" || siteURL == "" {
+		return url
+	}
+	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") {
+		return url
+	}
+	return siteURL + "/" + strings.TrimPrefix(url, "/")
 }
 
 func firstNonEmpty(values ...string) string {
