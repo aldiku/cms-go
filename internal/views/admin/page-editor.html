@@ -1,9 +1,9 @@
 {{ define "content" }}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js"></script>
 
-<div class="mx-auto h-[calc(100vh-80px)] space-y-4 flex flex-col">
+<div class="mx-auto space-y-4">
 
-  <div class="flex flex-wrap items-center justify-between gap-3 shrink-0">
+  <div class="flex flex-wrap items-center justify-between gap-3">
     <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">
       {{if .Page.ID}}Edit Page: {{.Page.Title}}{{else}}Create New Page{{end}}
     </h2>
@@ -12,133 +12,203 @@
       Back to Pages</a>
   </div>
 
-  <div
-    class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 flex-1 flex flex-col min-h-0">
-    <div class="px-5 py-2 sm:px-6 shrink-0">
-      <!-- Tabs -->
-      <div class="border-b border-gray-200 dark:border-gray-700 shrink-0">
-        <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="tabNav">
-          <li class="mr-2">
-            <button type="button"
-              class="inline-block p-3 rounded-t-lg border-b-2 border-indigo-600 text-indigo-600 active-tab"
-              data-tab="meta">Meta</button>
-          </li>
-          <li class="mr-2">
-            <button type="button"
-              class="inline-block p-3 rounded-t-lg border-b-2 border-transparent hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700 text-gray-500 dark:text-gray-400"
-              data-tab="seo">SEO</button>
-          </li>
-          <li class="mr-2">
-            <button type="button"
-              class="inline-block p-3 rounded-t-lg border-b-2 border-transparent hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700 text-gray-500 dark:text-gray-400"
-              data-tab="editor">Editor</button>
-          </li>
-          {{ if .Page.ID }}
-          <li class="mr-2">
-            <button type="button"
-              class="inline-block p-3 rounded-t-lg border-b-2 border-transparent hover:text-gray-600 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-700 text-gray-500 dark:text-gray-400"
-              data-tab="log">Log</button>
-          </li>
-          {{ end }}
-        </ul>
+  <form method="POST" action="{{if .Page.ID}}/admin/pages/{{.Page.ID}}/edit{{else}}/admin/pages/new{{end}}" id="pageForm">
+    <textarea id="content" name="content" hidden>{{if .Page}}{{.Page.Content}}{{end}}</textarea>
+    <input type="hidden" id="featured_image_id" name="featured_image_id" value="{{if .Page.FeaturedImageID}}{{.Page.FeaturedImageID}}{{end}}">
+
+    <div class="flex flex-col lg:flex-row gap-4 items-start">
+
+      <!-- ============ MAIN EDITOR COLUMN ============ -->
+      <div class="flex-1 w-full min-w-0 space-y-4">
+
+        <!-- Title -->
+        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4">
+          <input type="text" id="title" name="title" placeholder="Add title" required
+            value="{{if .Page}}{{.Page.Title}}{{end}}"
+            class="w-full border-0 bg-transparent text-2xl font-semibold text-gray-800 dark:text-white/90 placeholder:text-gray-300 dark:placeholder:text-gray-600 focus:outline-none focus:ring-0">
+        </div>
+
+        <!-- Body editor -->
+        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 flex flex-col" style="min-height: 65vh;">
+
+          <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 shrink-0">
+            <div class="flex items-center gap-2">
+              <button type="button" id="addBlockBtn" disabled title="Click inside the editor first to place your cursor"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
+                <span class="text-base leading-none">+</span> Add Block
+              </button>
+              <div id="jsonTools" class="hidden flex items-center gap-2">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-400">JSON</span>
+                <button type="button" id="beautifyJson"
+                  class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">Beautify</button>
+                <button type="button" id="compactJson"
+                  class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">Compact</button>
+              </div>
+            </div>
+
+            <div id="editorModeTabs" class="flex rounded-lg shadow-sm" role="group">
+              <button type="button" data-mode="visual"
+                class="mode-btn active-mode px-4 py-1.5 text-sm font-medium border border-gray-300 dark:border-gray-700 rounded-l-lg bg-indigo-50 dark:bg-indigo-500/15 border-indigo-500 text-indigo-600">Visual</button>
+              <button type="button" data-mode="code"
+                class="mode-btn px-4 py-1.5 text-sm font-medium border border-l-0 border-gray-300 dark:border-gray-700 rounded-r-lg bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800">Code</button>
+            </div>
+          </div>
+
+          <div class="flex-1 p-3 min-h-0 flex flex-col">
+            <div id="visualPane" class="flex-1 min-h-0 flex flex-col">
+              <div id="visualFrameWrap" class="relative flex-1 min-h-0 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden mx-auto w-full transition-all duration-200">
+                <iframe id="previewIframe" class="absolute inset-0 w-full h-full border-0" title="Visual editor"
+                  srcdoc="<html><head><script src='https://cdn.tailwindcss.com'></script><style>body{padding:1rem;font-family:system-ui,sans-serif;}</style></head><body>{{if .Page}}{{.Page.Content}}{{else}}<p>Start typing…</p>{{end}}</body></html>">
+                </iframe>
+              </div>
+            </div>
+            <div id="codePane" class="hidden relative flex-1 min-h-0">
+              <div id="contentEditor" class="absolute inset-0 w-full h-full border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm"></div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-    </div>
+      <!-- ============ SIDEBAR ============ -->
+      <div class="w-full lg:w-[340px] shrink-0 space-y-4">
 
-    <div class="px-5 py-2 flex-1 flex flex-col min-h-0 overflow-hidden">
-      <form method="POST" action="{{if .Page.ID}}/admin/pages/{{.Page.ID}}/edit{{else}}/admin/pages/new{{end}}"
-        class="space-y-3 flex flex-col h-full" id="pageForm">
-
-        <textarea id="content" name="content" hidden>{{if .Page}}{{.Page.Content}}{{end}}</textarea>
-
-
-        <!-- META TAB -->
-        <div id="tabMeta" class="tab-content space-y-4 overflow-y-auto flex-1">
-          <div>
-            <label for="title" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Title</label>
-            <input type="text" id="title" name="title"
-              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
-              value="{{if .Page}}{{.Page.Title}}{{end}}" required>
+        <!-- Publish card -->
+        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4 space-y-3">
+          <p class="text-sm font-medium text-gray-700 dark:text-gray-400">Visual editor viewport</p>
+          <div class="flex rounded-lg shadow-sm" role="group">
+            <button type="button" data-viewport="desktop"
+              class="viewport-btn active-viewport flex-1 px-2 py-2 text-xs font-medium border border-gray-300 dark:border-gray-700 rounded-l-lg bg-indigo-50 dark:bg-indigo-500/15 border-indigo-500 text-indigo-600">🖥️ Desktop</button>
+            <button type="button" data-viewport="tablet"
+              class="viewport-btn flex-1 px-2 py-2 text-xs font-medium border border-l-0 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800">📱 Tablet</button>
+            <button type="button" data-viewport="mobile"
+              class="viewport-btn flex-1 px-2 py-2 text-xs font-medium border border-l-0 border-gray-300 dark:border-gray-700 rounded-r-lg bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800">📱 Mobile</button>
           </div>
+          <button type="submit"
+            class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
+            <svg class="fill-current" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
+            </svg>
+            {{if .Page.ID}}Update{{else}}Save{{end}}
+          </button>
+        </div>
+
+        <!-- Page settings card -->
+        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4 space-y-4">
+          <h3 class="text-sm font-semibold text-gray-800 dark:text-white/90">Page Settings</h3>
+
           <div>
             <label for="slug" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Slug</label>
-            <input type="text" id="slug" name="slug"
-              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 font-mono placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
-              value="{{if .Page}}{{.Page.Slug}}{{end}}" required>
+            <input type="text" id="slug" name="slug" required value="{{if .Page}}{{.Page.Slug}}{{end}}"
+              class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 font-mono focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
           </div>
+
           <div>
             <label for="type" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Type</label>
             <select id="type" name="type"
-              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
               <option value="page" {{if eq .Page.Type "page" }}selected{{end}}>Page</option>
               <option value="post" {{if eq .Page.Type "post" }}selected{{end}}>Post</option>
               <option value="html" {{if eq .Page.Type "html" }}selected{{end}}>Html</option>
               {{if eq .Page.Type "builder" }}<option value="builder" selected>Builder (legacy JSON)</option>{{end}}
             </select>
           </div>
+
           <div>
             <label for="layout" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Layout</label>
             <select id="layout" name="layout_id"
-              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
               {{ range .Layouts }}
-              <option value="{{ .ID }}" {{if $.Page}}{{if eq $.Page.LayoutID .ID}}selected{{end}}{{end}}>{{ .Name }}
-              </option>
+              <option value="{{ .ID }}" {{if $.Page}}{{if eq $.Page.LayoutID .ID}}selected{{end}}{{end}}>{{ .Name }}</option>
               {{ end }}
             </select>
           </div>
+
           <div>
             <label for="author_id" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Author</label>
             <select id="author_id" name="author_id"
-              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
               {{ range .Users }}
               <option value="{{ .ID }}" {{if eq $.Page.AuthorID .ID}}selected{{else if and (not $.Page.ID) (eq $.CurrentUser.ID .ID)}}selected{{end}}>{{ .FullName }}</option>
               {{ end }}
             </select>
           </div>
-          <div>
-            <label for="status" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Status</label>
-            <select id="status" name="status"
-              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
-              <option value="draft" {{if eq .Page.Status "draft" }}selected{{end}}>Draft</option>
-              <option value="pending" {{if eq .Page.Status "pending" }}selected{{end}}>Pending Review</option>
-              <option value="publish" {{if eq .Page.Status "publish" }}selected{{end}}>Publish</option>
-            </select>
-          </div>
-        </div>
 
-        <div id="taxonomyFields" class="space-y-4 {{if ne .Page.Type "post"}}hidden{{end}}">
-          <div>
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Categories</label>
-            <div class="rounded-lg border border-gray-300 dark:border-gray-700 p-3 max-h-40 overflow-y-auto space-y-1.5">
-              {{ range .Categories }}
-              <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
-                <input type="checkbox" name="category_ids" value="{{ .ID }}"
-                  {{if index $.SelectedCategories .ID}}checked{{end}}
-                  class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
-                {{ .Name }}
-              </label>
-              {{ else }}
-              <p class="text-sm text-gray-400 dark:text-gray-500">No categories yet. <a href="/admin/categories/new" class="text-indigo-600 hover:text-indigo-800">Create one</a>.</p>
-              {{ end }}
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="status" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Status</label>
+              <select id="status" name="status"
+                class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+                <option value="draft" {{if eq .Page.Status "draft" }}selected{{end}}>Draft</option>
+                <option value="pending" {{if eq .Page.Status "pending" }}selected{{end}}>Pending Review</option>
+                <option value="publish" {{if eq .Page.Status "publish" }}selected{{end}}>Publish</option>
+              </select>
+            </div>
+            <div>
+              <label for="published_at" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Published at</label>
+              <input type="datetime-local" id="published_at" name="published_at"
+                value="{{if .Page.PublishedAt}}{{.Page.PublishedAt.Format "2006-01-02T15:04"}}{{end}}"
+                class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-2 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Blank = set automatically when published.</p>
             </div>
           </div>
-          <div>
-            <label for="tags" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tags</label>
-            <input type="text" id="tags" name="tags" value="{{ .TagsCSV }}" placeholder="e.g. news, tutorial, release"
-              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Comma-separated. New tags are created automatically.</p>
+
+          <div id="taxonomyFields" class="space-y-3 border-t border-gray-100 dark:border-gray-800 pt-3 {{if ne .Page.Type "post"}}hidden{{end}}">
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Categories</label>
+              <div class="rounded-lg border border-gray-300 dark:border-gray-700 p-3 max-h-32 overflow-y-auto space-y-1.5">
+                {{ range .Categories }}
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" name="category_ids" value="{{ .ID }}"
+                    {{if index $.SelectedCategories .ID}}checked{{end}}
+                    class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
+                  {{ .Name }}
+                </label>
+                {{ else }}
+                <p class="text-sm text-gray-400 dark:text-gray-500">No categories yet. <a href="/admin/categories/new" class="text-indigo-600 hover:text-indigo-800">Create one</a>.</p>
+                {{ end }}
+              </div>
+            </div>
+            <div>
+              <label for="tags" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tags</label>
+              <input type="text" id="tags" name="tags" value="{{ .TagsCSV }}" placeholder="e.g. news, tutorial"
+                class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Comma-separated. New tags are created automatically.</p>
+            </div>
           </div>
         </div>
 
-        <!-- SEO TAB -->
-        <div id="tabSeo" class="tab-content hidden space-y-4 overflow-y-auto flex-1 pb-4">
+        <!-- Featured image card -->
+        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4 space-y-3">
+          <h3 class="text-sm font-semibold text-gray-800 dark:text-white/90">Featured Image</h3>
+          <div id="featuredImagePreview" class="rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden {{if not .Page.FeaturedImageID}}hidden{{end}}">
+            <img id="featuredImagePreviewImg" src="{{.Page.FeaturedImage.URL}}" alt="" class="w-full h-40 object-cover">
+          </div>
+          <div id="featuredImageEmpty" class="rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 h-32 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500 {{if .Page.FeaturedImageID}}hidden{{end}}">
+            No image selected
+          </div>
+          <div class="flex gap-2">
+            <button type="button" id="setFeaturedImageBtn"
+              class="flex-1 inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+              {{if .Page.FeaturedImageID}}Change image{{else}}Set featured image{{end}}
+            </button>
+            <button type="button" id="removeFeaturedImageBtn"
+              class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-red-500 hover:bg-gray-50 dark:hover:bg-gray-800 {{if not .Page.FeaturedImageID}}hidden{{end}}">
+              Remove
+            </button>
+          </div>
+        </div>
 
-          <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-4">
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-400 mb-2">Search preview</p>
+        <!-- SEO card -->
+        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4 space-y-4">
+          <h3 class="text-sm font-semibold text-gray-800 dark:text-white/90">SEO</h3>
+
+          <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-3">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Search preview</p>
             <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2">
-              <div id="serpTitle" class="text-blue-700 text-lg leading-tight truncate"></div>
-              <div id="serpUrl" class="text-green-700 text-sm"></div>
-              <div id="serpDescription" class="text-sm text-gray-600 dark:text-gray-400 mt-1"></div>
+              <div id="serpTitle" class="text-blue-700 text-sm leading-tight truncate"></div>
+              <div id="serpUrl" class="text-green-700 text-xs"></div>
+              <div id="serpDescription" class="text-xs text-gray-600 dark:text-gray-400 mt-1"></div>
             </div>
           </div>
 
@@ -148,225 +218,130 @@
               <span id="metaTitleCount" class="text-xs text-gray-400 dark:text-gray-500"></span>
             </div>
             <input type="text" id="meta_title" name="meta_title"
-              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+              class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
               placeholder="{{if .Page}}{{.Page.Title}}{{end}}" value="{{if .Page}}{{.Page.MetaTitle}}{{end}}">
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Falls back to the page title if left blank. ~50-60
-              characters recommended.</p>
           </div>
 
           <div>
             <div class="flex justify-between mb-1.5">
-              <label for="meta_description" class="text-sm font-medium text-gray-700 dark:text-gray-400">Meta
-                Description</label>
+              <label for="meta_description" class="text-sm font-medium text-gray-700 dark:text-gray-400">Meta Description</label>
               <span id="metaDescriptionCount" class="text-xs text-gray-400 dark:text-gray-500"></span>
             </div>
             <textarea id="meta_description" name="meta_description" rows="3"
-              class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">{{if .Page}}{{.Page.MetaDescription}}{{end}}</textarea>
-            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">~150-160 characters recommended.</p>
+              class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 py-2 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">{{if .Page}}{{.Page.MetaDescription}}{{end}}</textarea>
           </div>
 
           <div>
-            <label for="focus_keyword" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Focus
-              Keyword</label>
+            <label for="focus_keyword" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Focus Keyword</label>
             <input type="text" id="focus_keyword" name="focus_keyword"
-              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+              class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
               value="{{if .Page}}{{.Page.FocusKeyword}}{{end}}">
           </div>
 
           <div>
-            <label for="canonical_url"
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Canonical URL</label>
+            <label for="canonical_url" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Canonical URL</label>
             <input type="text" id="canonical_url" name="canonical_url"
-              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 font-mono placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
-              placeholder="Auto-generated from the site URL + slug" value="{{if .Page}}{{.Page.CanonicalURL}}{{end}}">
+              class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 font-mono placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+              placeholder="Auto from site URL + slug" value="{{if .Page}}{{.Page.CanonicalURL}}{{end}}">
           </div>
 
           <div class="space-y-2">
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" id="meta_robots_noindex" name="meta_robots_noindex" {{if .Page}}{{if
-                .Page.MetaRobotsNoindex}}checked{{end}}{{end}}
+              <input type="checkbox" id="meta_robots_noindex" name="meta_robots_noindex" {{if .Page}}{{if .Page.MetaRobotsNoindex}}checked{{end}}{{end}}
                 class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
-              <span class="text-sm text-gray-700 dark:text-gray-400">Discourage search engines from indexing this
-                page</span>
+              <span class="text-sm text-gray-700 dark:text-gray-400">Discourage indexing</span>
             </label>
             <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" id="meta_robots_nofollow" name="meta_robots_nofollow" {{if .Page}}{{if
-                .Page.MetaRobotsNofollow}}checked{{end}}{{end}}
+              <input type="checkbox" id="meta_robots_nofollow" name="meta_robots_nofollow" {{if .Page}}{{if .Page.MetaRobotsNofollow}}checked{{end}}{{end}}
                 class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
-              <span class="text-sm text-gray-700 dark:text-gray-400">Don't follow links on this page</span>
+              <span class="text-sm text-gray-700 dark:text-gray-400">Don't follow links</span>
             </label>
           </div>
 
-          <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-            <p class="font-medium text-gray-700 dark:text-gray-400 mb-4">Social sharing (Open Graph)</p>
-            <div class="space-y-4">
+          <details class="border-t border-gray-100 dark:border-gray-800 pt-3">
+            <summary class="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-400">Social sharing (Open Graph)</summary>
+            <div class="space-y-3 mt-3">
               <div>
-                <label for="og_title" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">OG
-                  Title</label>
+                <label for="og_title" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">OG Title</label>
                 <input type="text" id="og_title" name="og_title"
-                  class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+                  class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
                   placeholder="Falls back to SEO title" value="{{if .Page}}{{.Page.OGTitle}}{{end}}">
               </div>
               <div>
-                <label for="og_description" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">OG
-                  Description</label>
+                <label for="og_description" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">OG Description</label>
                 <textarea id="og_description" name="og_description" rows="2"
-                  class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+                  class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 py-2 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
                   placeholder="Falls back to meta description">{{if .Page}}{{.Page.OGDescription}}{{end}}</textarea>
               </div>
               <div>
-                <label for="og_image" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">OG Image
-                  URL</label>
+                <label for="og_image" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">OG Image URL</label>
                 <input type="text" id="og_image" name="og_image"
-                  class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+                  class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
                   value="{{if .Page}}{{.Page.OGImage}}{{end}}">
               </div>
             </div>
-          </div>
+          </details>
 
-          <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-            <p class="font-medium text-gray-700 dark:text-gray-400 mb-4">Twitter Card</p>
-            <div class="space-y-4">
+          <details class="border-t border-gray-100 dark:border-gray-800 pt-3">
+            <summary class="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-400">Twitter Card</summary>
+            <div class="space-y-3 mt-3">
               <div>
-                <label for="twitter_card" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Card
-                  Type</label>
+                <label for="twitter_card" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Card Type</label>
                 <select id="twitter_card" name="twitter_card"
-                  class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+                  class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
                   <option value="">Auto</option>
                   <option value="summary" {{if eq .Page.TwitterCard "summary" }}selected{{end}}>Summary</option>
-                  <option value="summary_large_image" {{if eq .Page.TwitterCard "summary_large_image" }}selected{{end}}>
-                    Summary with large image</option>
+                  <option value="summary_large_image" {{if eq .Page.TwitterCard "summary_large_image" }}selected{{end}}>Summary with large image</option>
                 </select>
               </div>
               <div>
-                <label for="twitter_title"
-                  class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Twitter Title</label>
+                <label for="twitter_title" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Twitter Title</label>
                 <input type="text" id="twitter_title" name="twitter_title"
-                  class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+                  class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
                   placeholder="Falls back to OG title" value="{{if .Page}}{{.Page.TwitterTitle}}{{end}}">
               </div>
               <div>
-                <label for="twitter_description"
-                  class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Twitter Description</label>
+                <label for="twitter_description" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Twitter Description</label>
                 <textarea id="twitter_description" name="twitter_description" rows="2"
-                  class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+                  class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 py-2 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
                   placeholder="Falls back to OG description">{{if .Page}}{{.Page.TwitterDescription}}{{end}}</textarea>
               </div>
               <div>
-                <label for="twitter_image"
-                  class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Twitter Image URL</label>
+                <label for="twitter_image" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Twitter Image URL</label>
                 <input type="text" id="twitter_image" name="twitter_image"
-                  class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
+                  class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"
                   placeholder="Falls back to OG image" value="{{if .Page}}{{.Page.TwitterImage}}{{end}}">
               </div>
             </div>
-          </div>
-
-        </div>
-
-        <!-- EDITOR TAB -->
-        <div id="tabEditor" class="tab-content hidden flex-1 flex flex-col gap-3 min-h-0">
-
-          <div id="jsonTools" class="hidden flex items-center gap-2">
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-400">JSON</span>
-            <button type="button" id="beautifyJson"
-              class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">Beautify</button>
-            <button type="button" id="compactJson"
-              class="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">Compact</button>
-          </div>
-
-          <div id="layoutToggle" class="flex items-center space-x-4 {{if not (or (eq .Page.Type "html") (eq .Page.Type "post") (eq .Page.Type "page"))}}hidden{{end}}">
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Editor layout:</span>
-            <div class="flex rounded-lg shadow-sm" role="group">
-              <button type="button"
-                class="px-4 py-2 text-sm font-medium border border-gray-300 dark:border-gray-700 rounded-l-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 focus:z-10 layout-btn active-layout"
-                data-layout="col">Columns</button>
-              <button type="button"
-                class="px-4 py-2 text-sm font-medium border border-l-0 border-gray-300 dark:border-gray-700 rounded-r-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 focus:z-10 layout-btn"
-                data-layout="row">Rows</button>
-            </div>
-            <button type="button" id="addBlockBtn" disabled title="Click inside the editor first to place your cursor"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed">
-              <span class="text-base leading-none">+</span> Add Block
-            </button>
-          </div>
-
-          <div id="editorPreviewContainer" class="flex-1 flex flex-col {{if or (eq .Page.Type "html") (eq .Page.Type "post") (eq .Page.Type "page")}}md:flex-row{{end}}
-            gap-4 min-h-0">
-            <div id="editorPanel" class="flex-1 flex flex-col min-h-0">
-              <div id="contentEditor" class="flex-1 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm"></div>
-            </div>
-
-            <div id="previewPanel" class="flex-1 flex flex-col min-h-0 {{if not (or (eq .Page.Type "html") (eq .Page.Type "post") (eq .Page.Type "page"))}}hidden{{end}}">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Preview <span class="font-normal text-gray-400 dark:text-gray-500">(editable — typing here updates the HTML editor)</span></span>
-                <div class="flex space-x-1">
-                  <button type="button"
-                    class="text-xs px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 viewport-btn active-viewport"
-                    data-viewport="desktop">Desktop</button>
-                  <button type="button"
-                    class="text-xs px-2.5 py-1.5 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 viewport-btn"
-                    data-viewport="mobile">Mobile</button>
-                </div>
-              </div>
-              <div class="flex-1 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden">
-                <iframe id="previewIframe" class="w-full h-full border-0 transition-all duration-200"
-                  srcdoc="<html><head><script src='https://cdn.tailwindcss.com'></script><style>body{padding:1rem;font-family:system-ui,sans-serif;}</style></head><body>{{if .Page}}{{.Page.Content}}{{else}}<p>Preview will appear here.</p>{{end}}</body></html>">
-                </iframe>
-              </div>
-            </div>
-          </div>
+          </details>
         </div>
 
         {{ if .Page.ID }}
-        <!-- LOG TAB -->
-        <div id="tabLog" class="tab-content hidden space-y-4 overflow-y-auto flex-1">
-          <div class="w-full overflow-x-auto">
-            <table class="min-w-full">
-              <thead>
-                <tr class="border-y border-gray-100 dark:border-gray-800">
-                  <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Date</p></th>
-                  <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">User</p></th>
-                  <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Action</p></th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                {{ range .Revisions }}
-                <tr>
-                  <td class="py-3 text-sm text-gray-500 dark:text-gray-400">{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</td>
-                  <td class="py-3 text-sm text-gray-500 dark:text-gray-400">{{ if .UserName }}{{ .UserName }}{{ else }}&mdash;{{ end }}</td>
-                  <td class="py-3 text-sm"><a href="/admin/revisions/{{ .ID }}" class="text-indigo-600 hover:text-indigo-800 font-medium">View</a></td>
-                </tr>
-                {{ else }}
-                <tr>
-                  <td colspan="3" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No revisions yet.</td>
-                </tr>
-                {{ end }}
-              </tbody>
-            </table>
+        <!-- Revision history card -->
+        <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4 space-y-3">
+          <h3 class="text-sm font-semibold text-gray-800 dark:text-white/90">Revision History</h3>
+          <div class="max-h-48 overflow-y-auto space-y-1">
+            {{ range .Revisions }}
+            <div class="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 dark:border-gray-800 last:border-0">
+              <div class="min-w-0">
+                <p class="text-gray-700 dark:text-gray-300 truncate">{{ .CreatedAt.Format "2006-01-02 15:04" }}</p>
+                <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ if .UserName }}{{ .UserName }}{{ else }}&mdash;{{ end }}</p>
+              </div>
+              <a href="/admin/revisions/{{ .ID }}" class="text-indigo-600 hover:text-indigo-800 font-medium shrink-0 ml-2">View</a>
+            </div>
+            {{ else }}
+            <p class="text-sm text-gray-400 dark:text-gray-500 text-center py-2">No revisions yet.</p>
+            {{ end }}
           </div>
         </div>
         {{ end }}
 
-        <div class="flex justify-end pt-3 border-t border-gray-100 dark:border-gray-800 shrink-0">
-          <button type="submit"
-            class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
-            <svg class="fill-current" width="16" height="16" viewBox="0 0 20 20" fill="none"
-              xmlns="http://www.w3.org/2000/svg">
-              <path fill-rule="evenodd" clip-rule="evenodd"
-                d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z"
-                fill="" />
-            </svg>
-            Save
-          </button>
-        </div>
-
-      </form>
+      </div>
     </div>
-  </div>
+  </form>
 </div>
 
-<!-- Block Inserter Modal -->
+<!-- Block Inserter / Media Picker Modal (shared) -->
 <div id="blockModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
   <div class="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl bg-white dark:bg-gray-900 shadow-xl">
     <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-5 py-4 shrink-0">
@@ -382,7 +357,7 @@
       <div id="blockGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-3"></div>
     </div>
 
-    <!-- Step 2: per-block props -->
+    <!-- Step 2: per-block props / media picker -->
     <div id="blockPropsStep" class="hidden flex-1 flex flex-col min-h-0">
       <div id="blockPropsBody" class="p-5 overflow-y-auto flex-1 space-y-4"></div>
       <div class="flex justify-end gap-3 px-5 py-4 border-t border-gray-100 dark:border-gray-800 shrink-0">
@@ -396,19 +371,20 @@
 
 <script>
   (function () {
-    const jsonTools = document.getElementById("jsonTools");
-    const beautifyBtn = document.getElementById("beautifyJson");
-    const compactBtn = document.getElementById("compactJson");
     const form = document.getElementById('pageForm');
     const contentEditor = ace.edit("contentEditor");
     const typeSelect = document.getElementById('type');
-    const layoutToggle = document.getElementById('layoutToggle');
-    const editorPreviewContainer = document.getElementById('editorPreviewContainer');
-    const previewPanel = document.getElementById('previewPanel');
-    const previewIframe = document.getElementById('previewIframe');
     const contentTextarea = document.getElementById('content');
-
     const taxonomyFields = document.getElementById('taxonomyFields');
+    const jsonTools = document.getElementById("jsonTools");
+    const beautifyBtn = document.getElementById("beautifyJson");
+    const compactBtn = document.getElementById("compactJson");
+    const addBlockBtn = document.getElementById('addBlockBtn');
+    const previewIframe = document.getElementById('previewIframe');
+    const visualFrameWrap = document.getElementById('visualFrameWrap');
+    const visualPane = document.getElementById('visualPane');
+    const codePane = document.getElementById('codePane');
+    const editorModeTabs = document.getElementById('editorModeTabs');
 
     // True while a change is being pushed from the live preview into the Ace
     // editor, so the reverse (Ace -> preview) sync doesn't rebuild the
@@ -417,156 +393,73 @@
 
     contentEditor.setTheme("ace/theme/github");
     contentEditor.setOption("wrap", true);
-    setAceMode('{{ .Page.Type }}' || 'page');
-    // Load from the hidden textarea (not the contentEditor div's own text)
-    // and trim it: older rows can carry leading/trailing whitespace picked
-    // up from the template's own indentation before this fix, and pasted
-    // content can carry it too. -1 puts the cursor at the very start
-    // instead of leaving everything selected.
+    // Load from the hidden textarea (not raw DOM text) and trim it: older
+    // rows can carry leading/trailing whitespace from before this was
+    // fixed, and pasted content can carry it too. -1 puts the cursor at
+    // the very start instead of leaving everything selected.
     contentEditor.setValue((contentTextarea.value || '').trim(), -1);
 
-    const tabButtons = document.querySelectorAll('#tabNav button');
-    const tabContents = {
-      meta: document.getElementById('tabMeta'),
-      seo: document.getElementById('tabSeo'),
-      editor: document.getElementById('tabEditor'),
-      log: document.getElementById('tabLog')
-    };
-    tabButtons.forEach(btn => {
-      btn.addEventListener('click', function () {
-        tabButtons.forEach(b => {
-          b.classList.remove('border-indigo-600', 'text-indigo-600');
-          b.classList.add('border-transparent', 'text-gray-500');
-        });
-        Object.values(tabContents).forEach(el => el && el.classList.add('hidden'));
-        this.classList.remove('border-transparent', 'text-gray-500');
-        this.classList.add('border-indigo-600', 'text-indigo-600');
-        const tab = this.dataset.tab;
-        if (tab === 'meta') tabContents.meta.classList.remove('hidden');
-        else if (tab === 'seo') tabContents.seo.classList.remove('hidden');
-        else if (tab === 'editor') {
-          tabContents.editor.classList.remove('hidden');
-          contentEditor.resize();
-        }
-        else if (tab === 'log' && tabContents.log) tabContents.log.classList.remove('hidden');
-      });
-    });
-
-    const titleInput = document.getElementById('title');
-    const slugInput = document.getElementById('slug');
-    const metaTitleInput = document.getElementById('meta_title');
-    const metaDescriptionInput = document.getElementById('meta_description');
-    const metaTitleCount = document.getElementById('metaTitleCount');
-    const metaDescriptionCount = document.getElementById('metaDescriptionCount');
-    const serpTitle = document.getElementById('serpTitle');
-    const serpUrl = document.getElementById('serpUrl');
-    const serpDescription = document.getElementById('serpDescription');
-
-    function updateSerpPreview() {
-      const title = metaTitleInput.value.trim() || titleInput.value.trim() || 'Page title';
-      const description = metaDescriptionInput.value.trim() || 'Add a meta description to control how this page appears in search results.';
-      serpTitle.textContent = title;
-      serpUrl.textContent = window.location.origin + '/' + (slugInput.value.trim() || '');
-      serpDescription.textContent = description;
-      metaTitleCount.textContent = metaTitleInput.value.length + ' / 60';
-      metaDescriptionCount.textContent = metaDescriptionInput.value.length + ' / 160';
-    }
-
-    [titleInput, slugInput, metaTitleInput, metaDescriptionInput].forEach(el => {
-      el.addEventListener('input', updateSerpPreview);
-    });
-    updateSerpPreview();
-
-    window.addEventListener("resize", () => {
-      contentEditor.resize();
-    });
-
-    const layoutButtons = document.querySelectorAll('.layout-btn');
-    layoutButtons.forEach(btn => {
-      btn.addEventListener('click', function () {
-        layoutButtons.forEach(b => b.classList.remove('active-layout', 'bg-indigo-50', 'border-indigo-500'));
-        this.classList.add('active-layout', 'bg-indigo-50', 'border-indigo-500');
-        const layout = this.dataset.layout;
-        editorPreviewContainer.classList.remove('flex-col', 'md:flex-row', 'flex-row');
-        if (layout === 'col') {
-          editorPreviewContainer.classList.add('flex-col', 'md:flex-row');
-        } else {
-          editorPreviewContainer.classList.add('flex-col');
-        }
-        previewPanel.classList.remove('hidden');
-        setTimeout(() => contentEditor.resize(), 50);
-      });
-    });
-
-    const viewportButtons = document.querySelectorAll('.viewport-btn');
-    viewportButtons.forEach(btn => {
-      btn.addEventListener('click', function () {
-        viewportButtons.forEach(b => b.classList.remove('active-viewport', 'bg-indigo-50', 'border-indigo-500'));
-        this.classList.add('active-viewport', 'bg-indigo-50', 'border-indigo-500');
-        const vp = this.dataset.viewport;
-        if (vp === 'mobile') {
-          previewIframe.style.width = '375px';
-          previewIframe.style.margin = '0 auto';
-        } else {
-          previewIframe.style.width = '100%';
-          previewIframe.style.margin = '0';
-        }
-      });
-    });
-
-    beautifyBtn.addEventListener("click", () => {
-      try {
-        const obj = JSON.parse(contentEditor.getValue());
-        contentEditor.setValue(JSON.stringify(obj, null, 2), -1);
-      } catch (err) {
-        alert("Invalid JSON");
-      }
-    });
-
-    compactBtn.addEventListener("click", () => {
-      try {
-        const obj = JSON.parse(contentEditor.getValue());
-        contentEditor.setValue(JSON.stringify(obj), -1);
-      } catch (err) {
-        alert("Invalid JSON");
-      }
-    });
-
-    // "page"/"post"/"html" are all plain HTML content with the dual Ace +
-    // live-preview editor; "builder" is the legacy JSON page-builder schema
-    // (rows/columns/components) and keeps the JSON-only editor.
+    // "page"/"post"/"html" are all plain HTML content with the dual Visual
+    // (contentEditable preview) + Code (Ace) editor; "builder" is the
+    // legacy JSON page-builder schema (rows/columns/components) and only
+    // gets the Code editor, in JSON mode.
     function isHtmlLikeType(type) {
       return type === 'html' || type === 'post' || type === 'page';
     }
 
-    typeSelect.addEventListener('change', function () {
-      const newType = this.value;
-      setAceMode(newType);
-      if (isHtmlLikeType(newType)) {
-        jsonTools.classList.add("hidden");
-        layoutToggle.classList.remove("hidden");
-        previewPanel.classList.remove("hidden");
-        document.querySelector('.layout-btn[data-layout="col"]')?.click();
-        updatePreview(contentEditor.getValue());
-      } else {
-        jsonTools.classList.remove("hidden");
-        layoutToggle.classList.add("hidden");
-        previewPanel.classList.add("hidden");
-        editorPreviewContainer.classList.remove("md:flex-row", "flex-row");
-        editorPreviewContainer.classList.add("flex-col");
-      }
-      taxonomyFields?.classList.toggle("hidden", newType !== "post");
-      setTimeout(() => contentEditor.resize(), 100);
-    });
-
     function setAceMode(type) {
       contentEditor.session.setMode("ace/mode/" + (isHtmlLikeType(type) ? 'html' : 'json'));
     }
+    setAceMode(typeSelect.value);
+
+    // ---------------- Visual / Code tabs ----------------
+    let editorMode = 'visual';
+    function setEditorMode(mode) {
+      editorMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(function (b) {
+        const active = b.dataset.mode === mode;
+        b.classList.toggle('active-mode', active);
+        b.classList.toggle('bg-indigo-50', active);
+        b.classList.toggle('dark:bg-indigo-500/15', active);
+        b.classList.toggle('border-indigo-500', active);
+        b.classList.toggle('text-indigo-600', active);
+        b.classList.toggle('bg-white', !active);
+        b.classList.toggle('dark:bg-gray-900', !active);
+        b.classList.toggle('text-gray-600', !active);
+        b.classList.toggle('dark:text-gray-400', !active);
+      });
+      visualPane.classList.toggle('hidden', mode !== 'visual');
+      codePane.classList.toggle('hidden', mode !== 'code');
+      if (mode === 'code') {
+        setTimeout(function () { contentEditor.resize(); }, 0);
+      } else {
+        updatePreview(contentEditor.getValue());
+      }
+    }
+    editorModeTabs.querySelectorAll('.mode-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { setEditorMode(btn.dataset.mode); });
+    });
+
+    // ---------------- Type change: html-like vs legacy JSON builder ----------------
+    typeSelect.addEventListener('change', function () {
+      const newType = this.value;
+      setAceMode(newType);
+      const htmlLike = isHtmlLikeType(newType);
+      addBlockBtn.classList.toggle('hidden', !htmlLike);
+      jsonTools.classList.toggle('hidden', htmlLike);
+      editorModeTabs.querySelector('[data-mode="visual"]').classList.toggle('hidden', !htmlLike);
+      // The Code button normally sits to the right of Visual (rounded only
+      // on the right); when Visual is hidden it becomes the only button in
+      // the group, so it needs the left corner rounded too.
+      editorModeTabs.querySelector('[data-mode="code"]').classList.toggle('rounded-l-lg', !htmlLike);
+      if (!htmlLike) setEditorMode('code');
+      taxonomyFields?.classList.toggle('hidden', newType !== 'post');
+    });
 
     contentEditor.session.on('change', function () {
       const val = contentEditor.getValue();
       contentTextarea.value = val;
-      if (isHtmlLikeType(typeSelect.value)) {
+      if (isHtmlLikeType(typeSelect.value) && editorMode === 'visual') {
         updatePreview(val);
       }
     });
@@ -593,11 +486,11 @@
       `;
     }
 
-    // Makes the preview a live visual (WYSIWYG-ish) editor: typing directly
-    // in the rendered preview pushes the resulting HTML back into the Ace
-    // editor (and the hidden textarea actually submitted with the form).
-    // Re-attached on every "load" event since assigning srcdoc replaces the
-    // iframe's document, discarding any previously attached listeners.
+    // Makes the Visual pane a live editor: typing directly in the rendered
+    // preview pushes the resulting HTML back into the Ace editor (and the
+    // hidden textarea actually submitted with the form). Re-attached on
+    // every "load" event since assigning srcdoc replaces the iframe's
+    // document, discarding any previously attached listeners.
     previewIframe.addEventListener("load", function () {
       const doc = previewIframe.contentDocument;
       if (!doc || !doc.body || !isHtmlLikeType(typeSelect.value)) return;
@@ -611,24 +504,86 @@
         contentTextarea.value = html;
         syncingFromPreview = false;
       });
+      // "Active when cursor is on the editor" applies to the Visual pane
+      // too, not just the Code (Ace) one — see the matching ace 'focus'
+      // listener below.
+      doc.body.addEventListener("focus", function () { addBlockBtn.disabled = false; });
     });
 
-    setTimeout(function () {
-      typeSelect.dispatchEvent(new Event('change'));
-      if (isHtmlLikeType(typeSelect.value)) {
-        updatePreview(contentEditor.getValue());
-        document.querySelector('.layout-btn[data-layout="col"]')?.click();
-        document.querySelector('.viewport-btn[data-viewport="desktop"]')?.click();
+    beautifyBtn.addEventListener("click", () => {
+      try {
+        const obj = JSON.parse(contentEditor.getValue());
+        contentEditor.setValue(JSON.stringify(obj, null, 2), -1);
+      } catch (err) {
+        alert("Invalid JSON");
       }
-      contentEditor.resize();
-    }, 200);
+    });
+    compactBtn.addEventListener("click", () => {
+      try {
+        const obj = JSON.parse(contentEditor.getValue());
+        contentEditor.setValue(JSON.stringify(obj), -1);
+      } catch (err) {
+        alert("Invalid JSON");
+      }
+    });
 
-    form.addEventListener('submit', function (e) {
+    window.addEventListener("resize", () => { contentEditor.resize(); });
+
+    // ---------------- Sidebar viewport toggle (Visual pane width) ----------------
+    const viewportButtons = document.querySelectorAll('.viewport-btn');
+    viewportButtons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        viewportButtons.forEach(function (b) {
+          b.classList.remove('active-viewport', 'bg-indigo-50', 'dark:bg-indigo-500/15', 'border-indigo-500', 'text-indigo-600');
+          b.classList.add('bg-white', 'dark:bg-gray-900', 'text-gray-600', 'dark:text-gray-400');
+        });
+        btn.classList.add('active-viewport', 'bg-indigo-50', 'dark:bg-indigo-500/15', 'border-indigo-500', 'text-indigo-600');
+        btn.classList.remove('bg-white', 'dark:bg-gray-900', 'text-gray-600', 'dark:text-gray-400');
+        const vp = btn.dataset.viewport;
+        if (vp === 'mobile') visualFrameWrap.style.maxWidth = '390px';
+        else if (vp === 'tablet') visualFrameWrap.style.maxWidth = '768px';
+        else visualFrameWrap.style.maxWidth = '100%';
+      });
+    });
+
+    // ---------------- SEO search preview ----------------
+    const titleInput = document.getElementById('title');
+    const slugInput = document.getElementById('slug');
+    const metaTitleInput = document.getElementById('meta_title');
+    const metaDescriptionInput = document.getElementById('meta_description');
+    const metaTitleCount = document.getElementById('metaTitleCount');
+    const metaDescriptionCount = document.getElementById('metaDescriptionCount');
+    const serpTitle = document.getElementById('serpTitle');
+    const serpUrl = document.getElementById('serpUrl');
+    const serpDescription = document.getElementById('serpDescription');
+
+    function updateSerpPreview() {
+      const title = metaTitleInput.value.trim() || titleInput.value.trim() || 'Page title';
+      const description = metaDescriptionInput.value.trim() || 'Add a meta description to control how this page appears in search results.';
+      serpTitle.textContent = title;
+      serpUrl.textContent = window.location.origin + '/' + (slugInput.value.trim() || '');
+      serpDescription.textContent = description;
+      metaTitleCount.textContent = metaTitleInput.value.length + ' / 60';
+      metaDescriptionCount.textContent = metaDescriptionInput.value.length + ' / 160';
+    }
+    [titleInput, slugInput, metaTitleInput, metaDescriptionInput].forEach(function (el) {
+      el.addEventListener('input', updateSerpPreview);
+    });
+    updateSerpPreview();
+
+    form.addEventListener('submit', function () {
       contentTextarea.value = contentEditor.getValue().trim();
     });
 
-    // ---------------- Block Inserter ----------------
-    const addBlockBtn = document.getElementById('addBlockBtn');
+    // Initial render pass, once everything above is wired up.
+    typeSelect.dispatchEvent(new Event('change'));
+    setEditorMode(isHtmlLikeType(typeSelect.value) ? 'visual' : 'code');
+
+    // ================================================================
+    // Shared media library picker: search / type-filter / grid / upload.
+    // Used both by the block inserter's "Media" block and the sidebar's
+    // Featured Image card, via the same modal shell.
+    // ================================================================
     const blockModal = document.getElementById('blockModal');
     const blockModalTitle = document.getElementById('blockModalTitle');
     const blockBackBtn = document.getElementById('blockBackBtn');
@@ -640,22 +595,12 @@
     const blockCancelBtn = document.getElementById('blockCancelBtn');
     const blockInsertBtn = document.getElementById('blockInsertBtn');
 
-    // "Active when cursor is on the editor": disabled until the Ace editor
-    // has been focused at least once, since inserting needs a real cursor
-    // position to insert at.
-    contentEditor.on('focus', function () { addBlockBtn.disabled = false; });
-
-    const BLOCKS = [
-      { id: 'paragraph', label: 'Paragraph', icon: '¶' },
-      { id: 'heading', label: 'Heading', icon: 'H' },
-      { id: 'list', label: 'List', icon: '≡' },
-      { id: 'media', label: 'Media', icon: '🖼️' },
-      { id: 'table', label: 'Table', icon: '▦' },
-      { id: 'quote', label: 'Quote', icon: '❝' },
-      { id: 'button', label: 'Button', icon: '🔘' },
-      { id: 'code', label: 'Code', icon: '&lt;/&gt;' },
-      { id: 'divider', label: 'Divider', icon: '―' },
-    ];
+    function closeBlockModalFn() {
+      blockModal.classList.add('hidden');
+    }
+    closeBlockModalBtn.addEventListener('click', closeBlockModalFn);
+    blockCancelBtn.addEventListener('click', closeBlockModalFn);
+    blockModal.addEventListener('click', function (e) { if (e.target === blockModal) closeBlockModalFn(); });
 
     function escapeHtml(s) {
       return String(s == null ? '' : s)
@@ -666,59 +611,6 @@
         .replace(/'/g, '&#39;');
     }
 
-    let lastCursor = null;
-
-    function insertAtCursor(html) {
-      const pos = lastCursor || contentEditor.getCursorPosition();
-      contentEditor.session.insert(pos, html);
-      contentEditor.focus();
-    }
-
-    function openBlockModal() {
-      lastCursor = contentEditor.getCursorPosition();
-      showGridStep();
-      blockModal.classList.remove('hidden');
-    }
-    function closeBlockModalFn() {
-      blockModal.classList.add('hidden');
-    }
-    addBlockBtn.addEventListener('click', openBlockModal);
-    closeBlockModalBtn.addEventListener('click', closeBlockModalFn);
-    blockCancelBtn.addEventListener('click', closeBlockModalFn);
-    blockModal.addEventListener('click', function (e) { if (e.target === blockModal) closeBlockModalFn(); });
-
-    function showGridStep() {
-      blockModalTitle.textContent = 'Add a block';
-      blockBackBtn.classList.add('hidden');
-      blockGridStep.classList.remove('hidden');
-      blockPropsStep.classList.add('hidden');
-    }
-    blockBackBtn.addEventListener('click', showGridStep);
-
-    BLOCKS.forEach(function (block) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'flex flex-col items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-gray-700 dark:text-gray-300';
-      btn.innerHTML = '<span class="text-2xl">' + block.icon + '</span><span class="text-xs font-medium">' + block.label + '</span>';
-      btn.addEventListener('click', function () {
-        if (block.id === 'divider') {
-          insertAtCursor('<hr>\n');
-          closeBlockModalFn();
-          return;
-        }
-        blockModalTitle.textContent = block.label;
-        blockBackBtn.classList.remove('hidden');
-        blockGridStep.classList.add('hidden');
-        blockPropsStep.classList.remove('hidden');
-        blockInsertBtn.disabled = true;
-        blockInsertBtn.onclick = null;
-        blockPropsBody.innerHTML = '';
-        renderBlockProps(block.id);
-      });
-      blockGrid.appendChild(btn);
-    });
-
-    // ---- small form-field builders shared by the prop panels ----
     function fieldRow(labelText, inputEl) {
       const wrap = document.createElement('div');
       const label = document.createElement('label');
@@ -758,6 +650,311 @@
       return el;
     }
 
+    // Renders the Media Library / Upload New tabs into `container`, wiring
+    // `insertBtn` as the confirm action. opts:
+    //   lockType   - if set, hides the type dropdown and always filters to it
+    //   collectAlt - whether to show an alt-text field for image selections
+    //   onConfirm  - (item, altValue) => void
+    function renderMediaLibraryPicker(container, insertBtn, opts) {
+      opts = opts || {};
+      let selectedItem = null;
+
+      const tabs = document.createElement('div');
+      tabs.className = 'flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-3';
+      const libTab = document.createElement('button');
+      libTab.type = 'button';
+      libTab.textContent = 'Media Library';
+      const uploadTab = document.createElement('button');
+      uploadTab.type = 'button';
+      uploadTab.textContent = 'Upload New';
+      [libTab, uploadTab].forEach(function (btn) {
+        btn.className = 'px-3 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400';
+      });
+      tabs.appendChild(libTab);
+      tabs.appendChild(uploadTab);
+      container.appendChild(tabs);
+
+      const panelWrap = document.createElement('div');
+      container.appendChild(panelWrap);
+
+      function setActiveTab(tab) {
+        [libTab, uploadTab].forEach(function (b) { b.classList.remove('border-indigo-600', 'text-indigo-600'); });
+        tab.classList.add('border-indigo-600', 'text-indigo-600');
+      }
+
+      function showLibrary() {
+        setActiveTab(libTab);
+        panelWrap.innerHTML = '';
+        insertBtn.disabled = true;
+        insertBtn.onclick = null;
+
+        const controls = document.createElement('div');
+        controls.className = 'flex items-center gap-2 mb-3';
+        const search = textInputEl('', 'Search media...');
+        search.className += ' flex-1';
+        controls.appendChild(search);
+        let typeFilter = null;
+        if (!opts.lockType) {
+          typeFilter = selectEl([
+            { value: '', label: 'All types' },
+            { value: 'image', label: 'Images' },
+            { value: 'video', label: 'Video' },
+            { value: 'audio', label: 'Audio' },
+            { value: 'document', label: 'Documents' },
+            { value: 'archive', label: 'Archives' },
+          ], '');
+          controls.appendChild(typeFilter);
+        }
+        panelWrap.appendChild(controls);
+
+        const grid = document.createElement('div');
+        grid.className = 'grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-64 overflow-y-auto';
+        panelWrap.appendChild(grid);
+
+        const altWrap = document.createElement('div');
+        altWrap.className = 'hidden mt-3';
+        const altInput = textInputEl('', 'Describe this image for accessibility');
+        altWrap.appendChild(fieldRow('Alt text', altInput));
+        if (opts.collectAlt !== false) panelWrap.appendChild(altWrap);
+
+        function renderGrid(items) {
+          grid.innerHTML = '';
+          selectedItem = null;
+          insertBtn.disabled = true;
+          altWrap.classList.add('hidden');
+          if (!items.length) {
+            grid.innerHTML = '<p class="col-span-full text-sm text-gray-400 py-4 text-center">No media found.</p>';
+            return;
+          }
+          items.forEach(function (item) {
+            const cell = document.createElement('button');
+            cell.type = 'button';
+            cell.title = item.originalName;
+            cell.className = 'relative aspect-square rounded-lg border-2 border-transparent overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center';
+            if (item.type === 'image') {
+              const img = document.createElement('img');
+              img.src = item.url;
+              img.className = 'h-full w-full object-cover';
+              cell.appendChild(img);
+            } else {
+              const icon = document.createElement('span');
+              icon.className = 'text-2xl';
+              icon.textContent = item.type === 'video' ? '🎬' : item.type === 'audio' ? '🎵' : item.type === 'archive' ? '🗄️' : '📄';
+              cell.appendChild(icon);
+            }
+            cell.addEventListener('click', function () {
+              grid.querySelectorAll('button').forEach(function (b) { b.classList.remove('border-indigo-500'); });
+              cell.classList.add('border-indigo-500');
+              selectedItem = item;
+              insertBtn.disabled = false;
+              altWrap.classList.toggle('hidden', opts.collectAlt === false || item.type !== 'image');
+            });
+            grid.appendChild(cell);
+          });
+        }
+
+        let debounceTimer;
+        function load() {
+          const params = new URLSearchParams();
+          if (search.value.trim()) params.set('q', search.value.trim());
+          const typeVal = opts.lockType || (typeFilter ? typeFilter.value : '');
+          if (typeVal) params.set('type', typeVal);
+          fetch('/admin/medias/json?' + params.toString())
+            .then(function (res) { return res.json(); })
+            .then(renderGrid)
+            .catch(function () { grid.innerHTML = '<p class="col-span-full text-sm text-gray-400">Failed to load media.</p>'; });
+        }
+        search.addEventListener('input', function () {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(load, 250);
+        });
+        if (typeFilter) typeFilter.addEventListener('change', load);
+
+        insertBtn.onclick = function () {
+          if (!selectedItem) return;
+          opts.onConfirm(selectedItem, altInput.value);
+        };
+
+        load();
+      }
+
+      function showUpload() {
+        setActiveTab(uploadTab);
+        panelWrap.innerHTML = '';
+        insertBtn.disabled = true;
+        insertBtn.onclick = null;
+
+        const dz = document.createElement('label');
+        dz.className = 'flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 px-6 py-10 text-center cursor-pointer hover:border-indigo-400';
+        dz.innerHTML = '<span class="text-3xl">📤</span><span class="text-sm font-medium text-gray-700 dark:text-gray-300">Drop a file here or click to browse</span>';
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.hidden = true;
+        dz.appendChild(input);
+        panelWrap.appendChild(dz);
+
+        const status = document.createElement('p');
+        status.className = 'text-sm text-gray-400 mt-2';
+        panelWrap.appendChild(status);
+
+        function doUpload(file) {
+          if (!file) return;
+          status.textContent = 'Uploading ' + file.name + '...';
+          const fd = new FormData();
+          fd.append('files', file);
+          fetch('/admin/medias/upload?ajax=1', { method: 'POST', body: fd })
+            .then(function (res) {
+              if (!res.ok) throw new Error('Upload failed');
+              return res.json();
+            })
+            .then(function () {
+              status.textContent = 'Uploaded — pick it from the Media Library tab.';
+              libTab.click();
+            })
+            .catch(function (err) {
+              status.textContent = err.message || 'Upload failed.';
+            });
+        }
+
+        input.addEventListener('change', function () { doUpload(input.files[0]); });
+        ['dragover', 'dragenter'].forEach(function (evt) {
+          dz.addEventListener(evt, function (e) { e.preventDefault(); dz.classList.add('border-indigo-400'); });
+        });
+        ['dragleave', 'drop'].forEach(function (evt) {
+          dz.addEventListener(evt, function (e) { e.preventDefault(); dz.classList.remove('border-indigo-400'); });
+        });
+        dz.addEventListener('drop', function (e) {
+          if (e.dataTransfer && e.dataTransfer.files[0]) doUpload(e.dataTransfer.files[0]);
+        });
+      }
+
+      libTab.addEventListener('click', showLibrary);
+      uploadTab.addEventListener('click', showUpload);
+      showLibrary();
+    }
+
+    function openMediaPickerModal(title, opts) {
+      blockModalTitle.textContent = title;
+      blockBackBtn.classList.add('hidden');
+      blockGridStep.classList.add('hidden');
+      blockPropsStep.classList.remove('hidden');
+      blockInsertBtn.disabled = true;
+      blockInsertBtn.textContent = opts.insertLabel || 'Insert';
+      blockPropsBody.innerHTML = '';
+      renderMediaLibraryPicker(blockPropsBody, blockInsertBtn, opts);
+      blockModal.classList.remove('hidden');
+    }
+
+    // ---------------- Block Inserter ----------------
+    // "Active when cursor is on the editor": disabled until either editor
+    // — Code (Ace, here) or Visual (the iframe, see its "load" handler
+    // above) — has been focused at least once, since inserting needs a
+    // real cursor position to insert at.
+    contentEditor.on('focus', function () { addBlockBtn.disabled = false; });
+
+    const BLOCKS = [
+      { id: 'paragraph', label: 'Paragraph', icon: '¶' },
+      { id: 'heading', label: 'Heading', icon: 'H' },
+      { id: 'list', label: 'List', icon: '≡' },
+      { id: 'media', label: 'Media', icon: '🖼️' },
+      { id: 'table', label: 'Table', icon: '▦' },
+      { id: 'quote', label: 'Quote', icon: '❝' },
+      { id: 'button', label: 'Button', icon: '🔘' },
+      { id: 'code', label: 'Code', icon: '&lt;/&gt;' },
+      { id: 'divider', label: 'Divider', icon: '―' },
+    ];
+
+    let lastCursor = null;
+    let lastVisualRange = null;
+
+    // Inserts at the cursor in whichever editor is currently active. In
+    // Code mode that's Ace; in Visual mode it's the contentEditable
+    // preview, restoring the caret position captured when the modal was
+    // opened (clicking the "Add Block" button, which lives outside the
+    // iframe, doesn't clear the iframe's own Selection — it's scoped to
+    // that document, not the top-level one).
+    function insertAtCursor(html) {
+      if (editorMode === 'visual') {
+        insertIntoVisual(html);
+      } else {
+        const pos = lastCursor || contentEditor.getCursorPosition();
+        contentEditor.session.insert(pos, html);
+        contentEditor.focus();
+      }
+    }
+
+    function insertIntoVisual(html) {
+      const doc = previewIframe.contentDocument;
+      if (!doc || !doc.body) return;
+      doc.body.focus();
+      const sel = doc.getSelection();
+      sel.removeAllRanges();
+      if (lastVisualRange) {
+        try { sel.addRange(lastVisualRange); } catch (e) { /* stale range from a since-replaced document; fall through to the end-of-body fallback below */ }
+      }
+      if (!sel.rangeCount) {
+        // No prior selection to restore (e.g. a brand-new empty page) —
+        // place the insertion at the end of the content instead.
+        const range = doc.createRange();
+        range.selectNodeContents(doc.body);
+        range.collapse(false);
+        sel.addRange(range);
+      }
+      // execCommand fires a native "input" event on the contentEditable
+      // body, which the listener attached in previewIframe's "load"
+      // handler picks up to sync this back into Ace + the hidden textarea.
+      doc.execCommand('insertHTML', false, html);
+    }
+
+    function openBlockModal() {
+      if (editorMode === 'visual') {
+        const doc = previewIframe.contentDocument;
+        const sel = doc && doc.getSelection();
+        lastVisualRange = (sel && sel.rangeCount > 0) ? sel.getRangeAt(0).cloneRange() : null;
+      } else {
+        lastCursor = contentEditor.getCursorPosition();
+      }
+      blockModalTitle.textContent = 'Add a block';
+      blockBackBtn.classList.add('hidden');
+      blockGridStep.classList.remove('hidden');
+      blockPropsStep.classList.add('hidden');
+      blockInsertBtn.textContent = 'Insert';
+      blockModal.classList.remove('hidden');
+    }
+    addBlockBtn.addEventListener('click', openBlockModal);
+
+    function showGridStep() {
+      blockModalTitle.textContent = 'Add a block';
+      blockBackBtn.classList.add('hidden');
+      blockGridStep.classList.remove('hidden');
+      blockPropsStep.classList.add('hidden');
+    }
+    blockBackBtn.addEventListener('click', showGridStep);
+
+    BLOCKS.forEach(function (block) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'flex flex-col items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-gray-700 dark:text-gray-300';
+      btn.innerHTML = '<span class="text-2xl">' + block.icon + '</span><span class="text-xs font-medium">' + block.label + '</span>';
+      btn.addEventListener('click', function () {
+        if (block.id === 'divider') {
+          insertAtCursor('<hr>\n');
+          closeBlockModalFn();
+          return;
+        }
+        blockModalTitle.textContent = block.label;
+        blockBackBtn.classList.remove('hidden');
+        blockGridStep.classList.add('hidden');
+        blockPropsStep.classList.remove('hidden');
+        blockInsertBtn.disabled = true;
+        blockInsertBtn.textContent = 'Insert';
+        blockInsertBtn.onclick = null;
+        blockPropsBody.innerHTML = '';
+        renderBlockProps(block.id);
+      });
+      blockGrid.appendChild(btn);
+    });
+
     function renderBlockProps(blockId) {
       const renderers = {
         paragraph: renderParagraphProps,
@@ -767,7 +964,7 @@
         button: renderButtonProps,
         code: renderCodeProps,
         table: renderTableProps,
-        media: renderMediaProps,
+        media: renderMediaBlockProps,
       };
       (renderers[blockId] || function () {})();
     }
@@ -906,179 +1103,48 @@
       return '<a href="' + item.url + '" target="_blank" rel="noopener">' + escapeHtml(item.originalName) + '</a>\n';
     }
 
-    function renderMediaProps() {
-      let selectedItem = null;
-
-      const tabs = document.createElement('div');
-      tabs.className = 'flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-3';
-      const libTab = document.createElement('button');
-      libTab.type = 'button';
-      libTab.textContent = 'Media Library';
-      const uploadTab = document.createElement('button');
-      uploadTab.type = 'button';
-      uploadTab.textContent = 'Upload New';
-      [libTab, uploadTab].forEach(function (btn) {
-        btn.className = 'px-3 py-2 text-sm font-medium border-b-2 border-transparent text-gray-500 dark:text-gray-400';
-      });
-      tabs.appendChild(libTab);
-      tabs.appendChild(uploadTab);
-      blockPropsBody.appendChild(tabs);
-
-      const panelWrap = document.createElement('div');
-      blockPropsBody.appendChild(panelWrap);
-
-      function setActiveTab(tab) {
-        [libTab, uploadTab].forEach(function (b) { b.classList.remove('border-indigo-600', 'text-indigo-600'); });
-        tab.classList.add('border-indigo-600', 'text-indigo-600');
-      }
-
-      function showLibrary() {
-        setActiveTab(libTab);
-        panelWrap.innerHTML = '';
-        blockInsertBtn.disabled = true;
-        blockInsertBtn.onclick = null;
-
-        const controls = document.createElement('div');
-        controls.className = 'flex items-center gap-2 mb-3';
-        const search = textInputEl('', 'Search media...');
-        search.className += ' flex-1';
-        const typeFilter = selectEl([
-          { value: '', label: 'All types' },
-          { value: 'image', label: 'Images' },
-          { value: 'video', label: 'Video' },
-          { value: 'audio', label: 'Audio' },
-          { value: 'document', label: 'Documents' },
-          { value: 'archive', label: 'Archives' },
-        ], '');
-        controls.appendChild(search);
-        controls.appendChild(typeFilter);
-        panelWrap.appendChild(controls);
-
-        const grid = document.createElement('div');
-        grid.className = 'grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-64 overflow-y-auto';
-        panelWrap.appendChild(grid);
-
-        const altWrap = document.createElement('div');
-        altWrap.className = 'hidden mt-3';
-        const altInput = textInputEl('', 'Describe this image for accessibility');
-        altWrap.appendChild(fieldRow('Alt text', altInput));
-        panelWrap.appendChild(altWrap);
-
-        function renderGrid(items) {
-          grid.innerHTML = '';
-          selectedItem = null;
-          blockInsertBtn.disabled = true;
-          altWrap.classList.add('hidden');
-          if (!items.length) {
-            grid.innerHTML = '<p class="col-span-full text-sm text-gray-400 py-4 text-center">No media found.</p>';
-            return;
-          }
-          items.forEach(function (item) {
-            const cell = document.createElement('button');
-            cell.type = 'button';
-            cell.title = item.originalName;
-            cell.className = 'relative aspect-square rounded-lg border-2 border-transparent overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center';
-            if (item.type === 'image') {
-              const img = document.createElement('img');
-              img.src = item.url;
-              img.className = 'h-full w-full object-cover';
-              cell.appendChild(img);
-            } else {
-              const icon = document.createElement('span');
-              icon.className = 'text-2xl';
-              icon.textContent = item.type === 'video' ? '🎬' : item.type === 'audio' ? '🎵' : item.type === 'archive' ? '🗄️' : '📄';
-              cell.appendChild(icon);
-            }
-            cell.addEventListener('click', function () {
-              grid.querySelectorAll('button').forEach(function (b) { b.classList.remove('border-indigo-500'); });
-              cell.classList.add('border-indigo-500');
-              selectedItem = item;
-              blockInsertBtn.disabled = false;
-              altWrap.classList.toggle('hidden', item.type !== 'image');
-            });
-            grid.appendChild(cell);
-          });
-        }
-
-        let debounceTimer;
-        function load() {
-          const params = new URLSearchParams();
-          if (search.value.trim()) params.set('q', search.value.trim());
-          if (typeFilter.value) params.set('type', typeFilter.value);
-          fetch('/admin/medias/json?' + params.toString())
-            .then(function (res) { return res.json(); })
-            .then(renderGrid)
-            .catch(function () { grid.innerHTML = '<p class="col-span-full text-sm text-gray-400">Failed to load media.</p>'; });
-        }
-        search.addEventListener('input', function () {
-          clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(load, 250);
-        });
-        typeFilter.addEventListener('change', load);
-
-        blockInsertBtn.onclick = function () {
-          if (!selectedItem) return;
-          insertAtCursor(mediaTagFor(selectedItem, altInput.value));
+    function renderMediaBlockProps() {
+      renderMediaLibraryPicker(blockPropsBody, blockInsertBtn, {
+        collectAlt: true,
+        onConfirm: function (item, alt) {
+          insertAtCursor(mediaTagFor(item, alt));
           closeBlockModalFn();
-        };
-
-        load();
-      }
-
-      function showUpload() {
-        setActiveTab(uploadTab);
-        panelWrap.innerHTML = '';
-        blockInsertBtn.disabled = true;
-        blockInsertBtn.onclick = null;
-
-        const dz = document.createElement('label');
-        dz.className = 'flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 px-6 py-10 text-center cursor-pointer hover:border-indigo-400';
-        dz.innerHTML = '<span class="text-3xl">📤</span><span class="text-sm font-medium text-gray-700 dark:text-gray-300">Drop a file here or click to browse</span>';
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.hidden = true;
-        dz.appendChild(input);
-        panelWrap.appendChild(dz);
-
-        const status = document.createElement('p');
-        status.className = 'text-sm text-gray-400 mt-2';
-        panelWrap.appendChild(status);
-
-        function doUpload(file) {
-          if (!file) return;
-          status.textContent = 'Uploading ' + file.name + '...';
-          const fd = new FormData();
-          fd.append('files', file);
-          fetch('/admin/medias/upload?ajax=1', { method: 'POST', body: fd })
-            .then(function (res) {
-              if (!res.ok) throw new Error('Upload failed');
-              return res.json();
-            })
-            .then(function () {
-              status.textContent = 'Uploaded — pick it from the Media Library tab.';
-              libTab.click();
-            })
-            .catch(function (err) {
-              status.textContent = err.message || 'Upload failed.';
-            });
-        }
-
-        input.addEventListener('change', function () { doUpload(input.files[0]); });
-        ['dragover', 'dragenter'].forEach(function (evt) {
-          dz.addEventListener(evt, function (e) { e.preventDefault(); dz.classList.add('border-indigo-400'); });
-        });
-        ['dragleave', 'drop'].forEach(function (evt) {
-          dz.addEventListener(evt, function (e) { e.preventDefault(); dz.classList.remove('border-indigo-400'); });
-        });
-        dz.addEventListener('drop', function (e) {
-          if (e.dataTransfer && e.dataTransfer.files[0]) doUpload(e.dataTransfer.files[0]);
-        });
-      }
-
-      libTab.addEventListener('click', showLibrary);
-      uploadTab.addEventListener('click', showUpload);
-      showLibrary();
+        },
+      });
     }
+
+    // ---------------- Featured Image card ----------------
+    const featuredImageIdInput = document.getElementById('featured_image_id');
+    const featuredImagePreview = document.getElementById('featuredImagePreview');
+    const featuredImagePreviewImg = document.getElementById('featuredImagePreviewImg');
+    const featuredImageEmpty = document.getElementById('featuredImageEmpty');
+    const setFeaturedImageBtn = document.getElementById('setFeaturedImageBtn');
+    const removeFeaturedImageBtn = document.getElementById('removeFeaturedImageBtn');
+
+    setFeaturedImageBtn.addEventListener('click', function () {
+      openMediaPickerModal('Set Featured Image', {
+        lockType: 'image',
+        collectAlt: false,
+        insertLabel: 'Use this image',
+        onConfirm: function (item) {
+          featuredImageIdInput.value = item.id;
+          featuredImagePreviewImg.src = item.url;
+          featuredImagePreview.classList.remove('hidden');
+          featuredImageEmpty.classList.add('hidden');
+          setFeaturedImageBtn.textContent = 'Change image';
+          removeFeaturedImageBtn.classList.remove('hidden');
+          closeBlockModalFn();
+        },
+      });
+    });
+
+    removeFeaturedImageBtn.addEventListener('click', function () {
+      featuredImageIdInput.value = '';
+      featuredImagePreview.classList.add('hidden');
+      featuredImageEmpty.classList.remove('hidden');
+      setFeaturedImageBtn.textContent = 'Set featured image';
+      removeFeaturedImageBtn.classList.add('hidden');
+    });
 
   })();
 </script>

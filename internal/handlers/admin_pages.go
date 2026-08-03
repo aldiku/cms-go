@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -106,6 +107,26 @@ func bindPageFromForm(c echo.Context, page *models.Page) {
 		}
 	}
 
+	if featuredIDStr := c.FormValue("featured_image_id"); featuredIDStr != "" {
+		if featuredID, err := strconv.ParseUint(featuredIDStr, 10, 64); err == nil {
+			page.FeaturedImageID = uint(featuredID)
+		}
+	} else {
+		page.FeaturedImageID = 0 // blank = explicitly cleared via the Featured Image card
+	}
+
+	if publishedAtStr := c.FormValue("published_at"); publishedAtStr != "" {
+		// <input type="datetime-local"> carries no timezone — it's a "wall
+		// clock" value the user typed, meant as local time, not UTC.
+		if t, err := time.ParseInLocation("2006-01-02T15:04", publishedAtStr, time.Local); err == nil {
+			page.PublishedAt = &t
+		}
+	}
+	if page.Status == models.PageStatusPublish && page.PublishedAt == nil {
+		now := time.Now()
+		page.PublishedAt = &now
+	}
+
 	page.MetaTitle = c.FormValue("meta_title")
 	page.MetaDescription = c.FormValue("meta_description")
 	page.CanonicalURL = c.FormValue("canonical_url")
@@ -199,7 +220,7 @@ func AdminPageEditor(c echo.Context) error {
 	id := c.Param("id")
 	if id != "" {
 		// Editing existing page
-		db.DB.Preload("Author").Preload("Categories").Preload("Tags").First(&page, id)
+		db.DB.Preload("Author").Preload("Categories").Preload("Tags").Preload("FeaturedImage").First(&page, id)
 	}
 
 	db.DB.Find(&layouts)

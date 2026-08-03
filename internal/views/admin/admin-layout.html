@@ -127,24 +127,24 @@
               {{ range .NavMenus }}
               <li>
                 {{ if .Children }}
-                <div class="nav-group">
-                  <button type="button" @click="toggleSubmenu($el)"
+                <div class="nav-group" x-data="{ open: {{ .Active }} }">
+                  <button type="button" @click="open = !open"
                     class="menu-item group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium cursor-pointer select-none dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
-                    :class="selected === '{{ .Menu.Menu }}' || {{ .Active }} ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400' : 'text-gray-700 hover:bg-gray-100'">
+                    :class="open ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400' : 'text-gray-700 hover:bg-gray-100'">
                     <div class="flex items-center gap-3">
                       {{ if .Menu.Icon }}<span class="text-base w-5 text-center shrink-0">{{ .Menu.Icon }}</span>{{ end
                       }}
                       <span :class="sidebarToggle ? 'lg:hidden' : ''" class="sidebar-text">{{ .Menu.Menu }}</span>
                     </div>
                     <svg
-                      :class="[(selected === '{{ .Menu.Menu }}' || {{ .Active }}) ? 'rotate-180' : '', sidebarToggle ? 'lg:hidden' : '']"
+                      :class="[open ? 'rotate-180' : '', sidebarToggle ? 'lg:hidden' : '']"
                       class="sidebar-arrow w-4 h-4 transition-transform duration-200" viewBox="0 0 20 20" fill="none"
                       xmlns="http://www.w3.org/2000/svg">
                       <path d="M4.79175 7.39584L10.0001 12.6042L15.2084 7.39585" stroke="currentColor"
                         stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                   </button>
-                  <div :class="(selected === '{{ .Menu.Menu }}' || {{ .Active }}) ? 'block' : 'hidden'"
+                  <div :class="open ? 'block' : 'hidden'"
                     class="translate transform overflow-hidden">
                     <ul :class="sidebarToggle ? 'lg:hidden' : 'flex'"
                       class="sidebar-dropdown mt-2 flex flex-col gap-1 pl-9">
@@ -456,17 +456,6 @@
   </div>
 
   <script>
-    function toggleSubmenu(el) {
-      var container = el.closest('.nav-group');
-      var submenu = container?.querySelector('.translate');
-      var arrow = el.querySelector('.sidebar-arrow');
-      if (submenu && arrow) {
-        submenu.classList.toggle('block');
-        submenu.classList.toggle('hidden');
-        arrow.classList.toggle('rotate-180');
-      }
-    }
-    
     function menuToggle(el) {
       console.log(el)
     }

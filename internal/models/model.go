@@ -27,11 +27,14 @@ type Page struct {
 	UpdatedAt time.Time
 
 	// WordPress-style authoring metadata
-	AuthorID   uint
-	Author     User       `gorm:"foreignKey:AuthorID"`
-	Status     string     // "draft" | "pending" | "publish"
-	Categories []Category `gorm:"many2many:page_categories;"` // "post" type only, WP-style
-	Tags       []Tag      `gorm:"many2many:page_tags;"`       // "post" type only, WP-style
+	AuthorID        uint
+	Author          User       `gorm:"foreignKey:AuthorID"`
+	Status          string     // "draft" | "pending" | "publish"
+	PublishedAt     *time.Time // set automatically on first transition to "publish"; editable afterward
+	Categories      []Category `gorm:"many2many:page_categories;"` // "post" type only, WP-style
+	Tags            []Tag      `gorm:"many2many:page_tags;"`       // "post" type only, WP-style
+	FeaturedImageID uint
+	FeaturedImage   Media `gorm:"foreignKey:FeaturedImageID"`
 
 	// SEO
 	MetaTitle          string // overrides <title> / og:title / twitter:title if set
