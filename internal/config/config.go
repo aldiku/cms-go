@@ -48,3 +48,11 @@ func APIBasePath() string {
 	}
 	return strings.TrimRight(p, "/")
 }
+
+// AppKey returns the passphrase used to encrypt sensitive settings at rest
+// (currently: SMTP config passwords — see utils.SimpleEncrypt/SimpleDecrypt).
+// Empty means encryption still "works" but with a guessable key, so callers
+// should treat empty as a misconfiguration, not silently proceed.
+func AppKey() string {
+	return os.Getenv("APP_KEY")
+}

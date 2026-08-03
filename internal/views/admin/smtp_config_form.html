@@ -1,0 +1,125 @@
+{{ define "content" }}
+<div class="max-w-2xl mx-auto space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">{{if .Config.ID}}Edit SMTP Config: {{.Config.Name}}{{else}}Create New SMTP Config{{end}}</h2>
+    <a href="/admin/smtp" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">&larr; Back to SMTP Configs</a>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="p-5 sm:p-6">
+      <form method="POST" action="{{if .Config.ID}}/admin/smtp/{{.Config.ID}}/edit{{else}}/admin/smtp/new{{end}}" class="space-y-6">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="name" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Name</label>
+            <input type="text" id="name" name="name" required value="{{.Config.Name}}" placeholder="e.g. Primary Gmail"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <div>
+            <label for="encryption" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Encryption</label>
+            <select id="encryption" name="encryption"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              <option value="tls" {{if eq .Config.Encryption "tls"}}selected{{end}}>TLS (STARTTLS, e.g. port 587)</option>
+              <option value="ssl" {{if eq .Config.Encryption "ssl"}}selected{{end}}>SSL (implicit TLS, e.g. port 465)</option>
+              <option value="none" {{if eq .Config.Encryption "none"}}selected{{end}}>None</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="sm:col-span-2">
+            <label for="host" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Host</label>
+            <input type="text" id="host" name="host" required value="{{.Config.Host}}" placeholder="smtp.example.com"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 font-mono placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <div>
+            <label for="port" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Port</label>
+            <input type="number" id="port" name="port" value="{{if .Config.Port}}{{.Config.Port}}{{else}}587{{end}}"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="username" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Username</label>
+            <input type="text" id="username" name="username" value="{{.Config.Username}}" autocomplete="off"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <div>
+            <label for="password" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Password</label>
+            <input type="password" id="password" name="password" autocomplete="new-password"
+              placeholder="{{if .Config.ID}}Leave blank to keep the current password{{end}}"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <div>
+            <label for="from_email" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">From Email</label>
+            <input type="email" id="from_email" name="from_email" required value="{{.Config.FromEmail}}" placeholder="no-reply@example.com"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <div>
+            <label for="from_name" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">From Name</label>
+            <input type="text" id="from_name" name="from_name" value="{{.Config.FromName}}" placeholder="My Site"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <a href="/admin/smtp" class="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</a>
+          <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
+            <svg class="fill-current" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
+            </svg>
+            Save
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  {{ if .Config.ID }}
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-5 sm:p-6 space-y-3">
+    <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Send a test email</h3>
+    <p class="text-sm text-gray-500 dark:text-gray-400">Sends a plain test message through this saved configuration, so you can confirm it actually connects and authenticates.</p>
+    <div class="flex flex-col sm:flex-row gap-3">
+      <input type="email" id="testTo" placeholder="you@example.com"
+        class="h-11 flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+      <button type="button" id="sendTestBtn"
+        class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Send Test</button>
+    </div>
+    <p id="testResult" class="text-sm"></p>
+  </div>
+  <script>
+    (function () {
+      const btn = document.getElementById('sendTestBtn');
+      const result = document.getElementById('testResult');
+      btn.addEventListener('click', function () {
+        const to = document.getElementById('testTo').value.trim();
+        if (!to) { result.textContent = 'Enter a recipient address first.'; result.className = 'text-sm text-red-500'; return; }
+        btn.disabled = true;
+        result.textContent = 'Sending…';
+        result.className = 'text-sm text-gray-400';
+        const fd = new FormData();
+        fd.append('to', to);
+        fetch('/admin/smtp/{{.Config.ID}}/test', { method: 'POST', body: fd })
+          .then(function (res) { return res.text().then(function (text) { return { ok: res.ok, text: text }; }); })
+          .then(function (r) {
+            result.textContent = r.text;
+            result.className = 'text-sm ' + (r.ok ? 'text-green-600' : 'text-red-500');
+          })
+          .catch(function () {
+            result.textContent = 'Request failed.';
+            result.className = 'text-sm text-red-500';
+          })
+          .finally(function () { btn.disabled = false; });
+      });
+    })();
+  </script>
+  {{ end }}
+
+</div>
+{{ end }}

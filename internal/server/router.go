@@ -69,7 +69,7 @@ func New() *echo.Echo {
 		&models.Page{}, &models.Layout{}, &models.Menu{}, &models.Component{},
 		&models.User{}, &models.Role{}, &models.Permission{}, &models.Session{},
 		&models.Revision{}, &models.ApiEndpoint{}, &models.Category{}, &models.Tag{},
-		&models.Media{},
+		&models.Media{}, &models.SMTPConfig{}, &models.EmailTemplate{}, &models.NotificationHook{},
 	)
 	auth.SeedAuth()
 	migratePageDefaults()
@@ -150,6 +150,33 @@ func New() *echo.Echo {
 	admin.GET("/medias/json", handlers.AdminMediasJSON)
 	admin.POST("/medias/upload", handlers.AdminMediaUpload, middleware.BodyLimit("50M"))
 	admin.POST("/medias/:id/delete", handlers.AdminDeleteMedia)
+
+	// Email SMTP (Settings > Email SMTP)
+	admin.GET("/smtp", handlers.AdminSMTPConfigs)
+	admin.GET("/smtp/new", handlers.AdminSMTPConfigForm)
+	admin.POST("/smtp/new", handlers.AdminCreateSMTPConfig)
+	admin.GET("/smtp/:id/edit", handlers.AdminSMTPConfigForm)
+	admin.POST("/smtp/:id/edit", handlers.AdminUpdateSMTPConfig)
+	admin.POST("/smtp/:id/delete", handlers.AdminDeleteSMTPConfig)
+	admin.POST("/smtp/:id/test", handlers.AdminTestSMTPConfig)
+
+	// Email Templates
+	admin.GET("/email-templates", handlers.AdminEmailTemplates)
+	admin.GET("/email-templates/new", handlers.AdminEmailTemplateForm)
+	admin.POST("/email-templates/new", handlers.AdminCreateEmailTemplate)
+	admin.GET("/email-templates/:id/edit", handlers.AdminEmailTemplateForm)
+	admin.POST("/email-templates/:id/edit", handlers.AdminUpdateEmailTemplate)
+	admin.POST("/email-templates/:id/delete", handlers.AdminDeleteEmailTemplate)
+
+	// Notification Manager — binds a hook (see internal/notify.Registry) to
+	// an SMTP config + email template + field mapping
+	admin.GET("/notification-hooks", handlers.AdminNotificationHooks)
+	admin.GET("/notification-hooks/new", handlers.AdminNotificationHookForm)
+	admin.POST("/notification-hooks/new", handlers.AdminCreateNotificationHook)
+	admin.GET("/notification-hooks/:id/edit", handlers.AdminNotificationHookForm)
+	admin.POST("/notification-hooks/:id/edit", handlers.AdminUpdateNotificationHook)
+	admin.POST("/notification-hooks/:id/delete", handlers.AdminDeleteNotificationHook)
+	admin.POST("/notification-hooks/:id/test", handlers.AdminTestNotificationHook)
 
 	// Layouts
 	admin.GET("/layouts", handlers.AdminLayouts)

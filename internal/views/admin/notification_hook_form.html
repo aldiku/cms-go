@@ -1,0 +1,202 @@
+{{ define "content" }}
+<div class="max-w-3xl mx-auto space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">{{if .Hook.ID}}Edit Notification: {{.Hook.Name}}{{else}}Create New Notification{{end}}</h2>
+    <a href="/admin/notification-hooks" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">&larr; Back to Notification Manager</a>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="p-5 sm:p-6">
+      <form method="POST" action="{{if .Hook.ID}}/admin/notification-hooks/{{.Hook.ID}}/edit{{else}}/admin/notification-hooks/new{{end}}" id="hookForm" class="space-y-6">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="name" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Label</label>
+            <input type="text" id="name" name="name" value="{{.Hook.Name}}" placeholder="e.g. Send welcome email"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <div>
+            <label for="hook_key" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Hook</label>
+            <select id="hook_key" name="hook_key" required
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              <!-- options populated client-side from HOOKS (see bottom script) so the registry has one source of truth -->
+            </select>
+            <p id="hookDescription" class="text-xs text-gray-400 dark:text-gray-500 mt-1"></p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="smtp_config_id" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">SMTP Config</label>
+            <select id="smtp_config_id" name="smtp_config_id" required
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              <option value="">— Select —</option>
+              {{ range .SMTPConfigs }}
+              <option value="{{ .ID }}" {{if eq $.Hook.SMTPConfigID .ID}}selected{{end}}>{{ .Name }}</option>
+              {{ end }}
+            </select>
+            {{ if not .SMTPConfigs }}<p class="text-xs text-amber-500 mt-1">No SMTP configs yet. <a href="/admin/smtp/new" class="underline">Create one</a>.</p>{{ end }}
+          </div>
+          <div>
+            <label for="email_template_id" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Email Template</label>
+            <select id="email_template_id" name="email_template_id" required
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              <option value="">— Select —</option>
+              {{ range .Templates }}
+              <option value="{{ .ID }}" {{if eq $.Hook.EmailTemplateID .ID}}selected{{end}}>{{ .Name }}</option>
+              {{ end }}
+            </select>
+            {{ if not .Templates }}<p class="text-xs text-amber-500 mt-1">No email templates yet. <a href="/admin/email-templates/new" class="underline">Create one</a>.</p>{{ end }}
+          </div>
+        </div>
+
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="status" {{if eq .Hook.Status 1}}checked{{end}} {{if not .Hook.ID}}checked{{end}}
+            class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-gray-400">Active</span>
+        </label>
+
+        <div class="border-t border-gray-100 dark:border-gray-800 pt-4">
+          <h3 class="text-sm font-semibold text-gray-800 dark:text-white/90 mb-1">Parameter mapping</h3>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mb-3">For each placeholder the selected template declares, pick which field of the selected hook supplies its value.</p>
+          <div id="mappingRows" class="space-y-3"></div>
+          <p id="mappingEmpty" class="hidden text-sm text-gray-400 dark:text-gray-500 py-2">Select a hook and an email template above to map parameters.</p>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <a href="/admin/notification-hooks" class="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</a>
+          <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
+            <svg class="fill-current" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
+            </svg>
+            Save
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  {{ if .Hook.ID }}
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-5 sm:p-6 space-y-3">
+    <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Send a test notification</h3>
+    <p class="text-sm text-gray-500 dark:text-gray-400">Renders the mapped template with sample field values and sends it through the mapped SMTP config, so you can verify the whole pipeline without waiting for the real hook to fire.</p>
+    <div class="flex flex-col sm:flex-row gap-3">
+      <input type="email" id="testTo" placeholder="you@example.com"
+        class="h-11 flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+      <button type="button" id="sendTestBtn"
+        class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Send Test</button>
+    </div>
+    <p id="testResult" class="text-sm"></p>
+  </div>
+  <script>
+    (function () {
+      const btn = document.getElementById('sendTestBtn');
+      const result = document.getElementById('testResult');
+      btn.addEventListener('click', function () {
+        const to = document.getElementById('testTo').value.trim();
+        if (!to) { result.textContent = 'Enter a recipient address first.'; result.className = 'text-sm text-red-500'; return; }
+        btn.disabled = true;
+        result.textContent = 'Sending…';
+        result.className = 'text-sm text-gray-400';
+        const fd = new FormData();
+        fd.append('to', to);
+        fetch('/admin/notification-hooks/{{.Hook.ID}}/test', { method: 'POST', body: fd })
+          .then(function (res) { return res.text().then(function (text) { return { ok: res.ok, text: text }; }); })
+          .then(function (r) {
+            result.textContent = r.text;
+            result.className = 'text-sm ' + (r.ok ? 'text-green-600' : 'text-red-500');
+          })
+          .catch(function () {
+            result.textContent = 'Request failed.';
+            result.className = 'text-sm text-red-500';
+          })
+          .finally(function () { btn.disabled = false; });
+      });
+    })();
+  </script>
+  {{ end }}
+
+</div>
+
+<script>
+  (function () {
+    const HOOKS = {{ .RegistryJSON }};
+    const TEMPLATE_PARAMS = {{ .TemplateParamsJSON }};
+    const EXISTING_MAPPING = {{ .MappingJSON }};
+    const CURRENT_HOOK_KEY = {{ if .Hook.ID }}"{{ .Hook.HookKey }}"{{ else }}""{{ end }};
+
+    const hookSelect = document.getElementById('hook_key');
+    const templateSelect = document.getElementById('email_template_id');
+    const hookDescription = document.getElementById('hookDescription');
+    const mappingRows = document.getElementById('mappingRows');
+    const mappingEmpty = document.getElementById('mappingEmpty');
+    const fieldClass = 'h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none';
+
+    // Populate the Hook <select> from the registry (kept out of the Go
+    // template so the option list and the HOOKS JS object can never drift
+    // apart) and preselect the current value on edit.
+    HOOKS.forEach(function (h) {
+      const opt = document.createElement('option');
+      opt.value = h.Key;
+      opt.textContent = h.Label + ' (' + h.Key + ')';
+      if (h.Key === CURRENT_HOOK_KEY) opt.selected = true;
+      hookSelect.appendChild(opt);
+    });
+
+    function hookByKey(key) {
+      return HOOKS.find(function (h) { return h.Key === key; });
+    }
+
+    function updateHookDescription() {
+      const h = hookByKey(hookSelect.value);
+      hookDescription.textContent = h ? h.Description : '';
+    }
+
+    function rebuildMappingRows() {
+      const params = TEMPLATE_PARAMS[templateSelect.value] || [];
+      const hook = hookByKey(hookSelect.value);
+      const fields = (hook && hook.Fields) || [];
+
+      mappingRows.innerHTML = '';
+      mappingEmpty.classList.toggle('hidden', params.length > 0 && fields.length > 0);
+      if (!params.length || !fields.length) return;
+
+      params.forEach(function (p) {
+        const row = document.createElement('div');
+        row.className = 'grid grid-cols-1 sm:grid-cols-2 gap-3 items-center rounded-lg border border-gray-100 dark:border-gray-800 p-3';
+
+        const label = document.createElement('div');
+        label.innerHTML = '<code class="text-sm font-mono text-gray-700 dark:text-gray-300">{' + '{' + p.Key + '}' + '}</code>' +
+          (p.Description ? '<p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">' + p.Description + '</p>' : '');
+
+        const select = document.createElement('select');
+        select.name = 'mapping__' + p.Key;
+        select.className = fieldClass;
+        const noneOpt = document.createElement('option');
+        noneOpt.value = '';
+        noneOpt.textContent = '— Not mapped —';
+        select.appendChild(noneOpt);
+        fields.forEach(function (f) {
+          const opt = document.createElement('option');
+          opt.value = f.Key;
+          opt.textContent = f.Key + (f.Description ? ' — ' + f.Description : '');
+          if (EXISTING_MAPPING[p.Key] === f.Key) opt.selected = true;
+          select.appendChild(opt);
+        });
+
+        row.appendChild(label);
+        row.appendChild(select);
+        mappingRows.appendChild(row);
+      });
+    }
+
+    hookSelect.addEventListener('change', function () { updateHookDescription(); rebuildMappingRows(); });
+    templateSelect.addEventListener('change', rebuildMappingRows);
+
+    updateHookDescription();
+    rebuildMappingRows();
+  })();
+</script>
+{{ end }}

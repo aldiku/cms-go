@@ -1,0 +1,56 @@
+{{ define "content" }}
+<div class="space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Email Templates</h2>
+    <a href="/admin/email-templates/new" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
+      <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
+      </svg>
+      + New Email Template
+    </a>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="px-5 py-4 sm:px-6 sm:py-5">
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">All Templates</h3>
+    </div>
+    <div class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
+      <div class="w-full overflow-x-auto">
+        <table class="min-w-full">
+          <thead>
+            <tr class="border-y border-gray-100 dark:border-gray-800">
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Name</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Subject</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Description</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Action</p></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            {{ range .Templates }}
+            <tr>
+              <td class="py-4 text-sm font-medium text-gray-800 dark:text-white/90">{{ .Name }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .Subject }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ if .Description }}{{ .Description }}{{ else }}&mdash;{{ end }}</td>
+              <td class="py-4 text-sm">
+                <div class="flex items-center gap-3">
+                  <a href="/admin/email-templates/{{ .ID }}/edit" class="text-indigo-600 hover:text-indigo-800 font-medium">Edit</a>
+                  <form method="POST" action="/admin/email-templates/{{ .ID }}/delete" onsubmit="return confirm('Delete this email template?');">
+                    <button type="submit" class="text-red-500 hover:text-red-700 font-medium">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {{ else }}
+            <tr>
+              <td colspan="4" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No email templates found.</td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}

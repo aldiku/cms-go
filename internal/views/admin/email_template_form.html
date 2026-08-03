@@ -1,0 +1,228 @@
+{{ define "content" }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js"></script>
+
+<div class="mx-auto space-y-4">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">{{if .Template.ID}}Edit Email Template: {{.Template.Name}}{{else}}Create New Email Template{{end}}</h2>
+    <a href="/admin/email-templates" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">&larr; Back to Email Templates</a>
+  </div>
+
+  <form method="POST" action="{{if .Template.ID}}/admin/email-templates/{{.Template.ID}}/edit{{else}}/admin/email-templates/new{{end}}" id="templateForm" class="space-y-4">
+
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-5 sm:p-6 space-y-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label for="name" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Email Name</label>
+          <input type="text" id="name" name="name" required value="{{.Template.Name}}" placeholder="e.g. Welcome Email"
+            class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+        </div>
+        <div>
+          <label for="subject" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Subject</label>
+          <input type="text" id="subject" name="subject" required value="{{.Template.Subject}}" placeholder="e.g. Welcome to {{"{{"}}site_name{{"}}"}}!"
+            class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 font-mono placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+        </div>
+      </div>
+      <div>
+        <label for="description" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Description</label>
+        <textarea id="description" name="description" rows="2" placeholder="What this template is used for"
+          class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">{{.Template.Description}}</textarea>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-5 sm:p-6 space-y-3">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-semibold text-gray-800 dark:text-white/90">Parameters</h3>
+          <p class="text-xs text-gray-400 dark:text-gray-500">Placeholders this template's body can use, written as <code>{{"{{"}}key{{"}}"}}</code>. Notification Manager maps each one to a hook's data field at send time.</p>
+        </div>
+        <button type="button" id="addParamBtn" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+          <span class="text-base leading-none">+</span> Add Parameter
+        </button>
+      </div>
+      <div id="paramsContainer" class="space-y-2">
+        {{ range .Parameters }}
+        <div class="flex gap-2 items-start param-row">
+          <input type="text" name="param_key[]" value="{{ .Key }}" placeholder="key"
+            class="h-10 w-1/3 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 font-mono placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          <input type="text" name="param_description[]" value="{{ .Description }}" placeholder="Description"
+            class="h-10 flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          <button type="button" class="remove-param-btn shrink-0 h-10 w-10 flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 text-red-500 hover:bg-gray-50 dark:hover:bg-gray-800">&#10005;</button>
+        </div>
+        {{ end }}
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 flex flex-col" style="min-height: 55vh;">
+      <div class="flex flex-wrap items-center justify-between gap-2 px-5 py-3 border-b border-gray-100 dark:border-gray-800 shrink-0">
+        <h3 class="text-sm font-semibold text-gray-800 dark:text-white/90">Body</h3>
+        <div class="relative" id="placeholderDropdownWrap">
+          <button type="button" id="insertPlaceholderBtn"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+            Insert Placeholder <span class="text-xs">&#9662;</span>
+          </button>
+          <div id="placeholderDropdown" class="hidden absolute right-0 mt-1 w-64 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg z-10 py-1 max-h-64 overflow-y-auto"></div>
+        </div>
+      </div>
+      <div class="flex-1 p-3 min-h-0 flex flex-col md:flex-row gap-3">
+        <div class="flex-1 min-h-0 flex flex-col">
+          <textarea id="body" name="body" hidden>{{.Template.Body}}</textarea>
+          <div id="bodyEditor" class="relative flex-1 min-h-0 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden">
+            <div id="bodyAceContainer" class="absolute inset-0"></div>
+          </div>
+        </div>
+        <div class="flex-1 min-h-0 flex flex-col">
+          <span class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Preview (placeholders highlighted)</span>
+          <div class="relative flex-1 min-h-0 border border-gray-300 dark:border-gray-700 rounded-lg shadow-sm overflow-hidden">
+            <iframe id="bodyPreview" class="absolute inset-0 w-full h-full border-0" title="Body preview"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-end pt-1">
+      <button type="submit"
+        class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
+        <svg class="fill-current" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
+        </svg>
+        Save
+      </button>
+    </div>
+
+  </form>
+</div>
+
+<script>
+  (function () {
+    const paramsContainer = document.getElementById('paramsContainer');
+    const addParamBtn = document.getElementById('addParamBtn');
+
+    function wireRemoveBtn(row) {
+      row.querySelector('.remove-param-btn').addEventListener('click', function () { row.remove(); });
+    }
+    paramsContainer.querySelectorAll('.param-row').forEach(wireRemoveBtn);
+
+    addParamBtn.addEventListener('click', function () {
+      const row = document.createElement('div');
+      row.className = 'flex gap-2 items-start param-row';
+
+      const keyInput = document.createElement('input');
+      keyInput.type = 'text';
+      keyInput.name = 'param_key[]';
+      keyInput.placeholder = 'key';
+      keyInput.className = 'h-10 w-1/3 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 font-mono placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none';
+
+      const descInput = document.createElement('input');
+      descInput.type = 'text';
+      descInput.name = 'param_description[]';
+      descInput.placeholder = 'Description';
+      descInput.className = 'h-10 flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none';
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'remove-param-btn shrink-0 h-10 w-10 flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 text-red-500 hover:bg-gray-50 dark:hover:bg-gray-800';
+      removeBtn.innerHTML = '&#10005;';
+
+      row.appendChild(keyInput);
+      row.appendChild(descInput);
+      row.appendChild(removeBtn);
+      paramsContainer.appendChild(row);
+      wireRemoveBtn(row);
+      keyInput.focus();
+    });
+
+    // ---------------- Body editor: Ace + live preview + placeholder insert ----------------
+    const bodyTextarea = document.getElementById('body');
+    const bodyEditor = ace.edit('bodyAceContainer');
+    bodyEditor.setTheme('ace/theme/github');
+    bodyEditor.session.setMode('ace/mode/html');
+    bodyEditor.setOption('wrap', true);
+    bodyEditor.setValue((bodyTextarea.value || '').trim(), -1);
+
+    const preview = document.getElementById('bodyPreview');
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    function updatePreview() {
+      const raw = bodyEditor.getValue();
+      // Render as literal HTML, but visually flag placeholder tokens (double-
+      // curly-brace syntax) — this only rewrites text that looks like one,
+      // leaving real tags alone.
+      const highlighted = raw.replace(/\{\{\s*[a-zA-Z0-9_]+\s*\}\}/g, function (m) {
+        return '<mark style="background:#fde68a;color:#78350f;border-radius:3px;padding:0 2px;">' + escapeHtml(m) + '</mark>';
+      });
+      preview.srcdoc = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+        '<style>body{padding:1rem;font-family:system-ui,sans-serif;}</style></head>' +
+        '<body>' + highlighted + '</body></html>';
+    }
+
+    bodyEditor.session.on('change', function () {
+      bodyTextarea.value = bodyEditor.getValue();
+      updatePreview();
+    });
+    updatePreview();
+    window.addEventListener('resize', function () { bodyEditor.resize(); });
+    setTimeout(function () { bodyEditor.resize(); }, 50);
+
+    document.getElementById('templateForm').addEventListener('submit', function () {
+      bodyTextarea.value = bodyEditor.getValue().trim();
+    });
+
+    // ---------------- Insert Placeholder dropdown ----------------
+    const insertBtn = document.getElementById('insertPlaceholderBtn');
+    const dropdown = document.getElementById('placeholderDropdown');
+    // Built from concatenation, not a literal double-brace string: this file
+    // is itself a Go html/template, which scans for "{{"/"}}" delimiters
+    // everywhere, including inside <script> — a literal occurrence here
+    // would be parsed as a (broken) template action, not JS text.
+    const PH_OPEN = '{' + '{';
+    const PH_CLOSE = '}' + '}';
+
+    function currentParamKeys() {
+      return Array.from(paramsContainer.querySelectorAll('input[name="param_key[]"]'))
+        .map(function (i) { return i.value.trim(); })
+        .filter(Boolean);
+    }
+
+    function openDropdown() {
+      const keys = currentParamKeys();
+      dropdown.innerHTML = '';
+      if (!keys.length) {
+        const empty = document.createElement('p');
+        empty.className = 'px-3 py-2 text-sm text-gray-400';
+        empty.textContent = 'Add a parameter first.';
+        dropdown.appendChild(empty);
+      } else {
+        keys.forEach(function (key) {
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.className = 'block w-full text-left px-3 py-2 text-sm font-mono text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800';
+          item.textContent = PH_OPEN + key + PH_CLOSE;
+          item.addEventListener('click', function () {
+            bodyEditor.session.insert(bodyEditor.getCursorPosition(), PH_OPEN + key + PH_CLOSE);
+            bodyEditor.focus();
+            dropdown.classList.add('hidden');
+          });
+          dropdown.appendChild(item);
+        });
+      }
+      dropdown.classList.remove('hidden');
+    }
+
+    insertBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (dropdown.classList.contains('hidden')) openDropdown();
+      else dropdown.classList.add('hidden');
+    });
+    document.addEventListener('click', function (e) {
+      if (!dropdown.contains(e.target) && e.target !== insertBtn) dropdown.classList.add('hidden');
+    });
+  })();
+</script>
+{{ end }}

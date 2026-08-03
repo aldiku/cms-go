@@ -149,7 +149,37 @@ func SeedAuth() {
 	}
 	db.DB.Where("path = ?", mediasMenu.Path).FirstOrCreate(&mediasMenu, mediasMenu)
 
+	// "Settings" is a pure grouping menu (no route of its own, Path "#"),
+	// matched by name rather than path since "#" isn't unique — the
+	// existing "ACL" group already uses it too.
+	settingsMenu := models.Menu{
+		Menu: "Settings", Path: "#", Icon: "⚙️",
+		MenuType: "module", Status: 1, ListOrder: 14,
+	}
+	db.DB.Where("menu = ?", settingsMenu.Menu).FirstOrCreate(&settingsMenu, settingsMenu)
+
+	smtpMenu := models.Menu{
+		Menu: "Email SMTP", Path: "/admin/smtp", Icon: "📧",
+		MenuType: "module", Status: 1, ListOrder: 1, ParentID: settingsMenu.ID,
+	}
+	db.DB.Where("path = ?", smtpMenu.Path).FirstOrCreate(&smtpMenu, smtpMenu)
+
+	emailTemplateMenu := models.Menu{
+		Menu: "Email Template", Path: "/admin/email-templates", Icon: "✉️",
+		MenuType: "module", Status: 1, ListOrder: 15,
+	}
+	db.DB.Where("path = ?", emailTemplateMenu.Path).FirstOrCreate(&emailTemplateMenu, emailTemplateMenu)
+
+	notificationManagerMenu := models.Menu{
+		Menu: "Notification Manager", Path: "/admin/notification-hooks", Icon: "🔔",
+		MenuType: "module", Status: 1, ListOrder: 16,
+	}
+	db.DB.Where("path = ?", notificationManagerMenu.Path).FirstOrCreate(&notificationManagerMenu, notificationManagerMenu)
+
 	if os.Getenv("API_KEY") == "" {
 		log.Println("⚠️  seed: API_KEY is not set — all \"auth\"-tagged API Builder endpoints will reject every request")
+	}
+	if os.Getenv("APP_KEY") == "" {
+		log.Println("⚠️  seed: APP_KEY is not set — SMTP config passwords will be encrypted with a guessable key")
 	}
 }
