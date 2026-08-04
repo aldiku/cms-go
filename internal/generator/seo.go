@@ -36,14 +36,16 @@ func BuildSEOHead(page models.Page, siteURL string) template.HTML {
 
 	var b strings.Builder
 
-	b.WriteString("<title>" + esc(title) + "</title>\n")
+	b.WriteString("<title>");b.WriteString(esc(title));b.WriteString("</title>\n")
 
 	if description != "" {
 		writeMeta(&b, "name", "description", description)
 	}
 
 	if canonical != "" {
-		b.WriteString(`<link rel="canonical" href="` + esc(canonical) + `">` + "\n")
+		b.WriteString(`<link rel="canonical" href="`)
+		b.WriteString(esc(canonical))
+		b.WriteString(`">\n`)
 	}
 
 	if robots := robotsContent(page.MetaRobotsNoindex, page.MetaRobotsNofollow); robots != "" {
@@ -75,7 +77,13 @@ func BuildSEOHead(page models.Page, siteURL string) template.HTML {
 }
 
 func writeMeta(b *strings.Builder, attr, key, content string) {
-	b.WriteString(`<meta ` + attr + `="` + esc(key) + `" content="` + esc(content) + `">` + "\n")
+	b.WriteString(`<meta `)
+	b.WriteString(attr)
+	b.WriteString(`="`)
+	b.WriteString(esc(key))
+	b.WriteString(`" content="`)
+	b.WriteString(esc(content))
+	b.WriteString(`">` + "\n")
 }
 
 func robotsContent(noindex, nofollow bool) string {
