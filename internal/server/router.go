@@ -71,6 +71,8 @@ func New() *echo.Echo {
 		&models.Revision{}, &models.ApiEndpoint{}, &models.Category{}, &models.Tag{},
 		&models.Media{}, &models.SMTPConfig{}, &models.EmailTemplate{}, &models.NotificationHook{},
 		&models.EmailVerification{}, &models.PasswordReset{},
+		&models.ProductCategory{}, &models.Product{}, &models.ProductVariant{}, &models.ProductVariantTier{},
+		&models.PriceOverride{},
 	)
 	auth.SeedAuth()
 	auth.SeedAuthPages()
@@ -140,6 +142,8 @@ func New() *echo.Echo {
 	account.POST("/setting/sessions/:token/revoke", handlers.AuthRevokeSession)
 	account.POST("/setting/sessions/revoke-others", handlers.AuthRevokeOtherSessions)
 	account.POST("/setting/api-key/reset", handlers.AuthResetAPIKey)
+	account.GET("/pricing", handlers.AuthPricing)
+	account.POST("/pricing/set", handlers.AuthSetClientPrice)
 
 	// Admin panel (HTML forms) — session required, RBAC per menu
 	admin := e.Group("/admin", auth.RequireAuth, auth.RequirePermission)
@@ -166,6 +170,36 @@ func New() *echo.Echo {
 	admin.GET("/tags/:id/edit", handlers.AdminTagForm)
 	admin.POST("/tags/:id/edit", handlers.AdminUpdateTag)
 	admin.POST("/tags/:id/delete", handlers.AdminDeleteTag)
+
+	// Product Categories
+	admin.GET("/product-categories", handlers.AdminProductCategories)
+	admin.GET("/product-categories/new", handlers.AdminProductCategoryForm)
+	admin.POST("/product-categories/new", handlers.AdminCreateProductCategory)
+	admin.GET("/product-categories/:id/edit", handlers.AdminProductCategoryForm)
+	admin.POST("/product-categories/:id/edit", handlers.AdminUpdateProductCategory)
+	admin.POST("/product-categories/:id/delete", handlers.AdminDeleteProductCategory)
+
+	// Products (hierarchical tree, like Menus)
+	admin.GET("/products", handlers.AdminProducts)
+	admin.POST("/products/new", handlers.AdminCreateProduct)
+	admin.POST("/products/:id/edit", handlers.AdminUpdateProduct)
+	admin.POST("/products/:id/delete", handlers.AdminDeleteProduct)
+	admin.POST("/products/reorder", handlers.AdminReorderProducts)
+
+	// Product Variants (scoped to a Product node)
+	admin.GET("/products/variants/json", handlers.AdminVariantsJSON)
+	admin.GET("/products/:id/variants", handlers.AdminProductVariants)
+	admin.POST("/products/:id/variants/new", handlers.AdminCreateProductVariant)
+	admin.POST("/products/:id/variants/:variant_id/edit", handlers.AdminUpdateProductVariant)
+	admin.POST("/products/:id/variants/:variant_id/delete", handlers.AdminDeleteProductVariant)
+
+	// Custom Pricing (per-variant, per-user price overrides)
+	admin.POST("/products/:id/variants/:variant_id/pricing/new", handlers.AdminSetPriceOverride)
+	admin.POST("/products/:id/variants/:variant_id/pricing/:override_id/delete", handlers.AdminDeletePriceOverride)
+	admin.GET("/custom-pricing", handlers.AdminCustomPricingList)
+	admin.GET("/custom-pricing/user/:user_id", handlers.AdminCustomPricingForUser)
+	admin.POST("/custom-pricing/user/:user_id/set", handlers.AdminSetPriceOverrideForUser)
+	admin.POST("/custom-pricing/:override_id/delete", handlers.AdminDeleteCustomPricing)
 
 	// Media Library — image/video/audio/document/archive uploads
 	admin.GET("/medias", handlers.AdminMedias)
@@ -215,6 +249,7 @@ func New() *echo.Echo {
 
 	// Users
 	admin.GET("/users", handlers.AdminUsers)
+	admin.GET("/users/json", handlers.AdminUsersJSON)
 	admin.GET("/users/new", handlers.AdminUserForm)
 	admin.POST("/users/new", handlers.AdminCreateUser)
 	admin.GET("/users/:id/edit", handlers.AdminUserForm)

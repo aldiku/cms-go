@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"cms-go/internal/auth"
 	"cms-go/internal/config"
@@ -145,4 +146,32 @@ func AdminDeleteUser(c echo.Context) error {
 	// Their sessions are no longer valid.
 	db.DB.Delete(&models.Session{}, "user_id = ?", user.ID)
 	return c.Redirect(http.StatusSeeOther, "/admin/users")
+}
+
+type userSearchJSON struct {
+	ID    uint   `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+// GET /admin/users/json?q=... — lightweight search for in-page pickers
+// (e.g. the Custom Pricing target-user picker on the Variant page), same
+// shape/pattern as AdminMediasJSON (admin_media.go).
+func AdminUsersJSON(c echo.Context) error {
+	query := strings.TrimSpace(c.QueryParam("q"))
+
+	q := db.DB.Model(&models.User{})
+	if query != "" {
+		like := "%" + query + "%"
+		q = q.Where("firstname ILIKE ? OR lastname ILIKE ? OR email ILIKE ?", like, like, like)
+	}
+
+	var users []models.User
+	q.Order("firstname asc").Limit(20).Find(&users)
+
+	out := make([]userSearchJSON, 0, len(users))
+	for _, u := range users {
+		out = append(out, userSearchJSON{ID: u.ID, Name: u.FullName(), Email: u.Email})
+	}
+	return c.JSON(http.StatusOK, out)
 }

@@ -1,0 +1,81 @@
+{{ define "content" }}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">My Pricing</h2>
+  </div>
+
+  {{ if not .Downline }}
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-8 text-center">
+    <p class="text-sm text-gray-500 dark:text-gray-400">You don't have any clients yet. Clients that register with your user ID as their referral will show up here.</p>
+  </div>
+  {{ else }}
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="p-5 sm:p-6">
+      <form method="GET" action="/auth/pricing" class="flex flex-col">
+        <label for="client" class="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-400">Client</label>
+        <select id="client" name="client" onchange="this.form.submit()"
+          class="h-11 w-72 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          <option value="">Select a client&hellip;</option>
+          {{ range .Downline }}
+          <option value="{{ .ID }}" {{ if and $.SelectedClient (eq $.SelectedClient.ID .ID) }}selected{{ end }}>{{ .FullName }} ({{ .Email }})</option>
+          {{ end }}
+        </select>
+      </form>
+    </div>
+  </div>
+
+  {{ if .SelectedClient }}
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="px-5 py-4 sm:px-6 sm:py-5">
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Pricing for {{ .SelectedClient.FullName }}</h3>
+    </div>
+    <div class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
+      <div class="w-full overflow-x-auto">
+        <table class="min-w-full">
+          <thead>
+            <tr class="border-y border-gray-100 dark:border-gray-800">
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Product</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Variant</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Your price</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Client pays</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Margin</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Set new price</p></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            {{ range .Rows }}
+            <tr>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .ProductName }}</td>
+              <td class="py-4 text-sm font-medium text-gray-800 dark:text-white/90">{{ .VariantName }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .YourPrice }}</td>
+              <td class="py-4 text-sm text-gray-800 dark:text-white/90">{{ .ClientPrice }}</td>
+              <td class="py-4 text-sm {{ if lt .Margin 0 }}text-red-500{{ else }}text-green-600 dark:text-green-400{{ end }}">{{ .Margin }}</td>
+              <td class="py-4">
+                <form method="POST" action="/auth/pricing/set" class="flex items-center gap-2">
+                  <input type="hidden" name="client_id" value="{{ $.SelectedClient.ID }}">
+                  <input type="hidden" name="variant_id" value="{{ .VariantID }}">
+                  <input type="number" name="price" placeholder="{{ .ClientPrice }}"
+                    class="h-9 w-28 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+                  <button type="submit" class="h-9 inline-flex items-center rounded-lg bg-indigo-600 px-3 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
+                    Save
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {{ else }}
+            <tr>
+              <td colspan="6" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No active product variants yet.</td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {{ end }}
+
+  {{ end }}
+</div>
+{{ end }}

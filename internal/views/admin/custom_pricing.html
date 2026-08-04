@@ -1,0 +1,139 @@
+{{ define "content" }}
+<div class="space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Custom Pricing</h2>
+    <button type="button" id="addCustomPricingBtn" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
+      <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
+      </svg>
+      + Add
+    </button>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="p-5 sm:p-6">
+      <form method="GET" action="/admin/custom-pricing" class="flex flex-wrap items-end gap-3">
+        <div>
+          <label for="q" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Search</label>
+          <input type="text" id="q" name="q" value="{{ .Query }}" placeholder="Product, variant, or user name/email"
+            class="h-11 w-80 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+        </div>
+        <button type="submit" class="h-11 inline-flex items-center rounded-lg bg-indigo-600 px-5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
+          Search
+        </button>
+        {{ if .Query }}
+        <a href="/admin/custom-pricing" class="h-11 inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Clear</a>
+        {{ end }}
+      </form>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="px-5 py-4 sm:px-6 sm:py-5">
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">All Custom Prices</h3>
+    </div>
+    <div class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
+      <div class="w-full overflow-x-auto">
+        <table class="min-w-full">
+          <thead>
+            <tr class="border-y border-gray-100 dark:border-gray-800">
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Product</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Variant</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Target User</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Price</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Granted By</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Action</p></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            {{ range .Rows }}
+            <tr>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .ProductName }}</td>
+              <td class="py-4 text-sm font-medium text-gray-800 dark:text-white/90">{{ .VariantName }}</td>
+              <td class="py-4 text-sm">
+                <span class="text-gray-800 dark:text-white/90">{{ .TargetName }}</span>
+                <span class="text-gray-400 dark:text-gray-500">{{ .TargetEmail }}</span>
+              </td>
+              <td class="py-4 text-sm text-gray-800 dark:text-white/90">{{ .Price }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .SetByName }}</td>
+              <td class="py-4 text-sm">
+                <div class="flex items-center gap-3">
+                  <a href="/admin/products/{{ .ProductID }}/variants" class="text-indigo-600 hover:text-indigo-800 font-medium">Edit in Variant</a>
+                  <form method="POST" action="/admin/custom-pricing/{{ .ID }}/delete" onsubmit="return confirm('Remove this custom price?');">
+                    <button type="submit" class="text-red-500 hover:text-red-700 font-medium">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {{ else }}
+            <tr>
+              <td colspan="6" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No custom prices found.</td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.getElementById('addCustomPricingBtn').addEventListener('click', function () {
+    var overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4';
+    overlay.innerHTML =
+      '<div class="w-full max-w-md rounded-2xl bg-white dark:bg-gray-900 p-5">' +
+        '<div class="flex items-center justify-between mb-4">' +
+          '<h3 class="text-base font-medium text-gray-800 dark:text-white/90">Select a user</h3>' +
+          '<button type="button" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" id="addPricingClose">&times;</button>' +
+        '</div>' +
+        '<input type="text" id="addPricingSearch" placeholder="Search by name or email" autocomplete="off"' +
+          ' class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">' +
+        '<div id="addPricingResults" class="mt-3 max-h-64 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800"><p class="px-1 py-2 text-sm text-gray-400">Type at least 2 characters to search.</p></div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    function close() { overlay.remove(); }
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+    overlay.querySelector('#addPricingClose').addEventListener('click', close);
+
+    var search = overlay.querySelector('#addPricingSearch');
+    var results = overlay.querySelector('#addPricingResults');
+    var debounceTimer = null;
+
+    search.addEventListener('input', function () {
+      var q = search.value.trim();
+      clearTimeout(debounceTimer);
+      if (q.length < 2) {
+        results.innerHTML = '<p class="px-1 py-2 text-sm text-gray-400">Type at least 2 characters to search.</p>';
+        return;
+      }
+      debounceTimer = setTimeout(function () {
+        fetch('/admin/users/json?q=' + encodeURIComponent(q))
+          .then(function (r) { return r.json(); })
+          .then(function (users) {
+            if (!users.length) {
+              results.innerHTML = '<p class="px-1 py-2 text-sm text-gray-400">No users found.</p>';
+              return;
+            }
+            results.innerHTML = '';
+            users.forEach(function (u) {
+              var item = document.createElement('button');
+              item.type = 'button';
+              item.className = 'w-full text-left px-1 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800';
+              item.innerHTML = '<span class="font-medium text-gray-800 dark:text-white/90">' + u.name + '</span><br><span class="text-gray-400 text-xs">' + u.email + '</span>';
+              item.addEventListener('click', function () {
+                window.location.href = '/admin/custom-pricing/user/' + u.id;
+              });
+              results.appendChild(item);
+            });
+          });
+      }, 250);
+    });
+
+    search.focus();
+  });
+</script>
+{{ end }}

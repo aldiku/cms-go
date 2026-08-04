@@ -189,6 +189,24 @@ func SeedAuth() {
 	}
 	db.DB.Where("path = ?", notificationManagerMenu.Path).Attrs(notificationManagerMenu).FirstOrCreate(&notificationManagerMenu)
 
+	productCategoriesMenu := models.Menu{
+		Menu: "Product Categories", Path: "/admin/product-categories", Icon: "🗃️",
+		MenuType: "module", Status: 1, ListOrder: 17, MenuGroupID: backendGroup.ID,
+	}
+	db.DB.Where("path = ?", productCategoriesMenu.Path).Attrs(productCategoriesMenu).FirstOrCreate(&productCategoriesMenu)
+
+	productsMenu := models.Menu{
+		Menu: "Products", Path: "/admin/products", Icon: "📦",
+		MenuType: "module", Status: 1, ListOrder: 18, MenuGroupID: backendGroup.ID,
+	}
+	db.DB.Where("path = ?", productsMenu.Path).Attrs(productsMenu).FirstOrCreate(&productsMenu)
+
+	customPricingMenu := models.Menu{
+		Menu: "Custom Pricing", Path: "/admin/custom-pricing", Icon: "💰",
+		MenuType: "module", Status: 1, ListOrder: 19, MenuGroupID: backendGroup.ID,
+	}
+	db.DB.Where("path = ?", customPricingMenu.Path).Attrs(customPricingMenu).FirstOrCreate(&customPricingMenu)
+
 	// Backfill: any menu row without a group (pre-dates MenuGroupID, or was
 	// just created above without one) belongs to the system Backend group.
 	db.DB.Model(&models.Menu{}).Where("menu_group_id = 0 OR menu_group_id IS NULL").Update("menu_group_id", backendGroup.ID)

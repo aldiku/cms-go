@@ -1,0 +1,331 @@
+{{ define "content" }}
+{{ if .NoCategories }}
+<div class="space-y-6">
+  <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Products</h2>
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-8 text-center">
+    <p class="text-sm text-gray-500 dark:text-gray-400">No product categories yet.</p>
+    <a href="/admin/product-categories/new" class="mt-3 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
+      + Create a Product Category first
+    </a>
+  </div>
+</div>
+{{ else }}
+<div class="space-y-6" x-data="{ addItemOpen: false }">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Products</h2>
+  </div>
+
+  <!-- Category switcher -->
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="p-5 sm:p-6 flex flex-wrap items-end gap-3">
+      <form method="GET" action="/admin/products" class="flex flex-col">
+        <label for="category" class="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-400">Product category</label>
+        <select id="category" name="category" onchange="this.form.submit()"
+          class="h-11 w-64 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          {{ range .Categories }}
+          <option value="{{ .ID }}" {{ if eq .ID $.SelectedCategory.ID }}selected{{ end }}>{{ .Name }}</option>
+          {{ end }}
+        </select>
+      </form>
+      <a href="/admin/product-categories" class="h-11 inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+        Manage Categories
+      </a>
+    </div>
+  </div>
+
+  <!-- Product tree -->
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="px-5 py-4 sm:px-6 sm:py-5 flex flex-wrap items-center justify-between gap-3">
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">{{ .SelectedCategory.Name }} products</h3>
+      <button type="button" @click="addItemOpen = !addItemOpen"
+        class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
+        + Add new product
+      </button>
+    </div>
+
+    <!-- Quick-add form -->
+    <div x-show="addItemOpen" x-cloak class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6 bg-gray-50/60 dark:bg-white/[0.02]">
+      <form method="POST" action="/admin/products/new" class="space-y-4">
+        <input type="hidden" name="category_id" value="{{ .SelectedCategory.ID }}">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Code</label>
+            <input type="text" name="code" required
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 font-mono focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Name</label>
+            <input type="text" name="name" required
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">HPP</label>
+            <input type="number" name="hpp" value="0"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Price</label>
+            <input type="number" name="price" value="0"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Description</label>
+          <textarea name="description" rows="2"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"></textarea>
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="status" checked
+            class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-gray-400">Active</span>
+        </label>
+        <p class="text-xs text-gray-400 dark:text-gray-500">New products are added to the top level of this category — drag them into place below to nest or reorder. Thumbnail can be set after creation.</p>
+        <div class="flex justify-end gap-3">
+          <button type="button" @click="addItemOpen = false"
+            class="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+            Cancel
+          </button>
+          <button type="submit"
+            class="inline-flex items-center rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
+            Add Product
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
+      {{ if .HasProducts }}
+      <p class="mb-4 text-xs text-gray-400 dark:text-gray-500">Drag by the grip handle to reorder or nest products. Click a card to edit it.</p>
+      <ul id="product-tree-root" class="product-tree" data-parent-id="0" data-category-id="{{ .SelectedCategory.ID }}">
+        {{ range .ProductTree }}{{ template "productNode" . }}{{ end }}
+      </ul>
+      {{ else }}
+      <ul id="product-tree-root" class="product-tree min-h-[3rem]" data-parent-id="0" data-category-id="{{ .SelectedCategory.ID }}"></ul>
+      <p class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No products in this category yet. Click "Add new product" above to get started.</p>
+      {{ end }}
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .product-tree { list-style: none; margin: 0; padding: 0; min-height: 0.5rem; }
+  .product-tree .product-tree { margin-top: 0.5rem; padding-left: 1.5rem; border-left: 2px dashed #e5e7eb; }
+  .dark .product-tree .product-tree { border-left-color: #374151; }
+  .product-item-li { margin-bottom: 0.5rem; }
+  .product-tree .sortable-ghost { opacity: 0.4; }
+  .product-tree .sortable-drag .product-card { box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); }
+  .drag-handle { cursor: grab; }
+  .drag-handle:active { cursor: grabbing; }
+  [x-cloak] { display: none !important; }
+</style>
+
+{{ template "productScripts" . }}
+{{ end }}
+{{ end }}
+
+{{ define "productNode" }}
+<li class="product-item-li" data-id="{{ .Product.ID }}">
+  <div class="product-card rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900" x-data="{ open: false }">
+    <div class="flex items-center gap-2 px-3 py-2.5">
+      <span class="drag-handle shrink-0 text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400" title="Drag to reorder">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <circle cx="5" cy="3" r="1.3"/><circle cx="11" cy="3" r="1.3"/>
+          <circle cx="5" cy="8" r="1.3"/><circle cx="11" cy="8" r="1.3"/>
+          <circle cx="5" cy="13" r="1.3"/><circle cx="11" cy="13" r="1.3"/>
+        </svg>
+      </span>
+
+      {{ if .Product.ThumbnailID }}
+      <img src="{{ .Product.Thumbnail.URL }}" alt="" class="h-8 w-8 rounded-md object-cover shrink-0 border border-gray-200 dark:border-gray-800">
+      {{ end }}
+
+      <button type="button" @click="open = !open" class="flex-1 flex flex-wrap items-center gap-2 text-left min-w-0">
+        <span class="font-medium text-sm text-gray-800 dark:text-white/90 truncate">{{ .Product.Name }}</span>
+        <span class="text-xs text-gray-400 dark:text-gray-500 font-mono truncate">{{ .Product.Code }}</span>
+        <span class="text-xs text-gray-500 dark:text-gray-400">HPP {{ .Product.HPP }} / Price {{ .Product.Price }}</span>
+        {{ if eq .Product.Status 1 }}
+        <span class="rounded-full bg-green-50 dark:bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-600 dark:text-green-400">Active</span>
+        {{ else }}
+        <span class="rounded-full bg-gray-50 dark:bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">Inactive</span>
+        {{ end }}
+      </button>
+
+      <a href="/admin/products/{{ .Product.ID }}/variants" class="shrink-0 text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400">Variants &rarr;</a>
+
+      <button type="button" @click="open = !open" class="shrink-0 text-gray-400 dark:text-gray-500">
+        <svg :class="open ? 'rotate-180' : ''" class="w-4 h-4 transition-transform duration-150" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4.79175 7.39584L10.0001 12.6042L15.2084 7.39585" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+    </div>
+
+    <div x-show="open" x-cloak class="border-t border-gray-100 dark:border-gray-800 px-4 py-4 space-y-4">
+      <form method="POST" action="/admin/products/{{ .Product.ID }}/edit" id="product-edit-{{ .Product.ID }}" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Code</label>
+            <input type="text" name="code" required value="{{ .Product.Code }}"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 font-mono focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Name</label>
+            <input type="text" name="name" required value="{{ .Product.Name }}"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">HPP</label>
+            <input type="number" name="hpp" value="{{ .Product.HPP }}"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Price</label>
+            <input type="number" name="price" value="{{ .Product.Price }}"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Description</label>
+          <textarea name="description" rows="2"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">{{ .Product.Description }}</textarea>
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="status" {{ if eq .Product.Status 1 }}checked{{ end }}
+            class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-gray-400">Active</span>
+        </label>
+
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Thumbnail</label>
+          <input type="hidden" id="thumbnail_id_{{ .Product.ID }}" name="thumbnail_id" value="{{if .Product.ThumbnailID}}{{.Product.ThumbnailID}}{{end}}">
+          <div class="flex items-center gap-3">
+            <div id="thumbPreview_{{ .Product.ID }}" class="h-16 w-16 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 {{if not .Product.ThumbnailID}}hidden{{end}}">
+              <img id="thumbPreviewImg_{{ .Product.ID }}" src="{{ .Product.Thumbnail.URL }}" alt="" class="h-full w-full object-cover">
+            </div>
+            <div id="thumbEmpty_{{ .Product.ID }}" class="h-16 w-16 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 {{if .Product.ThumbnailID}}hidden{{end}}"></div>
+            <button type="button" onclick="setProductThumbnail({{ .Product.ID }})"
+              class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+              {{if .Product.ThumbnailID}}Change{{else}}Set thumbnail{{end}}
+            </button>
+          </div>
+        </div>
+      </form>
+      <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
+        <form method="POST" action="/admin/products/{{ .Product.ID }}/delete" onsubmit="return confirm('Remove this product? It must have no children and no variants.');">
+          <button type="submit" class="text-sm font-medium text-red-500 hover:text-red-700">Remove</button>
+        </form>
+        <button type="submit" form="product-edit-{{ .Product.ID }}"
+          class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
+          Save
+        </button>
+      </div>
+    </div>
+
+    <ul class="product-tree" data-parent-id="{{ .Product.ID }}">
+      {{ range .Children }}{{ template "productNode" . }}{{ end }}
+    </ul>
+  </div>
+</li>
+{{ end }}
+
+{{ define "productScripts" }}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+  (function () {
+    function initProductSortable() {
+      document.querySelectorAll('.product-tree').forEach(function (ul) {
+        if (ul.dataset.sortableInit) return;
+        ul.dataset.sortableInit = '1';
+        new Sortable(ul, {
+          group: 'product-items',
+          handle: '.drag-handle',
+          animation: 150,
+          fallbackOnBody: true,
+          swapThreshold: 0.65,
+          onEnd: saveProductOrder,
+        });
+      });
+    }
+
+    function saveProductOrder() {
+      var root = document.getElementById('product-tree-root');
+      if (!root) return;
+      var categoryId = parseInt(root.dataset.categoryId, 10);
+      var items = [];
+      document.querySelectorAll('.product-tree').forEach(function (ul) {
+        var parentId = parseInt(ul.dataset.parentId, 10) || 0;
+        Array.prototype.forEach.call(ul.children, function (li, index) {
+          if (!li.dataset.id) return;
+          items.push({ id: parseInt(li.dataset.id, 10), parent_id: parentId, order: index + 1 });
+        });
+      });
+      fetch('/admin/products/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category_id: categoryId, items: items }),
+      }).then(function (res) {
+        if (!res.ok) alert('Failed to save the new product order.');
+      }).catch(function () {
+        alert('Failed to save the new product order.');
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initProductSortable);
+    } else {
+      initProductSortable();
+    }
+  })();
+
+  function setProductThumbnail(productId) {
+    var overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4';
+    overlay.innerHTML =
+      '<div class="w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-2xl bg-white dark:bg-gray-900 p-5">' +
+        '<div class="flex items-center justify-between mb-4">' +
+          '<h3 class="text-base font-medium text-gray-800 dark:text-white/90">Select Thumbnail</h3>' +
+          '<button type="button" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" id="thumbPickerClose">&times;</button>' +
+        '</div>' +
+        '<div id="thumbPickerGrid" class="grid grid-cols-4 gap-3 min-h-[6rem]"><p class="col-span-4 text-sm text-gray-400">Loading...</p></div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    function close() { overlay.remove(); }
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+    overlay.querySelector('#thumbPickerClose').addEventListener('click', close);
+
+    fetch('/admin/medias/json?type=image')
+      .then(function (r) { return r.json(); })
+      .then(function (items) {
+        var grid = overlay.querySelector('#thumbPickerGrid');
+        if (!items.length) {
+          grid.innerHTML = '<p class="col-span-4 text-sm text-gray-400">No images in the media library yet.</p>';
+          return;
+        }
+        grid.innerHTML = '';
+        items.forEach(function (item) {
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'aspect-square overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 hover:ring-2 hover:ring-indigo-400';
+          btn.innerHTML = '<img src="' + item.url + '" alt="" class="h-full w-full object-cover">';
+          btn.addEventListener('click', function () {
+            document.getElementById('thumbnail_id_' + productId).value = item.id;
+            document.getElementById('thumbPreviewImg_' + productId).src = item.url;
+            document.getElementById('thumbPreview_' + productId).classList.remove('hidden');
+            document.getElementById('thumbEmpty_' + productId).classList.add('hidden');
+            close();
+          });
+          grid.appendChild(btn);
+        });
+      })
+      .catch(function () {
+        overlay.querySelector('#thumbPickerGrid').innerHTML = '<p class="col-span-4 text-sm text-red-500">Failed to load images.</p>';
+      });
+  }
+</script>
+{{ end }}
