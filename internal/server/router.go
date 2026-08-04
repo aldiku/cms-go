@@ -73,6 +73,7 @@ func New() *echo.Echo {
 		&models.EmailVerification{}, &models.PasswordReset{},
 	)
 	auth.SeedAuth()
+	auth.SeedAuthPages()
 	migratePageDefaults()
 	// generate templates from DB into views/generated
 	if err := generator.GenerateTemplatesFromDB(); err != nil {
