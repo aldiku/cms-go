@@ -46,7 +46,9 @@ func RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
 // ordered for the sidebar. Superadmin sees every active menu.
 func readableMenus(user models.User) []models.Menu {
 	var menus []models.Menu
-	q := db.DB.Model(&models.Menu{}).Where("menus.status = 1").Order("menus.list_order ASC")
+	q := db.DB.Model(&models.Menu{}).
+		Joins("JOIN menu_groups ON menu_groups.id = menus.menu_group_id AND menu_groups.is_system = true").
+		Where("menus.status = 1").Order("menus.list_order ASC")
 	if user.Role.Role != SuperadminRole {
 		q = q.Joins(`JOIN permissions ON permissions.menu_id = menus.id AND permissions.role_id = ? AND permissions."read" = true`, user.RoleID)
 	}
@@ -106,7 +108,9 @@ func RequirePermission(next echo.HandlerFunc) echo.HandlerFunc {
 // /admin/pages-x).
 func menuForPath(path string) (models.Menu, bool) {
 	var menus []models.Menu
-	db.DB.Where("status = 1").Find(&menus)
+	db.DB.Model(&models.Menu{}).
+		Joins("JOIN menu_groups ON menu_groups.id = menus.menu_group_id AND menu_groups.is_system = true").
+		Where("menus.status = 1").Find(&menus)
 
 	var best models.Menu
 	bestLen := -1

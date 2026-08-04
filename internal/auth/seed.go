@@ -15,6 +15,12 @@ import (
 func SeedAuth() {
 	var role models.Role
 
+	// The "Backend Menu" group is the system menu location: it drives the
+	// admin sidebar and every RBAC permission check. It always exists and
+	// every other seeded/legacy menu row belongs to it.
+	backendGroup := models.MenuGroup{Name: "Backend Menu", Slug: "backend", IsSystem: true}
+	db.DB.Where("slug = ?", backendGroup.Slug).Attrs(backendGroup).FirstOrCreate(&backendGroup)
+
 	var roleCount int64
 	db.DB.Model(&models.Role{}).Count(&roleCount)
 	if roleCount == 0 {
@@ -78,6 +84,7 @@ func SeedAuth() {
 		for i := range seedMenus {
 			seedMenus[i].Status = 1
 			seedMenus[i].ListOrder = uint32(i + 1)
+			seedMenus[i].MenuGroupID = backendGroup.ID
 		}
 		if err := db.DB.Create(&seedMenus).Error; err != nil {
 			log.Printf("seed: create menus failed: %v", err)
@@ -117,64 +124,68 @@ func SeedAuth() {
 	// Ensure newer menus exist idempotently, outside that one-time gate.
 	apiBuilderMenu := models.Menu{
 		Menu: "API Builder", Path: "/admin/api-builder", Icon: "🔌",
-		MenuType: "module", Status: 1, ListOrder: 9,
+		MenuType: "module", Status: 1, ListOrder: 9, MenuGroupID: backendGroup.ID,
 	}
-	db.DB.Where("path = ?", apiBuilderMenu.Path).FirstOrCreate(&apiBuilderMenu, apiBuilderMenu)
+	db.DB.Where("path = ?", apiBuilderMenu.Path).Attrs(apiBuilderMenu).FirstOrCreate(&apiBuilderMenu)
 
 	// Granting CanUpdate here grants full arbitrary SQL execution (including
 	// DDL) — there's no separate "execute" RBAC verb in this app. Treat
 	// granting DB Manager access at all as a superadmin-tier decision.
 	dbManagerMenu := models.Menu{
 		Menu: "DB Manager", Path: "/admin/db-manager", Icon: "🗄️",
-		MenuType: "module", Status: 1, ListOrder: 10,
+		MenuType: "module", Status: 1, ListOrder: 10, MenuGroupID: backendGroup.ID,
 		MenuDescription: "Direct Postgres table browser and SQL console — grants full arbitrary-SQL execution to any role with update access.",
 	}
-	db.DB.Where("path = ?", dbManagerMenu.Path).FirstOrCreate(&dbManagerMenu, dbManagerMenu)
+	db.DB.Where("path = ?", dbManagerMenu.Path).Attrs(dbManagerMenu).FirstOrCreate(&dbManagerMenu)
 
 	categoriesMenu := models.Menu{
 		Menu: "Categories", Path: "/admin/categories", Icon: "🗂️",
-		MenuType: "module", Status: 1, ListOrder: 11,
+		MenuType: "module", Status: 1, ListOrder: 11, MenuGroupID: backendGroup.ID,
 	}
-	db.DB.Where("path = ?", categoriesMenu.Path).FirstOrCreate(&categoriesMenu, categoriesMenu)
+	db.DB.Where("path = ?", categoriesMenu.Path).Attrs(categoriesMenu).FirstOrCreate(&categoriesMenu)
 
 	tagsMenu := models.Menu{
 		Menu: "Tags", Path: "/admin/tags", Icon: "🏷️",
-		MenuType: "module", Status: 1, ListOrder: 12,
+		MenuType: "module", Status: 1, ListOrder: 12, MenuGroupID: backendGroup.ID,
 	}
-	db.DB.Where("path = ?", tagsMenu.Path).FirstOrCreate(&tagsMenu, tagsMenu)
+	db.DB.Where("path = ?", tagsMenu.Path).Attrs(tagsMenu).FirstOrCreate(&tagsMenu)
 
 	mediasMenu := models.Menu{
 		Menu: "Medias", Path: "/admin/medias", Icon: "🖼️",
-		MenuType: "module", Status: 1, ListOrder: 13,
+		MenuType: "module", Status: 1, ListOrder: 13, MenuGroupID: backendGroup.ID,
 	}
-	db.DB.Where("path = ?", mediasMenu.Path).FirstOrCreate(&mediasMenu, mediasMenu)
+	db.DB.Where("path = ?", mediasMenu.Path).Attrs(mediasMenu).FirstOrCreate(&mediasMenu)
 
 	// "Settings" is a pure grouping menu (no route of its own, Path "#"),
 	// matched by name rather than path since "#" isn't unique — the
 	// existing "ACL" group already uses it too.
 	settingsMenu := models.Menu{
 		Menu: "Settings", Path: "#", Icon: "⚙️",
-		MenuType: "module", Status: 1, ListOrder: 14,
+		MenuType: "module", Status: 1, ListOrder: 14, MenuGroupID: backendGroup.ID,
 	}
-	db.DB.Where("menu = ?", settingsMenu.Menu).FirstOrCreate(&settingsMenu, settingsMenu)
+	db.DB.Where("menu = ?", settingsMenu.Menu).Attrs(settingsMenu).FirstOrCreate(&settingsMenu)
 
 	smtpMenu := models.Menu{
 		Menu: "Email SMTP", Path: "/admin/smtp", Icon: "📧",
-		MenuType: "module", Status: 1, ListOrder: 1, ParentID: settingsMenu.ID,
+		MenuType: "module", Status: 1, ListOrder: 1, ParentID: settingsMenu.ID, MenuGroupID: backendGroup.ID,
 	}
-	db.DB.Where("path = ?", smtpMenu.Path).FirstOrCreate(&smtpMenu, smtpMenu)
+	db.DB.Where("path = ?", smtpMenu.Path).Attrs(smtpMenu).FirstOrCreate(&smtpMenu)
 
 	emailTemplateMenu := models.Menu{
 		Menu: "Email Template", Path: "/admin/email-templates", Icon: "✉️",
-		MenuType: "module", Status: 1, ListOrder: 15,
+		MenuType: "module", Status: 1, ListOrder: 15, MenuGroupID: backendGroup.ID,
 	}
-	db.DB.Where("path = ?", emailTemplateMenu.Path).FirstOrCreate(&emailTemplateMenu, emailTemplateMenu)
+	db.DB.Where("path = ?", emailTemplateMenu.Path).Attrs(emailTemplateMenu).FirstOrCreate(&emailTemplateMenu)
 
 	notificationManagerMenu := models.Menu{
 		Menu: "Notification Manager", Path: "/admin/notification-hooks", Icon: "🔔",
-		MenuType: "module", Status: 1, ListOrder: 16,
+		MenuType: "module", Status: 1, ListOrder: 16, MenuGroupID: backendGroup.ID,
 	}
-	db.DB.Where("path = ?", notificationManagerMenu.Path).FirstOrCreate(&notificationManagerMenu, notificationManagerMenu)
+	db.DB.Where("path = ?", notificationManagerMenu.Path).Attrs(notificationManagerMenu).FirstOrCreate(&notificationManagerMenu)
+
+	// Backfill: any menu row without a group (pre-dates MenuGroupID, or was
+	// just created above without one) belongs to the system Backend group.
+	db.DB.Model(&models.Menu{}).Where("menu_group_id = 0 OR menu_group_id IS NULL").Update("menu_group_id", backendGroup.ID)
 
 	if os.Getenv("API_KEY") == "" {
 		log.Println("⚠️  seed: API_KEY is not set — all \"auth\"-tagged API Builder endpoints will reject every request")

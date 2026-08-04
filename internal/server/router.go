@@ -66,7 +66,7 @@ func New() *echo.Echo {
 	// init DB
 	db.Connect()
 	db.DB.AutoMigrate(
-		&models.Page{}, &models.Layout{}, &models.Menu{}, &models.Component{},
+		&models.Page{}, &models.Layout{}, &models.MenuGroup{}, &models.Menu{}, &models.Component{},
 		&models.User{}, &models.Role{}, &models.Permission{}, &models.Session{},
 		&models.Revision{}, &models.ApiEndpoint{}, &models.Category{}, &models.Tag{},
 		&models.Media{}, &models.SMTPConfig{}, &models.EmailTemplate{}, &models.NotificationHook{},
@@ -209,11 +209,12 @@ func New() *echo.Echo {
 
 	// Menus
 	admin.GET("/menus", handlers.AdminMenus)
-	admin.GET("/menus/new", handlers.AdminMenuForm)
 	admin.POST("/menus/new", handlers.AdminCreateMenu)
-	admin.GET("/menus/:id/edit", handlers.AdminMenuForm)
 	admin.POST("/menus/:id/edit", handlers.AdminUpdateMenu)
 	admin.POST("/menus/:id/delete", handlers.AdminDeleteMenu)
+	admin.POST("/menus/reorder", handlers.AdminReorderMenus)
+	admin.POST("/menus/groups", handlers.AdminCreateMenuGroup)
+	admin.POST("/menus/groups/:id/delete", handlers.AdminDeleteMenuGroup)
 
 	// Revision history (read-only detail view; shared by pages/layouts/components)
 	admin.GET("/revisions/:id", handlers.AdminViewRevision)

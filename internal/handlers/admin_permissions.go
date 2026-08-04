@@ -31,7 +31,9 @@ func AdminPermissions(c echo.Context) error {
 	}
 
 	var menus []models.Menu
-	db.DB.Order("list_order asc, id asc").Find(&menus)
+	db.DB.Model(&models.Menu{}).
+		Joins("JOIN menu_groups ON menu_groups.id = menus.menu_group_id AND menu_groups.is_system = true").
+		Order("menus.list_order asc, menus.id asc").Find(&menus)
 
 	var perms []models.Permission
 	db.DB.Where("role_id = ?", roleID).Find(&perms)
@@ -67,7 +69,9 @@ func AdminSavePermissions(c echo.Context) error {
 	}
 
 	var menus []models.Menu
-	db.DB.Find(&menus)
+	db.DB.Model(&models.Menu{}).
+		Joins("JOIN menu_groups ON menu_groups.id = menus.menu_group_id AND menu_groups.is_system = true").
+		Find(&menus)
 
 	checked := func(menuID uint, flag string) bool {
 		return c.FormValue(fmt.Sprintf("perm_%d_%s", menuID, flag)) == "on"

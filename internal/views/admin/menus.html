@@ -1,68 +1,290 @@
 {{ define "content" }}
-<div class="space-y-6">
+<div class="space-y-6" x-data="{ newGroupOpen: false, addItemOpen: false }">
 
   <div class="flex flex-wrap items-center justify-between gap-3">
     <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Menus</h2>
-    <a href="/admin/menus/new" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
-      <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
-      </svg>
-      + New Menu
-    </a>
   </div>
 
+  <!-- Menu switcher -->
   <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-    <div class="px-5 py-4 sm:px-6 sm:py-5">
-      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">All Menus</h3>
+    <div class="p-5 sm:p-6 flex flex-wrap items-end gap-3">
+      <form method="GET" action="/admin/menus" class="flex flex-col">
+        <label for="group" class="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-400">Select a menu to edit</label>
+        <select id="group" name="group" onchange="this.form.submit()"
+          class="h-11 w-64 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          {{ range .Groups }}
+          <option value="{{ .ID }}" {{ if eq .ID $.SelectedGroup.ID }}selected{{ end }}>{{ .Name }}{{ if .IsSystem }} (system){{ end }}</option>
+          {{ end }}
+        </select>
+      </form>
+
+      <button type="button" @click="newGroupOpen = true" title="Create a new menu"
+        class="h-11 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
+        <svg class="fill-current" width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
+        </svg>
+        New Menu
+      </button>
+
+      {{ if not .SelectedGroup.IsSystem }}
+      <form method="POST" action="/admin/menus/groups/{{ .SelectedGroup.ID }}/delete"
+        onsubmit="return confirm('Delete the &quot;{{ .SelectedGroup.Name }}&quot; menu? All items must be removed first.');">
+        <button type="submit"
+          class="h-11 inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-4 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10">
+          Delete this menu
+        </button>
+      </form>
+      {{ end }}
     </div>
+
+    <!-- New menu group form -->
+    <div x-show="newGroupOpen" x-cloak @click.outside="newGroupOpen = false"
+      class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
+      <form method="POST" action="/admin/menus/groups" class="flex flex-wrap items-end gap-3">
+        <div>
+          <label for="new_group_name" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">New menu name</label>
+          <input type="text" id="new_group_name" name="name" required placeholder="e.g. Landing Menu, Footer Menu"
+            class="h-11 w-72 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+        </div>
+        <button type="submit"
+          class="h-11 inline-flex items-center rounded-lg bg-green-600 px-5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
+          Create Menu
+        </button>
+        <button type="button" @click="newGroupOpen = false"
+          class="h-11 inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+          Cancel
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Menu items tree -->
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="px-5 py-4 sm:px-6 sm:py-5 flex flex-wrap items-center justify-between gap-3">
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">{{ .SelectedGroup.Name }} items</h3>
+      <button type="button" @click="addItemOpen = !addItemOpen"
+        class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
+        <svg class="fill-current" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
+        </svg>
+        Add new item
+      </button>
+    </div>
+
+    <!-- Quick-add form -->
+    <div x-show="addItemOpen" x-cloak class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6 bg-gray-50/60 dark:bg-white/[0.02]">
+      <form method="POST" action="/admin/menus/new" class="space-y-4">
+        <input type="hidden" name="group_id" value="{{ .SelectedGroup.ID }}">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Menu name</label>
+            <input type="text" name="menu" required
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Icon</label>
+            <input type="text" name="icon" placeholder="e.g. 📄"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Path / URL</label>
+          <input type="text" name="path" required placeholder="/admin/example or https://example.com"
+            class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 font-mono placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Type</label>
+            <input type="text" name="menu_type" placeholder="module / settings / link"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <label class="flex items-center gap-2 cursor-pointer h-11 mt-6">
+            <input type="checkbox" name="status" checked
+              class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
+            <span class="text-sm text-gray-700 dark:text-gray-400">Active</span>
+          </label>
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Description</label>
+          <textarea name="menu_description" rows="2"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"></textarea>
+        </div>
+        <p class="text-xs text-gray-400 dark:text-gray-500">New items are added to the top level — drag them into place below to nest or reorder.</p>
+        <div class="flex justify-end gap-3">
+          <button type="button" @click="addItemOpen = false"
+            class="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+            Cancel
+          </button>
+          <button type="submit"
+            class="inline-flex items-center rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
+            Add Item
+          </button>
+        </div>
+      </form>
+    </div>
+
     <div class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
-      <div class="w-full overflow-x-auto">
-        <table class="min-w-full">
-          <thead>
-            <tr class="border-y border-gray-100 dark:border-gray-800">
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Order</p></th>
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Menu</p></th>
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Path</p></th>
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Parent</p></th>
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Type</p></th>
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Status</p></th>
-              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Action</p></th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-            {{ range .Menus }}
-            <tr>
-              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .ListOrder }}</td>
-              <td class="py-4 text-sm font-medium text-gray-800 dark:text-white/90">{{ if .Icon }}{{ .Icon }} {{ end }}{{ .Menu.Menu }}</td>
-              <td class="py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ .Path }}</td>
-              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ if .ParentName }}{{ .ParentName }}{{ else }}&mdash;{{ end }}</td>
-              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .MenuType }}</td>
-              <td class="py-4 text-sm">
-                {{ if eq .Status 1 }}
-                <span class="rounded-full bg-green-50 dark:bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-600 dark:text-green-400">Active</span>
-                {{ else }}
-                <span class="rounded-full bg-gray-50 dark:bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">Inactive</span>
-                {{ end }}
-              </td>
-              <td class="py-4 text-sm">
-                <div class="flex items-center gap-3">
-                  <a href="/admin/menus/{{ .ID }}/edit" class="text-indigo-600 hover:text-indigo-800 font-medium">Edit</a>
-                  <form method="POST" action="/admin/menus/{{ .ID }}/delete" onsubmit="return confirm('Delete this menu?');">
-                    <button type="submit" class="text-red-500 hover:text-red-700 font-medium">Delete</button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-            {{ else }}
-            <tr>
-              <td colspan="7" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No menus found.</td>
-            </tr>
-            {{ end }}
-          </tbody>
-        </table>
-      </div>
+      {{ if .HasMenus }}
+      <p class="mb-4 text-xs text-gray-400 dark:text-gray-500">Drag by the grip handle to reorder or nest items. Click a card to edit it.</p>
+      <ul id="menu-tree-root" class="menu-tree" data-parent-id="0" data-group-id="{{ .SelectedGroup.ID }}">
+        {{ range .MenuTree }}{{ template "menuNode" . }}{{ end }}
+      </ul>
+      {{ else }}
+      <ul id="menu-tree-root" class="menu-tree min-h-[3rem]" data-parent-id="0" data-group-id="{{ .SelectedGroup.ID }}"></ul>
+      <p class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No items in this menu yet. Click "Add new item" above to get started.</p>
+      {{ end }}
     </div>
   </div>
 
 </div>
+
+<style>
+  .menu-tree { list-style: none; margin: 0; padding: 0; min-height: 0.5rem; }
+  .menu-tree .menu-tree { margin-top: 0.5rem; padding-left: 1.5rem; border-left: 2px dashed #e5e7eb; }
+  .dark .menu-tree .menu-tree { border-left-color: #374151; }
+  .menu-item-li { margin-bottom: 0.5rem; }
+  .menu-tree .sortable-ghost { opacity: 0.4; }
+  .menu-tree .sortable-drag .menu-card { box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); }
+  .drag-handle { cursor: grab; }
+  .drag-handle:active { cursor: grabbing; }
+  [x-cloak] { display: none !important; }
+</style>
+
+{{ template "menuScripts" . }}
+{{ end }}
+
+{{ define "menuNode" }}
+<li class="menu-item-li" data-id="{{ .Menu.ID }}">
+  <div class="menu-card rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900" x-data="{ open: false }">
+    <div class="flex items-center gap-2 px-3 py-2.5">
+      <span class="drag-handle shrink-0 text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400" title="Drag to reorder">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <circle cx="5" cy="3" r="1.3"/><circle cx="11" cy="3" r="1.3"/>
+          <circle cx="5" cy="8" r="1.3"/><circle cx="11" cy="8" r="1.3"/>
+          <circle cx="5" cy="13" r="1.3"/><circle cx="11" cy="13" r="1.3"/>
+        </svg>
+      </span>
+
+      <button type="button" @click="open = !open" class="flex-1 flex flex-wrap items-center gap-2 text-left min-w-0">
+        {{ if .Menu.Icon }}<span class="text-base shrink-0">{{ .Menu.Icon }}</span>{{ end }}
+        <span class="font-medium text-sm text-gray-800 dark:text-white/90 truncate">{{ .Menu.Menu }}</span>
+        <span class="text-xs text-gray-400 dark:text-gray-500 font-mono truncate">{{ .Menu.Path }}</span>
+        {{ if eq .Menu.Status 1 }}
+        <span class="rounded-full bg-green-50 dark:bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-600 dark:text-green-400">Active</span>
+        {{ else }}
+        <span class="rounded-full bg-gray-50 dark:bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">Inactive</span>
+        {{ end }}
+      </button>
+
+      <button type="button" @click="open = !open" class="shrink-0 text-gray-400 dark:text-gray-500">
+        <svg :class="open ? 'rotate-180' : ''" class="w-4 h-4 transition-transform duration-150" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4.79175 7.39584L10.0001 12.6042L15.2084 7.39585" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+    </div>
+
+    <div x-show="open" x-cloak class="border-t border-gray-100 dark:border-gray-800 px-4 py-4 space-y-4">
+      <form method="POST" action="/admin/menus/{{ .Menu.ID }}/edit" id="menu-edit-{{ .Menu.ID }}" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Menu name</label>
+            <input type="text" name="menu" required value="{{ .Menu.Menu }}"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Icon</label>
+            <input type="text" name="icon" value="{{ .Menu.Icon }}" placeholder="e.g. 📄"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Path / URL</label>
+          <input type="text" name="path" required value="{{ .Menu.Path }}"
+            class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 font-mono focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Type</label>
+            <input type="text" name="menu_type" value="{{ .Menu.MenuType }}" placeholder="module / settings / link"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <label class="flex items-center gap-2 cursor-pointer h-11 mt-6">
+            <input type="checkbox" name="status" {{ if eq .Menu.Status 1 }}checked{{ end }}
+              class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
+            <span class="text-sm text-gray-700 dark:text-gray-400">Active</span>
+          </label>
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Description</label>
+          <textarea name="menu_description" rows="2"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">{{ .Menu.MenuDescription }}</textarea>
+        </div>
+      </form>
+      <div class="flex justify-between items-center pt-3 border-t border-gray-100 dark:border-gray-800">
+        <form method="POST" action="/admin/menus/{{ .Menu.ID }}/delete" onsubmit="return confirm('Remove this menu item? It must have no children.');">
+          <button type="submit" class="text-sm font-medium text-red-500 hover:text-red-700">Remove</button>
+        </form>
+        <button type="submit" form="menu-edit-{{ .Menu.ID }}"
+          class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
+          Save
+        </button>
+      </div>
+    </div>
+
+    <ul class="menu-tree" data-parent-id="{{ .Menu.ID }}">
+      {{ range .Children }}{{ template "menuNode" . }}{{ end }}
+    </ul>
+  </div>
+</li>
+{{ end }}
+
+{{ define "menuScripts" }}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+  (function () {
+    function initMenuSortable() {
+      document.querySelectorAll('.menu-tree').forEach(function (ul) {
+        if (ul.dataset.sortableInit) return;
+        ul.dataset.sortableInit = '1';
+        new Sortable(ul, {
+          group: 'menu-items',
+          handle: '.drag-handle',
+          animation: 150,
+          fallbackOnBody: true,
+          swapThreshold: 0.65,
+          onEnd: saveMenuOrder,
+        });
+      });
+    }
+
+    function saveMenuOrder() {
+      var root = document.getElementById('menu-tree-root');
+      if (!root) return;
+      var groupId = parseInt(root.dataset.groupId, 10);
+      var items = [];
+      document.querySelectorAll('.menu-tree').forEach(function (ul) {
+        var parentId = parseInt(ul.dataset.parentId, 10) || 0;
+        Array.prototype.forEach.call(ul.children, function (li, index) {
+          if (!li.dataset.id) return;
+          items.push({ id: parseInt(li.dataset.id, 10), parent_id: parentId, order: index + 1 });
+        });
+      });
+      fetch('/admin/menus/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ group_id: groupId, items: items }),
+      }).then(function (res) {
+        if (!res.ok) alert('Failed to save the new menu order.');
+      }).catch(function () {
+        alert('Failed to save the new menu order.');
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initMenuSortable);
+    } else {
+      initMenuSortable();
+    }
+  })();
+</script>
 {{ end }}

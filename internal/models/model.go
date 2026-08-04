@@ -124,8 +124,23 @@ type Layout struct {
 	CreatedAt time.Time
 }
 
+// MenuGroup is a named collection of Menu items — WordPress-style "menu
+// locations" such as Backend Menu (the admin sidebar/RBAC menu), Landing
+// Menu, Footer Menu, etc. Exactly one group (Slug "backend") is the system
+// group: it drives the admin sidebar and permission checks and can't be
+// deleted or renamed away from that role.
+type MenuGroup struct {
+	ID        uint   `gorm:"primaryKey"`
+	Name      string `gorm:"uniqueIndex"`
+	Slug      string `gorm:"uniqueIndex"`
+	IsSystem  bool
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 type Menu struct {
 	ID              uint `gorm:"primaryKey"`
+	MenuGroupID     uint `gorm:"index"`
 	Menu            string
 	Path            string
 	Icon            string // emoji or css class, free text
