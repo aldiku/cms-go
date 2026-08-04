@@ -45,7 +45,7 @@ func BuildSEOHead(page models.Page, siteURL string) template.HTML {
 	if canonical != "" {
 		b.WriteString(`<link rel="canonical" href="`)
 		b.WriteString(esc(canonical))
-		b.WriteString(`">\n`)
+		b.WriteString(`">` + "\n")
 	}
 
 	if robots := robotsContent(page.MetaRobotsNoindex, page.MetaRobotsNofollow); robots != "" {
