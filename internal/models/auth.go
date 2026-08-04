@@ -20,6 +20,7 @@ type User struct {
 	RoleID     uint
 	Status     uint8   // 1 = active
 	APIKey     *string `gorm:"uniqueIndex"` // nil = not generated; personal token for the "auth"-tagged API Builder header
+	ReferralID uint    `gorm:"index"`       // 0 = none; ID of the user who referred this one ("parent" user)
 	VerifiedAt *time.Time
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
@@ -68,6 +69,16 @@ type Session struct {
 // address they were registered with. Consuming it (GET /auth/verify) sets
 // User.VerifiedAt and deletes the row.
 type EmailVerification struct {
+	Token     string `gorm:"primaryKey;size:64"` // hex of 32 random bytes
+	UserID    uint   `gorm:"index"`
+	ExpiresAt time.Time
+	CreatedAt time.Time
+}
+
+// PasswordReset is a one-time token proving a user requested a password
+// reset for their own account. Consuming it (POST /auth/reset-password)
+// sets a new password hash and deletes the row.
+type PasswordReset struct {
 	Token     string `gorm:"primaryKey;size:64"` // hex of 32 random bytes
 	UserID    uint   `gorm:"index"`
 	ExpiresAt time.Time

@@ -24,6 +24,7 @@ const (
 	SessionCookie   = "cms_session"
 	sessionTTL      = 7 * 24 * time.Hour
 	verificationTTL = 24 * time.Hour
+	resetTTL        = 1 * time.Hour
 )
 
 func HashPassword(plain string) (string, error) {
@@ -101,6 +102,50 @@ func ConsumeVerificationToken(token string) (models.User, error) {
 	}
 
 	if err := db.DB.Preload("Role").First(&user, verification.UserID).Error; err != nil {
+		return user, err
+	}
+	return user, nil
+}
+
+// CreateResetToken stores a new one-time password-reset token for userID and
+// returns it. Any previous unconsumed token for the same user is removed
+// first, so only the most recently requested reset link works.
+func CreateResetToken(userID uint) (string, error) {
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return "", err
+	}
+	token := hex.EncodeToString(raw)
+
+	db.DB.Delete(&models.PasswordReset{}, "user_id = ?", userID)
+	reset := models.PasswordReset{
+		Token:     token,
+		UserID:    userID,
+		ExpiresAt: time.Now().Add(resetTTL),
+	}
+	if err := db.DB.Create(&reset).Error; err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+// ConsumeResetToken validates token, deletes it (one-time use), and returns
+// the user it belonged to. The caller is responsible for setting the new
+// password.
+func ConsumeResetToken(token string) (models.User, error) {
+	var user models.User
+
+	var reset models.PasswordReset
+	if err := db.DB.First(&reset, "token = ?", token).Error; err != nil {
+		return user, errors.New("invalid reset token")
+	}
+	db.DB.Delete(&reset)
+
+	if time.Now().After(reset.ExpiresAt) {
+		return user, errors.New("reset token has expired")
+	}
+
+	if err := db.DB.First(&user, reset.UserID).Error; err != nil {
 		return user, err
 	}
 	return user, nil

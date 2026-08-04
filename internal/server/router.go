@@ -70,7 +70,7 @@ func New() *echo.Echo {
 		&models.User{}, &models.Role{}, &models.Permission{}, &models.Session{},
 		&models.Revision{}, &models.ApiEndpoint{}, &models.Category{}, &models.Tag{},
 		&models.Media{}, &models.SMTPConfig{}, &models.EmailTemplate{}, &models.NotificationHook{},
-		&models.EmailVerification{},
+		&models.EmailVerification{}, &models.PasswordReset{},
 	)
 	auth.SeedAuth()
 	migratePageDefaults()
@@ -108,6 +108,25 @@ func New() *echo.Echo {
 	e.POST("/admin/login", handlers.AdminLogin, loginRateLimit, loginCSRF)
 	e.POST("/admin/logout", handlers.AdminLogout)
 	e.GET("/auth/verify", handlers.AuthVerifyEmail)
+
+	// JSON auth API — public, for a decoupled frontend (login/register use
+	// the double-submit csrf_token from GET /auth/csrf-token; reuses the
+	// same rate limiter shape as the admin login form).
+	authAPIRateLimit := middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
+		Store: middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
+			Rate:      rate.Limit(5.0 / 60.0),
+			Burst:     5,
+			ExpiresIn: 3 * time.Minute,
+		}),
+		IdentifierExtractor: func(c echo.Context) (string, error) {
+			return c.RealIP(), nil
+		},
+	})
+	e.GET("/auth/csrf-token", handlers.AuthCSRFToken)
+	e.POST("/auth/login", handlers.AuthAPILogin, authAPIRateLimit)
+	e.POST("/auth/register", handlers.AuthAPIRegister, authAPIRateLimit)
+	e.POST("/auth/forgot-password", handlers.AuthAPIForgotPassword, authAPIRateLimit)
+	e.POST("/auth/reset-password", handlers.AuthAPIResetPassword, authAPIRateLimit)
 
 	// Self-service account pages — session required, but NOT RBAC-gated by
 	// menu permission: every logged-in user needs their own profile/settings

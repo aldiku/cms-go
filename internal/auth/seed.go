@@ -34,6 +34,12 @@ func SeedAuth() {
 		db.DB.Where("role = ?", SuperadminRole).First(&role)
 	}
 
+	// "member" is the default role for self-service registrations
+	// (POST /auth/register) — it starts with zero granted permissions, so a
+	// member who somehow reaches /admin is refused by RequirePermission.
+	memberRole := models.Role{Role: "member", Status: 1}
+	db.DB.Where("role = ?", memberRole.Role).Attrs(memberRole).FirstOrCreate(&memberRole)
+
 	var userCount int64
 	db.DB.Model(&models.User{}).Count(&userCount)
 	if userCount == 0 {

@@ -56,6 +56,7 @@ var Registry = []HookDef{
 			{Key: "user_name", Description: "Full name of the requesting user"},
 			{Key: "user_email", Description: "Email address of the requesting user"},
 			{Key: "reset_url", Description: "One-time password reset link"},
+			{Key: "reset_token_code", Description: "Raw one-time password reset token/code"},
 		},
 	},
 }
