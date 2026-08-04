@@ -165,12 +165,15 @@ func AuthAPIRegister(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to process password"})
 	}
 
-	// Self-registered accounts get the no-permissions "member" role (seeded
-	// at boot, see auth.SeedAuth) — role_id has a not-null FK to roles, so
-	// this can't be left at 0.
-	var memberRole models.Role
-	if err := db.DB.Where("role = ?", "member").First(&memberRole).Error; err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "registration temporarily unavailable"})
+	// Self-registered accounts get an admin-configured default role if one
+	// is set (General Settings), else the no-permissions "member" role
+	// (seeded at boot, see auth.SeedAuth) — role_id has a not-null FK to
+	// roles, so this can't be left at 0.
+	registerRole := models.Role{ID: config.DefaultRegisterRoleID()}
+	if registerRole.ID == 0 || db.DB.First(&registerRole, registerRole.ID).Error != nil {
+		if err := db.DB.Where("role = ?", "member").First(&registerRole).Error; err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "registration temporarily unavailable"})
+		}
 	}
 
 	user := models.User{
@@ -179,7 +182,7 @@ func AuthAPIRegister(c echo.Context) error {
 		Email:      req.Email,
 		Phone:      req.Phone,
 		Password:   hash,
-		RoleID:     memberRole.ID,
+		RoleID:     registerRole.ID,
 		ReferralID: referralID,
 		Status:     1,
 	}
@@ -199,7 +202,7 @@ func AuthAPIRegister(c echo.Context) error {
 			"_to":              user.Email,
 			"user_name":        user.FullName(),
 			"user_email":       user.Email,
-			"user_role":        memberRole.Role,
+			"user_role":        registerRole.Role,
 			"site_name":        config.SiteName(),
 			"site_url":         config.SiteURL(),
 			"verification_url": verificationURL,

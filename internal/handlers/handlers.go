@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"cms-go/internal/auth"
+	"cms-go/internal/config"
 	"cms-go/internal/db"
 	"cms-go/internal/models"
 
@@ -105,6 +106,7 @@ func renderWithLayout(c echo.Context, layoutPath, viewPath string, data map[stri
 	if menus, ok := c.Get(auth.CtxNavMenus).([]models.Menu); ok {
 		data["NavMenus"] = buildNav(menus, c.Request().URL.Path)
 	}
+	data["SiteName"] = config.SiteName()
 
 	// Execute the layout template (layout.html should have {{ template "content" . }})
 	return tmpl.ExecuteTemplate(c.Response().Writer, "layout", data)

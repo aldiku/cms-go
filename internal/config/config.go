@@ -5,7 +5,22 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"cms-go/internal/db"
+	"cms-go/internal/models"
 )
+
+// generalSetting fetches the singleton GeneralSetting row (see
+// internal/handlers/admin_general_settings.go), or a zero-value one if it
+// doesn't exist yet (before the first admin save) or the DB isn't connected
+// (e.g. called too early in boot).
+func generalSetting() models.GeneralSetting {
+	var s models.GeneralSetting
+	if db.DB != nil {
+		db.DB.First(&s, 1)
+	}
+	return s
+}
 
 func RootPath() string {
 	projectDirName := os.Getenv("DIR_NAME")
@@ -21,13 +36,30 @@ func SiteURL() string {
 	return strings.TrimRight(os.Getenv("SITE_URL"), "/")
 }
 
-// SiteName returns the configured site name (APP_NAME env), used for
-// branding in outgoing notification emails. Defaults to "CMS" if unset.
+// SiteName returns the site's display name: the admin-set Site Title
+// (General Settings) if configured, else the APP_NAME env, else "CMS".
 func SiteName() string {
+	if title := generalSetting().SiteTitle; title != "" {
+		return title
+	}
 	if name := os.Getenv("APP_NAME"); name != "" {
 		return name
 	}
 	return "CMS"
+}
+
+// SiteTagline returns the admin-set Site Tagline (General Settings), or ""
+// if none is configured.
+func SiteTagline() string {
+	return generalSetting().Tagline
+}
+
+// DefaultRegisterRoleID returns the role an admin has configured (General
+// Settings) to grant new self-registered users (POST /auth/register). 0
+// means unconfigured — callers should fall back to their own default (the
+// seeded "member" role, see auth.SeedAuth).
+func DefaultRegisterRoleID() uint {
+	return generalSetting().DefaultRoleID
 }
 
 // GeneratePageLimit returns how many latest-updated pages to pre-render

@@ -1,0 +1,136 @@
+{{ define "content" }}
+<div class="max-w-2xl mx-auto space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">General Settings</h2>
+  </div>
+
+  {{ if .Saved }}
+  <div class="rounded-lg border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/40 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+    Settings saved.
+  </div>
+  {{ end }}
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="p-5 sm:p-6">
+      <form method="POST" action="/admin/general-settings" class="space-y-6">
+
+        <div>
+          <label for="site_title" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Site Title</label>
+          <input type="text" id="site_title" name="site_title" value="{{ .Setting.SiteTitle }}" placeholder="Falls back to APP_NAME, then &quot;CMS&quot;"
+            class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Shown in the admin panel title, and available to notification email templates.</p>
+        </div>
+
+        <div>
+          <label for="tagline" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tagline</label>
+          <input type="text" id="tagline" name="tagline" value="{{ .Setting.Tagline }}" placeholder="A short description of the site"
+            class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Used as the default meta description for pages that don't set their own.</p>
+        </div>
+
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Favicon</label>
+          <input type="hidden" id="favicon_id" name="favicon_id" value="{{if .Setting.FaviconID}}{{.Setting.FaviconID}}{{end}}">
+          <div class="flex items-center gap-3">
+            <div id="faviconPreview" class="h-12 w-12 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 {{if not .Setting.FaviconID}}hidden{{end}}">
+              <img id="faviconPreviewImg" src="{{ .Setting.Favicon.URL }}" alt="" class="h-full w-full object-cover">
+            </div>
+            <div id="faviconEmpty" class="h-12 w-12 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 {{if .Setting.FaviconID}}hidden{{end}}"></div>
+            <button type="button" id="setFaviconBtn"
+              class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
+              {{if .Setting.FaviconID}}Change{{else}}Set favicon{{end}}
+            </button>
+            <button type="button" id="removeFaviconBtn"
+              class="inline-flex items-center justify-center rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 text-sm font-medium text-red-500 hover:bg-gray-50 dark:hover:bg-gray-800 {{if not .Setting.FaviconID}}hidden{{end}}">
+              Remove
+            </button>
+          </div>
+          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Saving replaces assets/favicon.ico, so every page picks it up immediately &mdash; no need to edit any layout.</p>
+        </div>
+
+        <div>
+          <label for="default_role_id" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">New user default role</label>
+          <select id="default_role_id" name="default_role_id"
+            class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+            <option value="">Default ("member" role)</option>
+            {{ range .Roles }}
+            <option value="{{ .ID }}" {{ if eq $.Setting.DefaultRoleID .ID }}selected{{ end }}>{{ .Role }}</option>
+            {{ end }}
+          </select>
+          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Role granted to users who self-register via POST /auth/register.</p>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
+            Save
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function openFaviconPicker(onSelect) {
+    var overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4';
+    overlay.innerHTML =
+      '<div class="w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-2xl bg-white dark:bg-gray-900 p-5">' +
+        '<div class="flex items-center justify-between mb-4">' +
+          '<h3 class="text-base font-medium text-gray-800 dark:text-white/90">Select Favicon</h3>' +
+          '<button type="button" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" id="faviconPickerClose">&times;</button>' +
+        '</div>' +
+        '<div id="faviconPickerGrid" class="grid grid-cols-4 gap-3 min-h-[6rem]"><p class="col-span-4 text-sm text-gray-400">Loading...</p></div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    function close() { overlay.remove(); }
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+    overlay.querySelector('#faviconPickerClose').addEventListener('click', close);
+
+    fetch('/admin/medias/json?type=image')
+      .then(function (r) { return r.json(); })
+      .then(function (items) {
+        var grid = overlay.querySelector('#faviconPickerGrid');
+        if (!items.length) {
+          grid.innerHTML = '<p class="col-span-4 text-sm text-gray-400">No images in the media library yet.</p>';
+          return;
+        }
+        grid.innerHTML = '';
+        items.forEach(function (item) {
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'aspect-square overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 hover:ring-2 hover:ring-indigo-400';
+          btn.innerHTML = '<img src="' + item.url + '" alt="" class="h-full w-full object-cover">';
+          btn.addEventListener('click', function () { onSelect(item); close(); });
+          grid.appendChild(btn);
+        });
+      })
+      .catch(function () {
+        overlay.querySelector('#faviconPickerGrid').innerHTML = '<p class="col-span-4 text-sm text-red-500">Failed to load images.</p>';
+      });
+  }
+
+  document.getElementById('setFaviconBtn').addEventListener('click', function () {
+    openFaviconPicker(function (item) {
+      document.getElementById('favicon_id').value = item.id;
+      document.getElementById('faviconPreviewImg').src = item.url;
+      document.getElementById('faviconPreview').classList.remove('hidden');
+      document.getElementById('faviconEmpty').classList.add('hidden');
+      document.getElementById('setFaviconBtn').textContent = 'Change';
+      document.getElementById('removeFaviconBtn').classList.remove('hidden');
+    });
+  });
+
+  document.getElementById('removeFaviconBtn').addEventListener('click', function () {
+    document.getElementById('favicon_id').value = '';
+    document.getElementById('faviconPreview').classList.add('hidden');
+    document.getElementById('faviconEmpty').classList.remove('hidden');
+    document.getElementById('setFaviconBtn').textContent = 'Set favicon';
+    document.getElementById('removeFaviconBtn').classList.add('hidden');
+  });
+</script>
+{{ end }}

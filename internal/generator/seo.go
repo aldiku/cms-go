@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"cms-go/internal/config"
 	"cms-go/internal/models"
 	"html/template"
 	"strings"
@@ -13,7 +14,7 @@ import (
 // escaped here since this is the one place they become raw <head> markup.
 func BuildSEOHead(page models.Page, siteURL string) template.HTML {
 	title := firstNonEmpty(page.MetaTitle, page.Title)
-	description := page.MetaDescription
+	description := firstNonEmpty(page.MetaDescription, config.SiteTagline())
 	canonical := firstNonEmpty(page.CanonicalURL, pageURL(siteURL, page.Slug))
 
 	featuredImageURL := absoluteURL(siteURL, page.FeaturedImage.URL)

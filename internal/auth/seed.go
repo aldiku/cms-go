@@ -171,6 +171,12 @@ func SeedAuth() {
 	}
 	db.DB.Where("menu = ?", settingsMenu.Menu).Attrs(settingsMenu).FirstOrCreate(&settingsMenu)
 
+	generalSettingsMenu := models.Menu{
+		Menu: "General Settings", Path: "/admin/general-settings", Icon: "🛠️",
+		MenuType: "module", Status: 1, ListOrder: 0, ParentID: settingsMenu.ID, MenuGroupID: backendGroup.ID,
+	}
+	db.DB.Where("path = ?", generalSettingsMenu.Path).Attrs(generalSettingsMenu).FirstOrCreate(&generalSettingsMenu)
+
 	smtpMenu := models.Menu{
 		Menu: "Email SMTP", Path: "/admin/smtp", Icon: "📧",
 		MenuType: "module", Status: 1, ListOrder: 1, ParentID: settingsMenu.ID, MenuGroupID: backendGroup.ID,

@@ -72,7 +72,7 @@ func New() *echo.Echo {
 		&models.Media{}, &models.SMTPConfig{}, &models.EmailTemplate{}, &models.NotificationHook{},
 		&models.EmailVerification{}, &models.PasswordReset{},
 		&models.ProductCategory{}, &models.Product{}, &models.ProductVariant{}, &models.ProductVariantTier{},
-		&models.PriceOverride{},
+		&models.PriceOverride{}, &models.GeneralSetting{},
 	)
 	auth.SeedAuth()
 	auth.SeedAuthPages()
@@ -206,6 +206,10 @@ func New() *echo.Echo {
 	admin.GET("/medias/json", handlers.AdminMediasJSON)
 	admin.POST("/medias/upload", handlers.AdminMediaUpload, middleware.BodyLimit("50M"))
 	admin.POST("/medias/:id/delete", handlers.AdminDeleteMedia)
+
+	// General Settings (Settings > General Settings)
+	admin.GET("/general-settings", handlers.AdminGeneralSettings)
+	admin.POST("/general-settings", handlers.AdminUpdateGeneralSettings)
 
 	// Email SMTP (Settings > Email SMTP)
 	admin.GET("/smtp", handlers.AdminSMTPConfigs)
