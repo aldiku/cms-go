@@ -21,8 +21,9 @@ import (
 )
 
 const (
-	SessionCookie = "cms_session"
-	sessionTTL    = 7 * 24 * time.Hour
+	SessionCookie   = "cms_session"
+	sessionTTL      = 7 * 24 * time.Hour
+	verificationTTL = 24 * time.Hour
 )
 
 func HashPassword(plain string) (string, error) {
@@ -59,6 +60,50 @@ func CreateSession(userID uint, ip, userAgent string) (string, error) {
 
 func DestroySession(token string) {
 	db.DB.Delete(&models.Session{}, "token = ?", token)
+}
+
+// CreateVerificationToken stores a new one-time email-verification token for
+// userID and returns it. Any previous unconsumed token for the same user is
+// removed first, so only the most recently sent verification link works.
+func CreateVerificationToken(userID uint) (string, error) {
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return "", err
+	}
+	token := hex.EncodeToString(raw)
+
+	db.DB.Delete(&models.EmailVerification{}, "user_id = ?", userID)
+	verification := models.EmailVerification{
+		Token:     token,
+		UserID:    userID,
+		ExpiresAt: time.Now().Add(verificationTTL),
+	}
+	if err := db.DB.Create(&verification).Error; err != nil {
+		return "", err
+	}
+	return token, nil
+}
+
+// ConsumeVerificationToken validates token, deletes it (one-time use), and
+// returns the user it belonged to. The caller is responsible for setting
+// User.VerifiedAt.
+func ConsumeVerificationToken(token string) (models.User, error) {
+	var user models.User
+
+	var verification models.EmailVerification
+	if err := db.DB.First(&verification, "token = ?", token).Error; err != nil {
+		return user, errors.New("invalid verification link")
+	}
+	db.DB.Delete(&verification)
+
+	if time.Now().After(verification.ExpiresAt) {
+		return user, errors.New("verification link has expired")
+	}
+
+	if err := db.DB.Preload("Role").First(&user, verification.UserID).Error; err != nil {
+		return user, err
+	}
+	return user, nil
 }
 
 // GenerateAPIKey returns a new 32-character random hex string for

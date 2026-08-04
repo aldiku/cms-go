@@ -63,3 +63,13 @@ type Session struct {
 	ExpiresAt time.Time
 	CreatedAt time.Time
 }
+
+// EmailVerification is a one-time token proving a user controls the email
+// address they were registered with. Consuming it (GET /auth/verify) sets
+// User.VerifiedAt and deletes the row.
+type EmailVerification struct {
+	Token     string `gorm:"primaryKey;size:64"` // hex of 32 random bytes
+	UserID    uint   `gorm:"index"`
+	ExpiresAt time.Time
+	CreatedAt time.Time
+}

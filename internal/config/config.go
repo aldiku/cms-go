@@ -21,6 +21,15 @@ func SiteURL() string {
 	return strings.TrimRight(os.Getenv("SITE_URL"), "/")
 }
 
+// SiteName returns the configured site name (APP_NAME env), used for
+// branding in outgoing notification emails. Defaults to "CMS" if unset.
+func SiteName() string {
+	if name := os.Getenv("APP_NAME"); name != "" {
+		return name
+	}
+	return "CMS"
+}
+
 // GeneratePageLimit returns how many latest-updated pages to pre-render
 // during bulk generation (GENERATE_PAGE_LIMIT env, default 50). Pages
 // outside this set are generated lazily on first request.

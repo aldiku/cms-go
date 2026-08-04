@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
 	"cms-go/internal/auth"
+	"cms-go/internal/config"
 	"cms-go/internal/db"
 	"cms-go/internal/models"
+	"cms-go/internal/notify"
 
 	"github.com/labstack/echo/v4"
 )
@@ -83,6 +86,32 @@ func AdminCreateUser(c echo.Context) error {
 	if err := db.DB.Create(&user).Error; err != nil {
 		return c.String(http.StatusBadRequest, "Failed to create user (email may already exist)")
 	}
+
+	var role models.Role
+	db.DB.First(&role, user.RoleID)
+
+	verificationURL := ""
+	if token, err := auth.CreateVerificationToken(user.ID); err != nil {
+		log.Printf("notify: create verification token failed: %v", err)
+	} else {
+		verificationURL = config.SiteURL() + "/auth/verify?token=" + token
+	}
+
+	go func() {
+		data := map[string]string{
+			"_to":              user.Email,
+			"user_name":        user.FullName(),
+			"user_email":       user.Email,
+			"user_role":        role.Role,
+			"site_name":        config.SiteName(),
+			"site_url":         config.SiteURL(),
+			"verification_url": verificationURL,
+		}
+		for _, err := range notify.Dispatch("register_user", data) {
+			log.Printf("notify: register_user dispatch failed: %v", err)
+		}
+	}()
+
 	return c.Redirect(http.StatusSeeOther, "/admin/users")
 }
 

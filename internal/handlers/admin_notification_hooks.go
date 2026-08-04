@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
@@ -62,9 +63,9 @@ func AdminNotificationHookForm(c echo.Context) error {
 		"Hook":               hook,
 		"SMTPConfigs":        smtpConfigs,
 		"Templates":          templates,
-		"RegistryJSON":       string(registryJSON),
-		"TemplateParamsJSON": string(templateParamsJSON),
-		"MappingJSON":        string(mappingJSON),
+		"RegistryJSON":       template.JS(registryJSON),
+		"TemplateParamsJSON": template.JS(templateParamsJSON),
+		"MappingJSON":        template.JS(mappingJSON),
 	}
 	return renderWithLayout(c, "internal/views/admin/admin-layout.html", "internal/views/admin/notification_hook_form.html", data)
 }

@@ -35,6 +35,7 @@ var Registry = []HookDef{
 			{Key: "user_role", Description: "Assigned role name"},
 			{Key: "site_name", Description: "Site name"},
 			{Key: "site_url", Description: "Site URL"},
+			{Key: "verification_url", Description: "One-time link that verifies the new user's email and logs them in"},
 		},
 	},
 	{

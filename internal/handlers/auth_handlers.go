@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"cms-go/internal/auth"
 	"cms-go/internal/db"
@@ -67,4 +68,31 @@ func AdminLogout(c echo.Context) error {
 	}
 	auth.ClearSessionCookie(c)
 	return c.Redirect(http.StatusFound, "/admin/login")
+}
+
+// GET /auth/verify?token=... — consumes a one-time email-verification token
+// (sent via the register_user notification hook), marks the user verified,
+// and logs them straight in.
+func AuthVerifyEmail(c echo.Context) error {
+	user, err := auth.ConsumeVerificationToken(c.QueryParam("token"))
+	if err != nil {
+		return c.Render(http.StatusBadRequest, "login-admin.html", map[string]interface{}{
+			"Error": "This verification link is invalid or has expired. Please log in, or ask an admin for a new one.",
+			"CSRF":  csrfToken(c),
+		})
+	}
+
+	db.DB.Model(&user).Update("verified_at", time.Now())
+
+	token, err := auth.CreateSession(user.ID, c.RealIP(), c.Request().UserAgent())
+	if err != nil {
+		return c.Render(http.StatusInternalServerError, "login-admin.html", map[string]interface{}{
+			"Error": "Email verified, but we couldn't start your session — please log in.",
+			"Email": user.Email,
+			"CSRF":  csrfToken(c),
+		})
+	}
+
+	auth.SetSessionCookie(c, token)
+	return c.Redirect(http.StatusFound, "/admin")
 }

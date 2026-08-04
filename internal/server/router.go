@@ -70,6 +70,7 @@ func New() *echo.Echo {
 		&models.User{}, &models.Role{}, &models.Permission{}, &models.Session{},
 		&models.Revision{}, &models.ApiEndpoint{}, &models.Category{}, &models.Tag{},
 		&models.Media{}, &models.SMTPConfig{}, &models.EmailTemplate{}, &models.NotificationHook{},
+		&models.EmailVerification{},
 	)
 	auth.SeedAuth()
 	migratePageDefaults()
@@ -106,6 +107,7 @@ func New() *echo.Echo {
 	e.GET("/admin/login", handlers.AdminLoginForm, loginCSRF)
 	e.POST("/admin/login", handlers.AdminLogin, loginRateLimit, loginCSRF)
 	e.POST("/admin/logout", handlers.AdminLogout)
+	e.GET("/auth/verify", handlers.AuthVerifyEmail)
 
 	// Self-service account pages — session required, but NOT RBAC-gated by
 	// menu permission: every logged-in user needs their own profile/settings

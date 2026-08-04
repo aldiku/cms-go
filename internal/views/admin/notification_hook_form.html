@@ -168,11 +168,11 @@
         row.className = 'grid grid-cols-1 sm:grid-cols-2 gap-3 items-center rounded-lg border border-gray-100 dark:border-gray-800 p-3';
 
         const label = document.createElement('div');
-        label.innerHTML = '<code class="text-sm font-mono text-gray-700 dark:text-gray-300">{' + '{' + p.Key + '}' + '}</code>' +
-          (p.Description ? '<p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">' + p.Description + '</p>' : '');
+        label.innerHTML = '<code class="text-sm font-mono text-gray-700 dark:text-gray-300">{' + '{' + p.key + '}' + '}</code>' +
+          (p.description ? '<p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">' + p.description + '</p>' : '');
 
         const select = document.createElement('select');
-        select.name = 'mapping__' + p.Key;
+        select.name = 'mapping__' + p.key;
         select.className = fieldClass;
         const noneOpt = document.createElement('option');
         noneOpt.value = '';
@@ -182,7 +182,7 @@
           const opt = document.createElement('option');
           opt.value = f.Key;
           opt.textContent = f.Key + (f.Description ? ' — ' + f.Description : '');
-          if (EXISTING_MAPPING[p.Key] === f.Key) opt.selected = true;
+          if (EXISTING_MAPPING[p.key] === f.Key) opt.selected = true;
           select.appendChild(opt);
         });
 
