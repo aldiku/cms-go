@@ -1,0 +1,42 @@
+{{ define "content" }}
+<div class="space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">My Channels</h2>
+  </div>
+
+  {{ if .Cards }}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    {{ range .Cards }}
+    <a href="/auth/channels/{{ .Channel.ID }}" class="block rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4 hover:shadow-md transition-shadow">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">{{ if eq .Channel.Type "sms" }}📱{{ else if eq .Channel.Type "waba" }}💬{{ else }}✉️{{ end }}</span>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-semibold text-gray-800 dark:text-white/90 truncate">{{ .Channel.SenderID }}</p>
+          <p class="text-xs text-gray-400 dark:text-gray-500 truncate">{{ .Channel.Identifier }}</p>
+        </div>
+      </div>
+      <div class="mt-3 flex items-center justify-between">
+        <span class="text-xs text-gray-500 dark:text-gray-400">{{ .Channel.Type }}</span>
+        {{ if eq .Channel.Status "active" }}
+        <span class="rounded-full bg-green-50 dark:bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-600 dark:text-green-400">Active</span>
+        {{ else if eq .Channel.Status "pending" }}
+        <span class="rounded-full bg-yellow-50 dark:bg-yellow-500/15 px-2 py-0.5 text-xs font-medium text-yellow-600 dark:text-yellow-400">Pending</span>
+        {{ else if eq .Channel.Status "suspended" }}
+        <span class="rounded-full bg-orange-50 dark:bg-orange-500/15 px-2 py-0.5 text-xs font-medium text-orange-600 dark:text-orange-400">Suspended</span>
+        {{ else }}
+        <span class="rounded-full bg-red-50 dark:bg-red-500/15 px-2 py-0.5 text-xs font-medium text-red-600 dark:text-red-400">Rejected</span>
+        {{ end }}
+      </div>
+      <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">Balance: <span class="font-medium text-gray-700 dark:text-gray-300">{{ .Channel.Balance }}</span></p>
+    </a>
+    {{ end }}
+  </div>
+  {{ else }}
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-8 text-center">
+    <p class="text-sm text-gray-500 dark:text-gray-400">You don't have any channels yet. Contact an admin to have one registered for you.</p>
+  </div>
+  {{ end }}
+
+</div>
+{{ end }}

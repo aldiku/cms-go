@@ -100,6 +100,11 @@ func bindProductFromForm(c echo.Context, product *models.Product) {
 	} else {
 		product.Status = 0
 	}
+
+	if minQuota, err := strconv.ParseInt(c.FormValue("min_quota"), 10, 64); err == nil {
+		product.MinQuota = minQuota
+	}
+	product.IsCampaignable = c.FormValue("is_campaignable") == "on"
 }
 
 // POST /admin/products/new — always creates at the root of the submitted

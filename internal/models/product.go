@@ -34,8 +34,14 @@ type Product struct {
 	Price             int64
 	Status            uint8 // 1 = active
 	ListOrder         uint32
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
+	MinQuota          int64 // minimum purchase/topup quantity for this product (e.g. smstopup's minimum credits)
+	// IsCampaignable defaults true at the DB level (gorm tag) so AutoMigrate
+	// backfills existing rows as campaignable rather than NULL/false —
+	// false only for topup-only products (smstopup, WABA service/utility/
+	// marketing/authentication) — see internal/models/channel.go.
+	IsCampaignable bool `gorm:"default:true"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 // ProductVariant is the sellable unit under a Product node (normally a

@@ -73,6 +73,7 @@ func New() *echo.Echo {
 		&models.EmailVerification{}, &models.PasswordReset{},
 		&models.ProductCategory{}, &models.Product{}, &models.ProductVariant{}, &models.ProductVariantTier{},
 		&models.PriceOverride{}, &models.GeneralSetting{},
+		&models.Channel{}, &models.ChannelTopup{},
 	)
 	auth.SeedAuth()
 	auth.SeedAuthPages()
@@ -130,6 +131,8 @@ func New() *echo.Echo {
 	e.POST("/auth/register", handlers.AuthAPIRegister, authAPIRateLimit)
 	e.POST("/auth/forgot-password", handlers.AuthAPIForgotPassword, authAPIRateLimit)
 	e.POST("/auth/reset-password", handlers.AuthAPIResetPassword, authAPIRateLimit)
+	e.GET("/auth/channels/waba-products", handlers.ChannelWABAProductsJSON)
+	e.POST("/auth/channels/register", handlers.RegisterChannel, authAPIRateLimit)
 
 	// Self-service account pages — session required, but NOT RBAC-gated by
 	// menu permission: every logged-in user needs their own profile/settings
@@ -144,6 +147,10 @@ func New() *echo.Echo {
 	account.POST("/setting/api-key/reset", handlers.AuthResetAPIKey)
 	account.GET("/pricing", handlers.AuthPricing)
 	account.POST("/pricing/set", handlers.AuthSetClientPrice)
+	account.GET("/channels", handlers.AuthChannels)
+	account.GET("/channels/:id", handlers.AuthChannelDetail)
+	account.POST("/channels/:id/topup/sms", handlers.AuthTopupSMS)
+	account.POST("/channels/:id/topup/waba", handlers.AuthTopupWABA)
 
 	// Admin panel (HTML forms) — session required, RBAC per menu
 	admin := e.Group("/admin", auth.RequireAuth, auth.RequirePermission)
@@ -200,6 +207,13 @@ func New() *echo.Echo {
 	admin.GET("/custom-pricing/user/:user_id", handlers.AdminCustomPricingForUser)
 	admin.POST("/custom-pricing/user/:user_id/set", handlers.AdminSetPriceOverrideForUser)
 	admin.POST("/custom-pricing/:override_id/delete", handlers.AdminDeleteCustomPricing)
+
+	// Channels
+	admin.GET("/channels", handlers.AdminChannels)
+	admin.POST("/channels/new", handlers.AdminCreateChannel)
+	admin.GET("/channels/:id", handlers.AdminChannelDetail)
+	admin.POST("/channels/:id/edit", handlers.AdminUpdateChannel)
+	admin.POST("/channels/:id/topup/:topup_id/review", handlers.AdminReviewChannelTopup)
 
 	// Media Library — image/video/audio/document/archive uploads
 	admin.GET("/medias", handlers.AdminMedias)

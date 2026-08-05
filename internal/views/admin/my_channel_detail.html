@@ -1,0 +1,168 @@
+{{ define "content" }}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">{{ .Channel.SenderID }}</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400">{{ .Channel.Type }} &middot; {{ .Channel.Identifier }}</p>
+    </div>
+    <a href="/auth/channels" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">&larr; Back to My Channels</a>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4">
+      <p class="text-xs text-gray-400 dark:text-gray-500">Balance</p>
+      <p class="text-lg font-semibold text-gray-800 dark:text-white/90">{{ .Channel.Balance }}</p>
+    </div>
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4">
+      <p class="text-xs text-gray-400 dark:text-gray-500">Total Topped Up</p>
+      <p class="text-lg font-semibold text-gray-800 dark:text-white/90">{{ .Stats.TotalToppedUp }}</p>
+    </div>
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4">
+      <p class="text-xs text-gray-400 dark:text-gray-500">Completed Topups</p>
+      <p class="text-lg font-semibold text-gray-800 dark:text-white/90">{{ .Stats.CompletedCount }}</p>
+    </div>
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4">
+      <p class="text-xs text-gray-400 dark:text-gray-500">Pending Review</p>
+      <p class="text-lg font-semibold text-gray-800 dark:text-white/90">{{ .Stats.PendingCount }}</p>
+    </div>
+  </div>
+
+  {{ if eq .Channel.Status "active" }}
+  <!-- Topup -->
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="px-5 py-4 sm:px-6"><h3 class="text-base font-medium text-gray-800 dark:text-white/90">Topup</h3></div>
+    <div class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
+
+      {{ if eq .Channel.Type "sms" }}
+        {{ if .SMSAvailable }}
+        <form method="POST" action="/auth/channels/{{ .Channel.ID }}/topup/sms" class="sms-topup-form space-y-4">
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Quantity</label>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="sms-preset-btn rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800" data-quantity="2000">2.000</button>
+              <button type="button" class="sms-preset-btn rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800" data-quantity="5000">5.000</button>
+              <button type="button" class="sms-preset-btn rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800" data-quantity="10000">10.000</button>
+              <button type="button" class="sms-preset-btn rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800" data-quantity="50000">50.000</button>
+            </div>
+          </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Or custom quantity</label>
+            <input type="number" name="quantity" id="sms_quantity" min="1" placeholder="Minimum 2.000"
+              class="h-11 w-56 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <p class="text-sm text-gray-600 dark:text-gray-300">Price per SMS: <span class="font-medium">{{ .SMSPrice }}</span> &mdash; Total: <span id="sms_total" class="font-semibold text-gray-800 dark:text-white/90">0</span></p>
+          <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">Request Topup</button>
+        </form>
+        <script>
+          (function () {
+            var qtyInput = document.getElementById('sms_quantity');
+            var total = document.getElementById('sms_total');
+            var price = {{ .SMSPrice }};
+            function updateTotal() {
+              var qty = parseInt(qtyInput.value, 10) || 0;
+              total.textContent = qty * price;
+            }
+            document.querySelectorAll('.sms-preset-btn').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                qtyInput.value = btn.dataset.quantity;
+                updateTotal();
+              });
+            });
+            qtyInput.addEventListener('input', updateTotal);
+          })();
+        </script>
+        {{ else }}
+        <p class="text-sm text-gray-500 dark:text-gray-400">SMS topup isn't configured yet — ask an admin to set up the "smstopup" product.</p>
+        {{ end }}
+
+      {{ else if eq .Channel.Type "waba" }}
+        {{ if .WABAOptions }}
+        <form method="POST" action="/auth/channels/{{ .Channel.ID }}/topup/waba" class="space-y-4">
+          <div class="space-y-3">
+            {{ range .WABAOptions }}
+            {{ $product := .Product }}
+            {{ range .Variants }}
+            <label class="flex items-start gap-3 rounded-lg border border-gray-200 dark:border-gray-800 p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+              <input type="radio" name="variant_id" value="{{ .Variant.ID }}" required class="mt-1 waba-variant-radio" data-tiering="{{ if eq .Variant.PricingMode "tiering" }}1{{ else }}0{{ end }}">
+              <div class="flex-1">
+                <p class="text-sm font-medium text-gray-800 dark:text-white/90">{{ $product.Name }} &mdash; {{ .Variant.Name }}</p>
+                {{ if eq .Variant.PricingMode "fixed" }}
+                <p class="text-xs text-gray-500 dark:text-gray-400">Price: {{ .Variant.Price }}</p>
+                {{ else }}
+                <div class="mt-2 space-y-1 tier-options">
+                  {{ range .Tiers }}
+                  <label class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                    <input type="radio" name="tier_id" value="{{ .ID }}" class="tier-radio">
+                    {{ .Label }} &mdash; {{ .Price }}{{ if .IsCustom }} (custom, subject to approval){{ end }}
+                  </label>
+                  {{ end }}
+                </div>
+                {{ end }}
+              </div>
+            </label>
+            {{ end }}
+            {{ end }}
+          </div>
+          <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">Request Topup</button>
+        </form>
+        {{ else }}
+        <p class="text-sm text-gray-500 dark:text-gray-400">No WABA topup products are configured yet.</p>
+        {{ end }}
+
+      {{ else }}
+        <p class="text-sm text-gray-500 dark:text-gray-400">Topup isn't available for this channel type yet.</p>
+      {{ end }}
+
+    </div>
+  </div>
+  {{ else }}
+  <div class="rounded-lg border border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950/40 px-4 py-3 text-sm text-yellow-700 dark:text-yellow-400">
+    This channel is {{ .Channel.Status }} — topup is only available for active channels.
+  </div>
+  {{ end }}
+
+  <!-- History -->
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="px-5 py-4 sm:px-6"><h3 class="text-base font-medium text-gray-800 dark:text-white/90">Transaction History</h3></div>
+    <div class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
+      <div class="w-full overflow-x-auto">
+        <table class="min-w-full">
+          <thead>
+            <tr class="border-y border-gray-100 dark:border-gray-800">
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Date</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Quantity</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Amount</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Status</p></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            {{ range .Topups }}
+            <tr>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .CreatedAt.Format "2006-01-02 15:04" }}</td>
+              <td class="py-4 text-sm text-gray-800 dark:text-white/90">{{ .Quantity }}</td>
+              <td class="py-4 text-sm text-gray-800 dark:text-white/90">{{ .Amount }}</td>
+              <td class="py-4 text-sm">
+                {{ if eq .Status "completed" }}
+                <span class="rounded-full bg-green-50 dark:bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-600 dark:text-green-400">Completed</span>
+                {{ else if eq .Status "pending" }}
+                <span class="rounded-full bg-yellow-50 dark:bg-yellow-500/15 px-2 py-0.5 text-xs font-medium text-yellow-600 dark:text-yellow-400">Pending</span>
+                {{ else }}
+                <span class="rounded-full bg-red-50 dark:bg-red-500/15 px-2 py-0.5 text-xs font-medium text-red-600 dark:text-red-400">Rejected</span>
+                {{ end }}
+              </td>
+            </tr>
+            {{ else }}
+            <tr>
+              <td colspan="4" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No transactions yet.</td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}

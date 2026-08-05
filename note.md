@@ -1,6 +1,6 @@
 # Spesifikasi Modul Product — Advertising Marketplace
 
-Status: **draft teknis**, hasil rapikan dari catatan awal. Bagian [§9](#9-pertanyaan-terbuka--perlu-klarifikasi) berisi hal-hal yang masih ambigu di catatan asli dan perlu dikonfirmasi sebelum implementasi.
+Status: **draft teknis**. Sebagian besar pertanyaan di [§10](#10-pertanyaan-terbuka--perlu-klarifikasi) sudah dijawab langsung di section tersebut; sisanya (termasuk pertanyaan baru dari modul Channel Management, §9) masih perlu dikonfirmasi sebelum implementasi.
 
 ## Daftar Isi
 
@@ -12,7 +12,8 @@ Status: **draft teknis**, hasil rapikan dari catatan awal. Bagian [§9](#9-perta
 6. [Alur Registrasi Layanan](#6-alur-registrasi-layanan)
 7. [DOOH — Data Existing](#7-dooh--data-existing)
 8. [Sistem Harga Berjenjang (Reseller Pricing)](#8-sistem-harga-berjenjang-reseller-pricing)
-9. [Pertanyaan Terbuka / Perlu Klarifikasi](#9-pertanyaan-terbuka--perlu-klarifikasi)
+9. [Channel Management](#9-channel-management)
+10. [Pertanyaan Terbuka / Perlu Klarifikasi](#10-pertanyaan-terbuka--perlu-klarifikasi)
 
 ---
 
@@ -24,6 +25,7 @@ Modul **Product** mengelola katalog layanan advertising yang dijual melalui mark
 - **Creative** — aset iklan (gambar, video, copy) yang dipasangkan dengan campaign.
 - **Registrasi layanan** — onboarding sender ID untuk SMS Broadcast dan WhatsApp Business API (WABA).
 - **Harga berjenjang** — HPP/price per produk, dengan kemampuan admin dan reseller melakukan override harga secara bertingkat.
+- **Channel Management** — kelola channel (hasil registrasi sender ID SMS/WABA/Email) beserta saldo, riwayat transaksi, dan topup (§9).
 
 ---
 
@@ -42,12 +44,12 @@ Kategori tingkat atas (top-level), flat, tidak bertingkat. CRUD penuh.
 
 ### 2.2 Product (Hierarkis)
 
-Produk berada di bawah satu Category, dan **bersifat rekursif** — satu Product bisa punya Product anak (lihat pohon di [§3](#3-struktur-kategori--produk-per-vertikal), contoh: `SMS Advertising > SMS LBA > TELKOMSEL > Telkomsel Ads` = 4 level bersarang). CRUD penuh.
+Produk berada di bawah satu Category, dan **bersifat rekursif** — satu Product bisa punya Product anak (lihat pohon di [§3](#3-struktur-kategori--produk-per-vertikal), contoh: `SMS Advertising > SMS LBA > TELKOMSEL > Telkomsel Ads` = 4 level bersarang). **Setiap level di pohon adalah row `Product` dengan `parent_id`** — dikonfirmasi di [§10.1](#10-pertanyaan-terbuka--perlu-klarifikasi). CRUD penuh.
 
 | Field | Tipe | Keterangan |
 |---|---|---|
 | `id` | integer | Primary key |
-| `code` | string | Kode unik produk |
+| `code` | string | Kode unik produk (contoh: `smstopup`, dipakai referensi langsung di §9.4) |
 | `cat_id` | integer | FK ke `Category.id` |
 | `parent_id` | integer, nullable | FK ke `Product.id` sendiri — mendukung nesting N-level. `null` = node tingkat pertama di bawah kategori |
 | `nama` | string | Nama produk/node (contoh: "SMS LBA", "TELKOMSEL", "Telkomsel Ads") |
@@ -57,8 +59,10 @@ Produk berada di bawah satu Category, dan **bersifat rekursif** — satu Product
 | `price` | numeric | Harga jual default |
 | `status` | string/int | Status aktif/nonaktif |
 | `list_order` | integer | Urutan tampil |
+| `min_quota` | integer | Kuantitas minimum pembelian/topup untuk produk ini — analog `min_spot` di DOOH ([§7](#7-dooh--data-existing)) |
+| `is_campaignable` | boolean, default `true` | `false` untuk produk yang bukan dipakai langsung sebagai campaign — dipakai untuk topup saldo channel saja (`smstopup`, dan WABA `service`/`utility`/`marketing`/`authentication`). Lihat [§9.6](#96-flag-is_campaignable-pada-product) |
 
-> Lihat [§9.1](#9-pertanyaan-terbuka--perlu-klarifikasi) — perlu konfirmasi apakah **setiap** level di pohon adalah row `Product` (dengan `parent_id`), atau ada level yang sebetulnya harus jadi entity terpisah (mis. "operator" sebagai entity, bukan node produk).
+> **Catatan penempatan `min_quota`**: jawaban awal di [§10.2](#10-pertanyaan-terbuka--perlu-klarifikasi) sempat menyebut field ini dalam konteks `ProductVariant` (§2.3, unit yang benar-benar di-checkout). Instruksi terbaru menempatkannya di `Product`. Ditempatkan di `Product` sesuai instruksi terbaru — **perlu dikonfirmasi ulang** kalau memang dimaksudkan per-Variant (mis. produk dengan beberapa variant yang punya minimum kuantitas berbeda-beda).
 
 ### 2.3 Product Variant
 
@@ -74,8 +78,6 @@ Unit yang benar-benar dijual/di-*checkout* di level daun (leaf) pohon Product. C
 | `status` | string/int | Status aktif/nonaktif |
 | `list_order` | integer | Urutan tampil |
 
-> Field di atas adalah minimum yang bisa disimpulkan dari catatan asli (disebutkan varian punya `hpp` dan `price`, serta bisa punya *tiering*). Field lain seperti kode SKU atau satuan (mis. "per session") belum eksplisit — lihat [§9.2](#9-pertanyaan-terbuka--perlu-klarifikasi).
-
 **Tiering harga per varian** (dipakai juga di WABA, [§6.2](#62-registrasi-whatsapp-business-api-waba)): satu varian bisa punya mode **fixed price** (satu angka) atau **tiering price** (beberapa titik harga berdasarkan volume, contoh sesi WABA: 10.000 / 20.000 / 50.000, plus opsi "custom session" yang perlu approval manual).
 
 | Field (tabel `product_variant_tier`, usulan) | Tipe | Keterangan |
@@ -90,7 +92,7 @@ Unit yang benar-benar dijual/di-*checkout* di level daun (leaf) pohon Product. C
 
 ## 3. Struktur Kategori & Produk per Vertikal
 
-Referensi isi pohon Category → Product (bersarang) untuk 4 kategori utama. Kedalaman tiap cabang **tidak seragam** (ada yang 2 level, ada yang 4 level) — konfirmasi dampaknya ke desain di [§9.1](#9-pertanyaan-terbuka--perlu-klarifikasi).
+Referensi isi pohon Category → Product (bersarang) untuk 4 kategori utama. Kedalaman tiap cabang **tidak seragam** (ada yang 2 level, ada yang 4 level) — sudah dikonfirmasi setiap level jadi row `Product` tersendiri ([§10.1](#10-pertanyaan-terbuka--perlu-klarifikasi)).
 
 ### 3.1 SMS Advertising
 
@@ -103,7 +105,7 @@ SMS Advertising
 │  ├─ TELKOMSEL → Telkomsel Ads
 │  └─ IOH → Indosat Ads
 ├─ SMS Broadcast
-│  └─ Sender ID (dipilih dari sender ID yang sudah teregistrasi — lihat §6.1)
+│  └─ Sender ID (dipilih dari Channel yang sudah teregistrasi — lihat §6.1 dan §9)
 └─ RCS Ads
    └─ Telkomsel RCS
 ```
@@ -119,7 +121,7 @@ WhatsApp Advertising
 │  ├─ TELKOMSEL → Telkomsel Promo & Ads, Adsqoo
 │  └─ IOH → Indosat Promo & Reward
 └─ WA Business API (WABA)
-   └─ Sender ID (dipilih dari sender ID yang sudah teregistrasi — lihat §6.2)
+   └─ Sender ID (dipilih dari Channel yang sudah teregistrasi — lihat §6.2 dan §9)
 ```
 
 ### 3.3 Online Advertising
@@ -142,7 +144,7 @@ Outdoor Advertising
 └─ DOOH Mobile Truck → daftar DOOH dipilih (pagination), filter type = mobile-videotron
 ```
 
-> Catatan asli menulis "type video tron" untuk ketiga cabang (VideoTron, Billboard, Mobile Truck). Nilai `type` di atas sudah dikoreksi berdasarkan data aktual di tabel `dooh_data` ([§7](#7-dooh--data-existing)), yang punya nilai `videotron`, `billboard`, dan `mobile-videotron`. **Perlu dikonfirmasi.**
+Nilai `type` di atas sudah dikonfirmasi ([§10.3](#10-pertanyaan-terbuka--perlu-klarifikasi)): `videotron`, `billboard`, `mobile-videotron`.
 
 ---
 
@@ -152,7 +154,7 @@ CRUD penuh. Merepresentasikan target penerima/penonton untuk satu campaign.
 
 | Field | Tipe | Keterangan |
 |---|---|---|
-| `audience_id` | string | Format `AUD` + `YYMMDD` + random (contoh: `AUD260901HHGTGH`) — **aturan generate perlu dikonfirmasi**, lihat §9 |
+| `audience_id` | string | Format `AUD` + `YYMMDD` + 6 karakter acak (contoh: `AUD260901HHGTGH`) — format dikonfirmasi di [§10.4](#10-pertanyaan-terbuka--perlu-klarifikasi): `AUD` + `YYMMDD` + 6 random char |
 | `type` | string | Tipe target, biasanya match dengan node produk daun (contoh: `sms-lba`) |
 | `location` | string | Alamat/deskripsi lokasi (free text) |
 | `latitude` | numeric | Titik tengah radius target |
@@ -243,7 +245,7 @@ Aset iklan yang dipasangkan ke campaign. Field bersifat superset — tidak semua
 
 ## 6. Alur Registrasi Layanan
 
-Sebelum sebuah sender ID bisa dipakai di campaign (lihat referensi "Sender ID" di §3.1 dan §3.2), perlu registrasi berikut.
+Sebelum sebuah Channel bisa dipakai di campaign (lihat referensi "Sender ID" di §3.1 dan §3.2), perlu registrasi berikut. Hasil registrasi ini menjadi satu row `Channel` — lihat [§9](#9-channel-management).
 
 ### 6.1 Registrasi SMS Broadcast
 
@@ -340,8 +342,9 @@ Ini bagian paling kompleks dari modul ini: **setiap level dalam hierarki reselle
 
 1. Setiap `ProductVariant` (atau tier-nya) punya `hpp` dan `price` default yang diset admin — ini berlaku untuk **semua client** kecuali di-override.
 2. Admin bisa set **harga custom per variant** untuk **user tertentu** (biasanya reseller) — override ini menggantikan harga default untuk user tersebut.
-3. **Khusus role reseller**: reseller bisa set harga custom untuk client yang berada di bawahnya (relasi "di bawah siapa" ini sudah dimodelkan lewat `User.ReferralID` yang ada di modul auth — lihat [§9.5](#9-pertanyaan-terbuka--perlu-klarifikasi)).
+3. **Khusus role reseller**: reseller bisa set harga custom untuk client yang berada di bawahnya. Relasi "di bawah siapa" ini memakai `User.ReferralID` yang sudah ada di modul auth — dikonfirmasi di [§10.5](#10-pertanyaan-terbuka--perlu-klarifikasi).
 4. Reseller melihat margin = (harga jual ke client) − (harga beli reseller dari admin).
+5. Untuk variant dengan mode *tiering* ([§2.3](#23-product-variant)), override berlaku **per tier secara spesifik** — dikonfirmasi di [§10.7](#10-pertanyaan-terbuka--perlu-klarifikasi).
 
 ### 8.2 Contoh Kasus
 
@@ -360,22 +363,94 @@ Dashboard Reseller X menampilkan margin: **480 − 450 = 30** per unit dari Clie
 | Field (tabel `price_override`, usulan) | Tipe | Keterangan |
 |---|---|---|
 | `id` | integer | Primary key |
-| `variant_id` | integer | FK ke `ProductVariant.id` (atau ke tier-nya jika tiering) |
+| `variant_id` | integer | FK ke `ProductVariant.id` |
+| `tier_id` | integer, nullable | FK ke `product_variant_tier.id` — diisi kalau override ini untuk satu tier spesifik (mode tiering); `null` kalau variant mode fixed |
 | `set_by_user_id` | integer | User yang membuat override ini (admin atau reseller) |
 | `target_user_id` | integer | User yang menerima harga ini (reseller, atau client di bawah reseller) |
 | `price` | numeric | Harga override |
 | `created_at` | timestamp | |
 
-Resolusi harga untuk user tertentu: cari `price_override` dengan `target_user_id = current_user.id`; kalau tidak ada, naik satu level lewat `User.ReferralID` (harga reseller-nya); kalau masih tidak ada, pakai `ProductVariant.price` default.
+Resolusi harga untuk user tertentu: cari `price_override` dengan `target_user_id = current_user.id` (dan `tier_id` yang sesuai kalau relevan); kalau tidak ada, pakai `ProductVariant.price` (atau `product_variant_tier.price`) default. **Catatan**: resolusi ini langsung ke `target_user_id`, tidak menyusuri `User.ReferralID` berjenjang ke atas — hierarki `ReferralID` dipakai untuk otorisasi (siapa boleh set harga untuk siapa) dan tampilan margin, bukan untuk fallback lookup.
 
 ---
 
-## 9. Pertanyaan Terbuka / Perlu Klarifikasi
+## 9. Channel Management
 
-1. **Kedalaman pohon Product** — apakah *semua* level di §3 (termasuk level "operator" seperti TELKOMSEL/IOH) memang harus jadi row `Product` dengan `parent_id`, atau ada level yang sebaiknya jadi entity terpisah (mis. `Operator`) supaya query/filter lebih mudah?
-2. **Field Variant** — catatan asli tidak merinci field `ProductVariant` selain `hpp`/`price`. Apakah perlu kode/SKU, satuan (mis. "per session", "per spot"), atau field lain?
-3. **Tipe DOOH** — §3.4 mengasumsikan `type` untuk Billboard = `billboard` dan Mobile Truck = `mobile-videotron` berdasarkan data sample, bukan dari catatan asli (yang menulis "video tron" untuk ketiganya). Perlu konfirmasi nilai yang benar.
-4. **Format `audience_id`** — aturan generate `AUD` + `YYMMDD` + suffix acak perlu didefinisikan persis (panjang suffix, charset, cek keunikan).
-5. **Relasi reseller → client** — apakah memang memakai `User.ReferralID` (sudah ada di modul auth, lihat `internal/models/auth.go`) sebagai sumber hierarki "client di bawah reseller ini", atau butuh relasi terpisah?
-6. **Sender ID sebagai entity** — SMS Broadcast dan WABA sama-sama punya langkah "pilih Sender ID yang sudah teregistrasi". Apakah `SenderID` perlu jadi entity/tabel sendiri (hasil dari alur registrasi §6), yang direferensikan oleh Audience/Campaign?
-7. **Override tiering** — untuk variant dengan mode *tiering* ([§2.3](#23-product-variant)), apakah `price_override` di §8.3 override satu tier spesifik, atau seluruh set tier sekaligus?
+Modul untuk mengelola **Channel** — generalisasi dari "Sender ID" hasil alur registrasi §6 — mencakup SMS, WABA, dan (nanti) Email. Setiap Channel dimiliki satu user, punya saldo yang diisi lewat topup, dan menjadi sumber pengiriman saat Audience/campaign dibuat.
+
+### 9.1 Model Data — Channel
+
+| Field | Tipe | Keterangan |
+|---|---|---|
+| `id` | integer | Primary key |
+| `type` | string | `sms` \| `waba` \| `email` — `email` disiapkan di skema tapi **disabled** dulu di UI (belum bisa dipilih) |
+| `sender_id` | string | Nama/ID pengirim terdaftar (contoh: "PROMO-ADSQOO") |
+| `identifier` | string | Identitas tambahan channel — maknanya beda per `type` (nomor WA terdaftar untuk WABA, kode approval untuk SMS?) — **perlu dikonfirmasi persis**, lihat [§10.8](#10-pertanyaan-terbuka--perlu-klarifikasi) |
+| `owner_user_id` | integer | FK ke `User` — pemilik channel, hasil registrasi §6 |
+| `status` | string | Status approval: `pending` \| `active` \| `suspended` \| `rejected` |
+| `balance` | numeric | Saldo channel saat ini — bertambah lewat topup, §9.4/§9.5 |
+| `created_at` / `updated_at` | timestamp | |
+
+> Field registrasi detail (dokumen, PIC, company, dst — lihat §6) disimpan langsung di row `Channel` yang sama, bukan tabel terpisah, kecuali nanti ada kebutuhan versi/histori pengajuan.
+
+### 9.2 Daftar Channel (List)
+
+- Ditampilkan sebagai **cards** dengan **pagination**.
+- Tiap card menampilkan: **Icon** (berdasarkan `type` — SMS/WABA/Email masing-masing ikon berbeda, bukan field tersimpan), **Sender ID**, **identifier**, **Owner**, **status**.
+- **Filter**: by `type`, by `user` (owner).
+- **Edit**: **admin only**.
+
+### 9.3 Detail Channel
+
+Halaman detail per-channel berisi:
+- **Detail** — semua field di §9.1.
+- **Usage stats** — statistik pemakaian channel. **Struktur/metrik detail belum ditentukan** — lihat [§10.9](#10-pertanyaan-terbuka--perlu-klarifikasi).
+- **History transaksi** — daftar topup + pemakaian saldo (ledger).
+- **Menu Topup** — lihat §9.4 (SMS) dan §9.5 (WABA).
+
+### 9.4 Topup — SMS
+
+Pilihan quantity preset: **2.000 / 5.000 / 10.000 / 50.000**, plus opsi **custom** (minimum **2.000**, lewat `Product.min_quota` di produk `smstopup` — §2.2).
+
+Harga dihitung dari `ProductVariant.price` milik Product dengan `code = smstopup` (lewat resolusi harga berjenjang, §8.3):
+
+```
+total_harga = quantity × harga_per_unit_smstopup
+```
+
+> **Perlu dikonfirmasi** ([§10.10](#10-pertanyaan-terbuka--perlu-klarifikasi)): apakah 2.000/5.000/dst itu **jumlah kredit SMS** yang dibeli (dikalikan harga per SMS), atau **nominal Rupiah** topup langsung? Draf ini mengasumsikan **jumlah kredit SMS**.
+
+### 9.5 Topup — WABA
+
+Berbeda dari SMS (preset tetap), pilihan topup WABA **diambil dinamis dari Product/Variant WABA** yang ada di katalog (§6.2: `service`, `utility`, `marketing`, `authentication`), termasuk tiering masing-masing (§2.3) — bukan preset angka tetap seperti SMS.
+
+### 9.6 Flag `is_campaignable` pada Product
+
+Produk topup (`smstopup`, dan keempat produk WABA topup: `service`/`utility`/`marketing`/`authentication`) **bukan** produk yang dipakai langsung untuk campaign — mereka hanya dipakai untuk mengisi saldo Channel. Field `is_campaignable` (boolean, default `true`) di `Product` (§2.2) membedakan ini:
+
+- `false` — keempat produk topup di atas.
+- `true` — produk campaign biasa (SMS LBA, WA Targetted, dst).
+
+Dipakai untuk menyaring produk mana yang muncul di picker pembuatan campaign vs. yang muncul di alur topup channel.
+
+---
+
+## 10. Pertanyaan Terbuka / Perlu Klarifikasi
+
+**Sudah dijawab:**
+
+1. **Kedalaman pohon Product** — *semua* level di §3 (termasuk level "operator" seperti TELKOMSEL/IOH) memang jadi row `Product` dengan `parent_id`.
+2. **Field Variant tambahan** — `min_quota` (lihat catatan penempatan di §2.2 — instruksi terbaru menaruhnya di `Product`, bukan `ProductVariant`).
+3. **Tipe DOOH** — `type` untuk Videotron = `videotron`, Billboard = `billboard`, Mobile Truck = `mobile-videotron`.
+4. **Format `audience_id`** — `AUD` + `YYMMDD` + 6 karakter acak.
+5. **Relasi reseller → client** — pakai `User.ReferralID` (sudah ada di modul auth, `internal/models/auth.go`), tidak perlu relasi terpisah.
+6. **Sender ID sebagai entity** — jadi tabel sendiri (`Channel`, lihat §9), referensi kepemilikan ke `User` lewat `owner_user_id`.
+7. **Override tiering** — `price_override` berlaku **per tier secara spesifik**, bukan seluruh set tier sekaligus (lihat `tier_id` di §8.3).
+
+**Masih terbuka (baru, dari modul Channel Management):**
+
+8. **Makna `identifier` pada Channel** (§9.1) — apa persisnya per `type`? (nomor WA terdaftar untuk WABA, kode approval untuk SMS, sesuatu yang lain?): nomor wa / custom id
+9. **Usage stats Channel** (§9.3) — metrik apa saja yang ditampilkan : jumlah pesan terkirim, delivery rate, per periode waktu, total topup, saldo tersisa
+10. **Satuan topup SMS** (§9.4) — preset 2.000/5.000/10.000/50.000 itu jumlah kredit SMS atau nominal Rupiah? : jumlah kredit
+11. **Alur pembayaran topup** — gateway pembayaran apa yang dipakai untuk transaksi topup (SMS maupun WABA)? Belum dibahas sama sekali. gateway akan dibuat setelah sistem cart, saat ini masukkan ke cart dulu
+12. **Approval workflow Channel** — siapa yang approve `pending` → `active`/`rejected`? Perlu notifikasi (bisa reuse sistem notification hook yang sudah ada di `internal/notify`)? approval manual oleh admin
