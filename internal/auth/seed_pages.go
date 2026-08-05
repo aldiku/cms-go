@@ -23,11 +23,18 @@ var forgotPasswordPageContent string
 //go:embed seedpages/reset-password.html
 var resetPasswordPageContent string
 
+//go:embed seedpages/register-sms.html
+var registerSMSPageContent string
+
+//go:embed seedpages/register-whatsapp.html
+var registerWhatsAppPageContent string
+
 const blankLayoutStructure = `{"name":"blank-layout","rows":[{"columns":[{"components":[{"type":"content","props":{"html":"<p>This is default placeholder.</p>"}}]}]}]}`
 
 // SeedAuthPages bootstraps the header/footer-less "blank-layout" and the
-// four public JSON-auth pages (/login, /register, /forgot-password,
-// /reset-password) that back internal/handlers/auth_api.go, so a fresh
+// public JSON-auth pages (/login, /register, /forgot-password,
+// /reset-password, /register-sms, /register-whatsapp) that back
+// internal/handlers/auth_api.go and channel_register_api.go, so a fresh
 // database (e.g. a second dev machine) gets a working auth UI without
 // manual setup. Idempotent — only creates rows that don't already exist by
 // name/slug, and never overwrites content an admin has since edited. Call
@@ -60,6 +67,8 @@ func SeedAuthPages() {
 		{Title: "Register", Slug: "/register", Type: "html", Status: models.PageStatusPublish, LayoutID: blankLayout.ID, AuthorID: admin.ID, PublishedAt: &now, MetaTitle: "Register", Content: registerPageContent},
 		{Title: "Forgot Password", Slug: "/forgot-password", Type: "html", Status: models.PageStatusPublish, LayoutID: blankLayout.ID, AuthorID: admin.ID, PublishedAt: &now, MetaTitle: "Forgot Password", Content: forgotPasswordPageContent},
 		{Title: "Reset Password", Slug: "/reset-password", Type: "html", Status: models.PageStatusPublish, LayoutID: blankLayout.ID, AuthorID: admin.ID, PublishedAt: &now, MetaTitle: "Reset Password", Content: resetPasswordPageContent},
+		{Title: "Register SMS Broadcast", Slug: "/register-sms", Type: "html", Status: models.PageStatusPublish, LayoutID: blankLayout.ID, AuthorID: admin.ID, PublishedAt: &now, MetaTitle: "Register SMS Broadcast", Content: registerSMSPageContent},
+		{Title: "Register WhatsApp Business API", Slug: "/register-whatsapp", Type: "html", Status: models.PageStatusPublish, LayoutID: blankLayout.ID, AuthorID: admin.ID, PublishedAt: &now, MetaTitle: "Register WhatsApp Business API", Content: registerWhatsAppPageContent},
 	}
 	for _, p := range pages {
 		var existing models.Page

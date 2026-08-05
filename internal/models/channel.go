@@ -30,7 +30,18 @@ type Channel struct {
 	// InitialProduct is the WABA product code (waba-service/utility/
 	// marketing/authentication) selected at registration (note.md §6.2)
 	// — SMS has no equivalent, it just has an initial token (Balance).
+	// Always "waba-service" for self-service registration since that
+	// product is mandatory there (see InitialProductSelections for the
+	// full picked set, including the optional extras and quantities).
 	InitialProduct string
+	// InitialProductSelections is a JSON snapshot (`[{"code","name",
+	// "quantity","unit_price","amount"}, ...]`) of every WABA product the
+	// registrant checked on the /register-whatsapp card picker, captured
+	// at submission time so admins reviewing a pending registration can
+	// see the requested quantities/estimated total without them being
+	// re-derived from the (possibly since-changed) product catalog.
+	// Informational only — never parsed back by application code.
+	InitialProductSelections string `gorm:"type:text"`
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

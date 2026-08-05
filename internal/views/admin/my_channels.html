@@ -3,6 +3,10 @@
 
   <div class="flex flex-wrap items-center justify-between gap-3">
     <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">My Channels</h2>
+    <div class="flex flex-wrap gap-2">
+      <a href="/register-sms" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">+ SMS Broadcast</a>
+      <a href="/register-whatsapp" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 hover:bg-blue-700 px-4 py-2.5 text-sm font-medium text-white">+ WhatsApp Business API</a>
+    </div>
   </div>
 
   {{ if .Cards }}
@@ -34,7 +38,7 @@
   </div>
   {{ else }}
   <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-8 text-center">
-    <p class="text-sm text-gray-500 dark:text-gray-400">You don't have any channels yet. Contact an admin to have one registered for you.</p>
+    <p class="text-sm text-gray-500 dark:text-gray-400">You don't have any channels yet. Register a <a href="/register-sms" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">SMS Broadcast</a> or <a href="/register-whatsapp" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">WhatsApp Business API</a> sender to get started.</p>
   </div>
   {{ end }}
 

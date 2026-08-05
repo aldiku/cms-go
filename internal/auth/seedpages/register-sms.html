@@ -1,0 +1,119 @@
+<button id="theme-toggle" type="button" aria-label="Toggle theme"
+  class="fixed top-4 right-4 z-50 inline-flex items-center justify-center w-10 h-10 rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm hover:bg-gray-50 transition dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
+  <svg id="icon-sun" class="w-5 h-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1.5m0 15V21m9-9h-1.5M4.5 12H3m15.364 6.364-1.06-1.06M6.696 6.696 5.636 5.636m12.728 0-1.06 1.06M6.696 17.304l-1.06 1.06M12 7.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9Z"/></svg>
+  <svg id="icon-moon" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 008.997-5.998Z"/></svg>
+</button>
+
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 px-4 py-12 transition-colors duration-300">
+  <div class="max-w-3xl mx-auto space-y-6">
+
+    <div class="text-center">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Registrasi SMS Broadcast</h1>
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Daftarkan Sender ID untuk mulai mengirim SMS Broadcast.</p>
+    </div>
+
+    <!-- ============================================================
+         KONTEN INFORMASI — bagian ini bebas diedit oleh admin/operator
+         lewat Page Editor (Konten HTML halaman ini). Ubah teks, syarat,
+         atau tambahkan bagian baru sesuai kebutuhan; struktur FORM di
+         bawahnya (id, name field) sebaiknya tidak diubah karena dipakai
+         oleh JavaScript untuk mengirim data ke server.
+         ============================================================ -->
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-6 space-y-4">
+      <h2 class="text-base font-semibold text-gray-800 dark:text-white/90">Syarat & Ketentuan</h2>
+      <ul class="list-disc pl-5 space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
+        <li>Sender ID adalah nama pengirim yang akan tampil di SMS penerima (maksimal 11 karakter, tanpa spasi).</li>
+        <li>Dokumen pendaftaran (form isian, surat kuasa, dsb) diunggah dalam format <strong>.zip</strong>.</li>
+        <li>Token awal minimum <strong>5.000</strong> kredit SMS untuk memulai.</li>
+        <li>Pendaftaran akan diverifikasi oleh admin sebelum Sender ID aktif digunakan — proses biasanya memakan waktu 1&ndash;3 hari kerja.</li>
+        <li>Setelah aktif, saldo dapat ditambah kapan saja melalui menu <em>Topup</em> pada halaman Channel Anda.</li>
+      </ul>
+      <div>
+        <a href="/assets/uploads/templates/sms-broadcast-registration-template.zip" class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">Unduh template dokumen pendaftaran &rarr;</a>
+      </div>
+    </div>
+    <!-- ============ AKHIR KONTEN INFORMASI ============ -->
+
+    <div id="form-alert" class="hidden rounded-lg px-4 py-3 text-sm"></div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-6">
+      <form id="register-form" enctype="multipart/form-data" class="space-y-5" novalidate>
+        <input type="hidden" name="type" value="sms">
+
+        <div>
+          <label for="sender_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Sender</label>
+          <input id="sender_id" name="sender_id" type="text" required maxlength="11" placeholder="Contoh: ADSQOO"
+            class="mt-1 w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition text-sm">
+        </div>
+
+        <div>
+          <label for="identifier" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kode Approval <span class="text-gray-400 dark:text-gray-500 font-normal">(jika sudah ada)</span></label>
+          <input id="identifier" name="identifier" type="text" placeholder="Opsional"
+            class="mt-1 w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition text-sm">
+        </div>
+
+        <div>
+          <label for="initial_token" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Token Awal</label>
+          <input id="initial_token" name="initial_token" type="number" required min="5000" value="5000"
+            class="mt-1 w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition text-sm">
+          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Minimum 5.000 kredit SMS.</p>
+        </div>
+
+        <div>
+          <label for="document" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Dokumen Pendaftaran <span class="text-gray-400 dark:text-gray-500 font-normal">(.zip)</span></label>
+          <input id="document" name="document" type="file" accept=".zip"
+            class="mt-1 block w-full text-sm text-gray-700 dark:text-gray-300 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 dark:file:bg-blue-500/15 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-600 dark:file:text-blue-400 hover:file:bg-blue-100">
+        </div>
+
+        <button id="register-submit" type="submit"
+          class="w-full px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition shadow-sm">
+          Daftarkan Sender ID
+        </button>
+      </form>
+    </div>
+
+    <p class="text-sm text-gray-600 dark:text-gray-400 text-center">
+      Ingin daftar WhatsApp Business API? <a href="/register-whatsapp" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">Klik di sini</a>
+    </p>
+
+  </div>
+</div>
+
+<script src="/assets/auth/auth-api.js"></script>
+<script>
+  document.getElementById("register-form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    var alertEl = document.getElementById("form-alert");
+    var button = document.getElementById("register-submit");
+    AuthAPI.hideAlert(alertEl);
+    AuthAPI.setLoading(button, true, "Mengirim…");
+
+    try {
+      var formData = new FormData(document.getElementById("register-form"));
+      var res = await fetch("/auth/channels/register", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+      var data = {};
+      try { data = await res.json(); } catch (err) {}
+
+      if (res.status === 401) {
+        AuthAPI.showAlert(alertEl, "Silakan login terlebih dahulu untuk mendaftarkan Sender ID.", "error");
+        AuthAPI.setLoading(button, false);
+        return;
+      }
+      if (!res.ok) {
+        AuthAPI.showAlert(alertEl, data.error || "Pendaftaran gagal. Silakan coba lagi.", "error");
+        AuthAPI.setLoading(button, false);
+        return;
+      }
+
+      AuthAPI.showAlert(alertEl, data.message || "Pendaftaran berhasil dikirim.", "success");
+      setTimeout(function () { window.location.href = "/auth/channels"; }, 1200);
+    } catch (err) {
+      AuthAPI.showAlert(alertEl, "Terjadi kesalahan jaringan. Silakan coba lagi.", "error");
+      AuthAPI.setLoading(button, false);
+    }
+  });
+</script>

@@ -9,6 +9,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"cms-go/internal/auth"
@@ -35,18 +36,67 @@ func currentUserJSON(c echo.Context) (models.User, bool) {
 
 // GET /auth/channels/waba-products — public catalog lookup (no
 // registration action, nothing sensitive) so the WABA registration page's
-// "Initial Product" dropdown can be populated from real Product rows
-// instead of a hardcoded list, same convention as the topup flow
-// (auth_channels.go's wabaTopupOptions).
+// product cards can be populated from real Product/ProductVariant rows
+// instead of a hardcoded list. Reuses wabaTopupOptions (auth_channels.go)
+// for pricing so the registration estimate and the post-activation topup
+// picker never disagree about what a product costs. If the caller is
+// logged in and has a models.PriceOverride on the matched variant (see
+// AuthSetClientPrice/AdminSetPriceOverride), that price is shown instead
+// of the catalog default — same "override wins" convention as
+// pricing.EffectivePrice, applied here to whichever variant a product
+// actually resolves to (fixed or the cheapest tiering bracket).
 func ChannelWABAProductsJSON(c echo.Context) error {
-	var products []models.Product
-	db.DB.Where("is_campaignable = ? AND code <> ?", false, "smstopup").Order("name asc").Find(&products)
+	current, loggedIn := currentUserJSON(c)
 
-	out := make([]map[string]interface{}, 0, len(products))
-	for _, p := range products {
-		out = append(out, map[string]interface{}{"code": p.Code, "name": p.Name})
+	options := wabaTopupOptions()
+	out := make([]map[string]interface{}, 0, len(options))
+	for _, opt := range options {
+		price, mode, isCustom := wabaProductDisplayPrice(opt, current.ID, loggedIn)
+		out = append(out, map[string]interface{}{
+			"code":         opt.Product.Code,
+			"name":         opt.Product.Name,
+			"price":        price,
+			"pricing_mode": mode,     // "fixed" | "tiering" | "" (no active variant configured yet)
+			"is_custom":    isCustom, // true when `price` is this user's PriceOverride, not the catalog default
+		})
 	}
 	return c.JSON(http.StatusOK, out)
+}
+
+// wabaProductDisplayPrice picks one representative price for a product's
+// registration card: a logged-in caller's PriceOverride on the variant if
+// one exists, else the first active fixed variant's price, else the
+// cheapest non-custom tier of the first active tiering variant (labeled
+// "starting from" client-side) — the exact tier/variant is finalized by
+// an admin during review, same as the post-activation topup flow. Products
+// with no active variant configured yet return price 0 and an empty mode
+// so the page can show "price to be confirmed" instead of blocking
+// registration on incomplete catalog setup.
+func wabaProductDisplayPrice(opt wabaTopupOption, userID uint, loggedIn bool) (price int64, mode string, isCustom bool) {
+	for _, v := range opt.Variants {
+		if loggedIn {
+			var override models.PriceOverride
+			if db.DB.Where("variant_id = ? AND target_user_id = ?", v.Variant.ID, userID).First(&override).Error == nil {
+				return override.Price, v.Variant.PricingMode, true
+			}
+		}
+		if v.Variant.PricingMode == "fixed" {
+			return v.Variant.Price, "fixed", false
+		}
+		cheapest := int64(-1)
+		for _, t := range v.Tiers {
+			if t.IsCustom {
+				continue
+			}
+			if cheapest == -1 || t.Price < cheapest {
+				cheapest = t.Price
+			}
+		}
+		if cheapest != -1 {
+			return cheapest, "tiering", false
+		}
+	}
+	return 0, "", false
 }
 
 // POST /auth/channels/register — public self-service registration for the
@@ -66,6 +116,19 @@ func RegisterChannel(c echo.Context) error {
 	}
 	ch.OwnerUserID = current.ID
 	ch.Status = "pending"
+
+	// product_selections is the JSON snapshot built client-side by the
+	// /register-whatsapp card picker (checked products + quantity + the
+	// price shown at submission time) — admin-only registration forms
+	// don't send it, so this stays empty for those. Only kept if it's
+	// well-formed JSON; a malformed value is dropped rather than failing
+	// the whole registration over a cosmetic field.
+	if raw := c.FormValue("product_selections"); raw != "" {
+		var probe []map[string]interface{}
+		if json.Unmarshal([]byte(raw), &probe) == nil {
+			ch.InitialProductSelections = raw
+		}
+	}
 
 	if err := db.DB.Create(&ch).Error; err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to submit registration"})
