@@ -128,6 +128,40 @@ func menuForPath(path string) (models.Menu, bool) {
 	return best, bestLen >= 0
 }
 
+// RequireAnyMenuRead authorizes a request if the user's role has read
+// access to ANY of the given menu paths (exact match against
+// models.Menu.Path — unlike menuForPath, no prefix matching). For helper
+// endpoints consumed from more than one permission-gated screen — e.g. the
+// admin user search (/admin/users/json), which both the standalone Custom
+// Pricing page (gated by the "Custom Pricing" menu) and the per-variant
+// Custom Pricing widget on Products > Variants (gated by the "Products"
+// menu) call — so a role granted one of those screens but not the "Users"
+// menu itself isn't wrongly locked out of the search box it needs.
+// Superadmin always passes, same as RequirePermission.
+func RequireAnyMenuRead(menuPaths ...string) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			user, ok := c.Get(CtxUser).(models.User)
+			if !ok {
+				return c.Redirect(http.StatusFound, "/admin/login")
+			}
+			if user.Role.Role == SuperadminRole {
+				return next(c)
+			}
+
+			var menus []models.Menu
+			db.DB.Where("path IN ?", menuPaths).Find(&menus)
+			for _, menu := range menus {
+				var perm models.Permission
+				if db.DB.Where(`role_id = ? AND menu_id = ? AND "read" = true`, user.RoleID, menu.ID).First(&perm).Error == nil {
+					return next(c)
+				}
+			}
+			return renderForbidden(c)
+		}
+	}
+}
+
 func renderForbidden(c echo.Context) error {
 	return c.Render(http.StatusForbidden, "403.html", nil)
 }

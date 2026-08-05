@@ -20,6 +20,7 @@
             <tr class="border-y border-gray-100 dark:border-gray-800">
               <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Product</p></th>
               <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Variant</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Original Price</p></th>
               <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Price</p></th>
               <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Action</p></th>
             </tr>
@@ -29,12 +30,13 @@
             <tr>
               <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .ProductName }}</td>
               <td class="py-4 text-sm font-medium text-gray-800 dark:text-white/90">{{ .VariantName }}</td>
+              <td class="py-4 text-sm text-gray-400 dark:text-gray-500">{{ .OriginalPrice }}</td>
               <td class="py-4">
-                <form method="POST" action="{{ $.SetAction }}" class="flex items-center gap-2">
+                <form method="POST" action="{{ $.SetAction }}" class="existing-price-form flex items-center gap-2">
                   <input type="hidden" name="variant_id" value="{{ .VariantID }}">
-                  <input type="number" name="price" value="{{ .Price }}"
-                    class="h-9 w-28 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
-                  <button type="submit" class="h-9 inline-flex items-center rounded-lg bg-indigo-600 px-3 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">Save</button>
+                  <input type="number" name="price" value="{{ .Price }}" data-original="{{ .OriginalPrice }}"
+                    class="existing-price-input h-9 w-28 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+                  <button type="submit" class="save-btn h-9 inline-flex items-center rounded-lg bg-indigo-600 px-3 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Save</button>
                 </form>
               </td>
               <td class="py-4 text-sm">
@@ -46,7 +48,7 @@
             </tr>
             {{ else }}
             <tr>
-              <td colspan="4" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No custom prices for this user yet.</td>
+              <td colspan="5" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No custom prices for this user yet.</td>
             </tr>
             {{ end }}
           </tbody>
@@ -62,16 +64,19 @@
     <div class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
       <form method="POST" action="{{ .SetAction }}" class="add-variant-price-form flex items-end gap-2">
         <div class="flex-1 relative">
-          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Product variant</label>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Product / variant</label>
           <input type="hidden" class="variant-id" name="variant_id" value="">
-          <input type="text" class="variant-search h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none" placeholder="Search by variant or product name" autocomplete="off">
+          <input type="hidden" class="product-id" name="product_id" value="">
+          <input type="hidden" class="default-price" value="">
+          <input type="text" class="variant-search h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none" placeholder="Search by product or variant name" autocomplete="off">
           <div class="variant-results hidden absolute z-10 mt-1 w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg max-h-48 overflow-y-auto"></div>
         </div>
-        <div class="w-32">
+        <div class="w-40">
           <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Price</label>
-          <input type="number" name="price" required class="h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          <input type="number" name="price" required class="new-price h-10 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Original: <span class="original-price-label">&mdash;</span> &middot; Selisih: <span class="price-diff-label">&mdash;</span></p>
         </div>
-        <button type="submit" class="h-10 inline-flex items-center rounded-lg bg-indigo-600 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">
+        <button type="submit" class="grant-btn h-10 inline-flex items-center rounded-lg bg-indigo-600 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed" disabled>
           Grant
         </button>
       </form>
@@ -81,13 +86,52 @@
 </div>
 
 <script>
+  function formatRupiah(n) {
+    return 'Rp ' + Math.round(n).toLocaleString('id-ID');
+  }
+
+  // Diff label: "Rp 0" (neutral) when equal, "+Rp X" (green) when the new
+  // price is higher than the reference, "-Rp X" (red) when lower.
+  function setDiffLabel(el, diff) {
+    el.textContent = (diff > 0 ? '+' : diff < 0 ? '-' : '') + formatRupiah(Math.abs(diff));
+    el.classList.toggle('text-gray-400', diff === 0);
+    el.classList.toggle('dark:text-gray-500', diff === 0);
+    el.classList.toggle('text-green-600', diff > 0);
+    el.classList.toggle('dark:text-green-400', diff > 0);
+    el.classList.toggle('text-red-500', diff < 0);
+  }
+
+  // Existing rows: gate each "Save" button on its own price input actually
+  // differing from that row's original (catalog) price — editing a custom
+  // price back to the catalog default is a no-op the button shouldn't
+  // encourage.
+  document.querySelectorAll('.existing-price-form').forEach(function (form) {
+    var input = form.querySelector('.existing-price-input');
+    var btn = form.querySelector('.save-btn');
+    var original = Number(input.dataset.original);
+    function update() {
+      var cur = Number(input.value);
+      btn.disabled = isNaN(cur) || cur === original;
+    }
+    input.addEventListener('input', update);
+    update();
+  });
+
   (function () {
     var form = document.querySelector('.add-variant-price-form');
     if (!form) return;
 
+    var TARGET_USER_ID = {{ .Target.ID }};
+
     var search = form.querySelector('.variant-search');
     var results = form.querySelector('.variant-results');
-    var hiddenId = form.querySelector('.variant-id');
+    var hiddenVariantId = form.querySelector('.variant-id');
+    var hiddenProductId = form.querySelector('.product-id');
+    var hiddenDefaultPrice = form.querySelector('.default-price');
+    var priceInput = form.querySelector('.new-price');
+    var originalLabel = form.querySelector('.original-price-label');
+    var diffLabel = form.querySelector('.price-diff-label');
+    var grantBtn = form.querySelector('.grant-btn');
     var debounceTimer = null;
 
     function hideResults() {
@@ -95,17 +139,51 @@
       results.innerHTML = '';
     }
 
+    function resetPriceState() {
+      hiddenDefaultPrice.value = '';
+      originalLabel.textContent = '—';
+      diffLabel.textContent = '—';
+      diffLabel.className = 'price-diff-label';
+      grantBtn.disabled = true;
+    }
+
+    function updateDiffAndButton() {
+      if (hiddenDefaultPrice.value === '') { grantBtn.disabled = true; return; }
+      var def = Number(hiddenDefaultPrice.value);
+      var cur = Number(priceInput.value);
+      if (priceInput.value === '' || isNaN(cur)) {
+        diffLabel.textContent = '—';
+        grantBtn.disabled = true;
+        return;
+      }
+      setDiffLabel(diffLabel, cur - def);
+      grantBtn.disabled = (cur === def);
+    }
+
+    priceInput.addEventListener('input', updateDiffAndButton);
+
+    function priceLabel(v) {
+      if (!v.price) return 'harga menyusul';
+      var amount = formatRupiah(v.price);
+      if (v.is_custom) return 'harga khusus saat ini ' + amount;
+      if (!v.has_variant) return 'base price ' + amount;
+      if (v.pricing_mode === 'tiering') return 'mulai dari ' + amount;
+      return 'default ' + amount;
+    }
+
     search.addEventListener('input', function () {
-      hiddenId.value = '';
+      hiddenVariantId.value = '';
+      hiddenProductId.value = '';
+      resetPriceState();
       var q = search.value.trim();
       clearTimeout(debounceTimer);
       if (q.length < 2) { hideResults(); return; }
       debounceTimer = setTimeout(function () {
-        fetch('/admin/products/variants/json?q=' + encodeURIComponent(q))
+        fetch('/admin/products/variants/json?q=' + encodeURIComponent(q) + '&target_user_id=' + TARGET_USER_ID)
           .then(function (r) { return r.json(); })
           .then(function (variants) {
             if (!variants.length) {
-              results.innerHTML = '<p class="px-3 py-2 text-sm text-gray-400">No variants found.</p>';
+              results.innerHTML = '<p class="px-3 py-2 text-sm text-gray-400">No products or variants found.</p>';
               results.classList.remove('hidden');
               return;
             }
@@ -114,10 +192,17 @@
               var item = document.createElement('button');
               item.type = 'button';
               item.className = 'w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800';
-              item.innerHTML = '<span class="font-medium text-gray-800 dark:text-white/90">' + v.name + '</span> <span class="text-gray-400">' + v.productName + ' &middot; default ' + v.price + '</span>';
+              item.innerHTML = '<span class="font-medium text-gray-800 dark:text-white/90">' + v.name + '</span> <span class="text-gray-400">' + v.product_name + ' &middot; ' + priceLabel(v) +
+                (v.has_variant ? '' : ' <span class="text-amber-500">&middot; variant baru akan dibuat</span>') + '</span>';
               item.addEventListener('click', function () {
-                hiddenId.value = v.id;
-                search.value = v.productName + ' / ' + v.name;
+                hiddenVariantId.value = v.variant_id || 0;
+                hiddenProductId.value = v.product_id;
+                hiddenDefaultPrice.value = v.default_price;
+                originalLabel.textContent = formatRupiah(v.default_price);
+                priceInput.value = v.default_price;
+                setDiffLabel(diffLabel, 0);
+                grantBtn.disabled = true;
+                search.value = v.product_name + ' / ' + v.name;
                 hideResults();
               });
               results.appendChild(item);
@@ -132,9 +217,9 @@
     });
 
     form.addEventListener('submit', function (e) {
-      if (!hiddenId.value) {
+      if (hiddenVariantId.value === '') {
         e.preventDefault();
-        alert('Please pick a variant from the search results first.');
+        alert('Please pick a product or variant from the search results first.');
       }
     });
   })();

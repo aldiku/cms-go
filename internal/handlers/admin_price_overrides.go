@@ -63,15 +63,16 @@ func AdminDeletePriceOverride(c echo.Context) error {
 // customPricingRow is one line of the global Custom Pricing list — every
 // related name resolved up front so the template stays a simple range.
 type customPricingRow struct {
-	ID          uint
-	ProductID   uint
-	ProductName string
-	VariantID   uint
-	VariantName string
-	TargetName  string
-	TargetEmail string
-	SetByName   string
-	Price       int64
+	ID            uint
+	ProductID     uint
+	ProductName   string
+	VariantID     uint
+	VariantName   string
+	TargetName    string
+	TargetEmail   string
+	SetByName     string
+	OriginalPrice int64 // the variant's own catalog price, i.e. what Price is overriding
+	Price         int64
 }
 
 // buildCustomPricingRows resolves the product/variant/user names for a set
@@ -147,7 +148,7 @@ func buildCustomPricingRows(overrides []models.PriceOverride, query string) []cu
 			ID: o.ID, ProductID: product.ID, ProductName: product.Name,
 			VariantID: variant.ID, VariantName: variant.Name,
 			TargetName: target.FullName(), TargetEmail: target.Email,
-			SetByName: setBy.FullName(), Price: o.Price,
+			SetByName: setBy.FullName(), OriginalPrice: variantDisplayPrice(variant), Price: o.Price,
 		})
 	}
 	return rows
@@ -196,22 +197,42 @@ func AdminCustomPricingForUser(c echo.Context) error {
 // price for an admin-chosen variant, for the user fixed by the URL. Same
 // upsert as AdminSetPriceOverride, just with variant_id coming from the
 // form instead of the path (this flow starts from the user, not a variant).
+//
+// variant_id is 0 when the picker (AdminVariantsJSON) matched a product
+// that has no variant configured yet — PriceOverride is always anchored to
+// a real ProductVariant, so in that case a default fixed-price variant is
+// auto-provisioned here, seeded from the product's base Price, and the
+// override is granted against that instead. product_id is only consulted
+// in that case.
 func AdminSetPriceOverrideForUser(c echo.Context) error {
 	targetUserID, err := strconv.ParseUint(c.Param("user_id"), 10, 64)
 	if err != nil {
 		return c.String(http.StatusBadRequest, "Invalid user")
-	}
-	variantID, err := strconv.ParseUint(c.FormValue("variant_id"), 10, 64)
-	if err != nil || variantID == 0 {
-		return c.String(http.StatusBadRequest, "A variant is required")
 	}
 	price, err := strconv.ParseInt(c.FormValue("price"), 10, 64)
 	if err != nil {
 		return c.String(http.StatusBadRequest, "A valid price is required")
 	}
 
-	var variant models.ProductVariant
-	if err := db.DB.First(&variant, variantID).Error; err != nil {
+	variantID, _ := strconv.ParseUint(c.FormValue("variant_id"), 10, 64)
+	if variantID == 0 {
+		productID, err := strconv.ParseUint(c.FormValue("product_id"), 10, 64)
+		if err != nil || productID == 0 {
+			return c.String(http.StatusBadRequest, "A product or variant is required")
+		}
+		var product models.Product
+		if err := db.DB.First(&product, productID).Error; err != nil {
+			return c.String(http.StatusBadRequest, "Product not found")
+		}
+		variant := models.ProductVariant{
+			ProductID: product.ID, Name: "Base Price",
+			PricingMode: "fixed", Price: product.Price, Status: 1,
+		}
+		if err := db.DB.Create(&variant).Error; err != nil {
+			return c.String(http.StatusInternalServerError, "Failed to create default variant")
+		}
+		variantID = uint64(variant.ID)
+	} else if db.DB.First(&models.ProductVariant{}, variantID).Error != nil {
 		return c.String(http.StatusBadRequest, "Variant not found")
 	}
 

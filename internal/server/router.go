@@ -267,7 +267,12 @@ func New() *echo.Echo {
 
 	// Users
 	admin.GET("/users", handlers.AdminUsers)
-	admin.GET("/users/json", handlers.AdminUsersJSON)
+	// /users/json is registered outside the `admin` group's blanket
+	// RequirePermission (which would gate it strictly by the "Users" menu)
+	// because it's also called from the Custom Pricing search box on the
+	// Products > Variants page and the standalone Custom Pricing page —
+	// neither is the Users menu. See auth.RequireAnyMenuRead.
+	e.GET("/admin/users/json", handlers.AdminUsersJSON, auth.RequireAuth, auth.RequireAnyMenuRead("/admin/users", "/admin/products", "/admin/custom-pricing"))
 	admin.GET("/users/new", handlers.AdminUserForm)
 	admin.POST("/users/new", handlers.AdminCreateUser)
 	admin.GET("/users/:id/edit", handlers.AdminUserForm)

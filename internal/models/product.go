@@ -61,12 +61,17 @@ type ProductVariant struct {
 }
 
 // ProductVariantTier is one price point of a "tiering" ProductVariant
-// (e.g. WABA session bundles: 10.000 / 20.000 / 50.000 sesi).
+// (e.g. WABA session bundles: 10.000 / 20.000 / 50.000 sesi). Price is the
+// price of the whole bundle (e.g. Rp 6.990.000 for the "10.000 Sessi"
+// tier), not a per-unit rate — Quantity is what makes the per-unit price
+// ("Harga/Session") a derived value (Price / Quantity) instead of two
+// numbers that have to be kept in sync by hand.
 type ProductVariantTier struct {
 	ID        uint `gorm:"primaryKey"`
 	VariantID uint `gorm:"index"`
 	Label     string
 	Price     int64
-	IsCustom  bool // "custom" tier — price negotiated, not from the fixed list
+	Quantity  int64 // session/unit count this tier's Price buys; 0 = not set (older rows, or a non-session tier)
+	IsCustom  bool  // "custom" tier — price negotiated, not from the fixed list
 	CreatedAt time.Time
 }

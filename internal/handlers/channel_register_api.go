@@ -36,67 +36,73 @@ func currentUserJSON(c echo.Context) (models.User, bool) {
 
 // GET /auth/channels/waba-products — public catalog lookup (no
 // registration action, nothing sensitive) so the WABA registration page's
-// product cards can be populated from real Product/ProductVariant rows
-// instead of a hardcoded list. Reuses wabaTopupOptions (auth_channels.go)
-// for pricing so the registration estimate and the post-activation topup
-// picker never disagree about what a product costs. If the caller is
-// logged in and has a models.PriceOverride on the matched variant (see
-// AuthSetClientPrice/AdminSetPriceOverride), that price is shown instead
-// of the catalog default — same "override wins" convention as
-// pricing.EffectivePrice, applied here to whichever variant a product
-// actually resolves to (fixed or the cheapest tiering bracket).
+// product cards (with a tiering "session package" picker where applicable)
+// can be populated from real Product/ProductVariant/ProductVariantTier
+// rows instead of a hardcoded list. Reuses wabaTopupOptions
+// (auth_channels.go) so the registration estimate and the post-activation
+// topup picker never disagree about what a product costs.
 func ChannelWABAProductsJSON(c echo.Context) error {
 	current, loggedIn := currentUserJSON(c)
 
 	options := wabaTopupOptions()
 	out := make([]map[string]interface{}, 0, len(options))
 	for _, opt := range options {
-		price, mode, isCustom := wabaProductDisplayPrice(opt, current.ID, loggedIn)
-		out = append(out, map[string]interface{}{
-			"code":         opt.Product.Code,
-			"name":         opt.Product.Name,
-			"price":        price,
-			"pricing_mode": mode,     // "fixed" | "tiering" | "" (no active variant configured yet)
-			"is_custom":    isCustom, // true when `price` is this user's PriceOverride, not the catalog default
-		})
+		out = append(out, wabaProductJSON(opt, current.ID, loggedIn))
 	}
 	return c.JSON(http.StatusOK, out)
 }
 
-// wabaProductDisplayPrice picks one representative price for a product's
-// registration card: a logged-in caller's PriceOverride on the variant if
-// one exists, else the first active fixed variant's price, else the
-// cheapest non-custom tier of the first active tiering variant (labeled
-// "starting from" client-side) — the exact tier/variant is finalized by
-// an admin during review, same as the post-activation topup flow. Products
-// with no active variant configured yet return price 0 and an empty mode
-// so the page can show "price to be confirmed" instead of blocking
-// registration on incomplete catalog setup.
-func wabaProductDisplayPrice(opt wabaTopupOption, userID uint, loggedIn bool) (price int64, mode string, isCustom bool) {
-	for _, v := range opt.Variants {
-		if loggedIn {
-			var override models.PriceOverride
-			if db.DB.Where("variant_id = ? AND target_user_id = ?", v.Variant.ID, userID).First(&override).Error == nil {
-				return override.Price, v.Variant.PricingMode, true
-			}
-		}
-		if v.Variant.PricingMode == "fixed" {
-			return v.Variant.Price, "fixed", false
-		}
-		cheapest := int64(-1)
+// wabaProductJSON builds one product's registration-card payload,
+// following the pricing hierarchy: the product's own base Price (no
+// variant configured yet) → its first active variant's price (fixed:
+// Price; tiering: the full tier list, so the page can offer a session
+// package <select> instead of collapsing to one number) → a logged-in
+// caller's PriceOverride on that variant. Overrides only apply to fixed
+// pricing — there's no per-tier override support yet (PriceOverride is
+// keyed by variant, not tier).
+func wabaProductJSON(opt wabaTopupOption, userID uint, loggedIn bool) map[string]interface{} {
+	out := map[string]interface{}{
+		"code":         opt.Product.Code,
+		"name":         opt.Product.Name,
+		"description":  opt.Product.Description,
+		"pricing_mode": "", // "fixed" | "tiering" | "" (no active variant configured yet)
+		"price":        opt.Product.Price,
+		"variant_name": "", // fixed-mode subtitle, e.g. "One time charge + first 3 Months"
+		"is_custom":    false,
+		"tiers":        []map[string]interface{}{},
+	}
+	if len(opt.Variants) == 0 {
+		return out
+	}
+
+	v := opt.Variants[0]
+	out["pricing_mode"] = v.Variant.PricingMode
+	out["variant_name"] = v.Variant.Name
+
+	if v.Variant.PricingMode != "fixed" {
+		tiers := make([]map[string]interface{}, 0, len(v.Tiers))
 		for _, t := range v.Tiers {
-			if t.IsCustom {
-				continue
-			}
-			if cheapest == -1 || t.Price < cheapest {
-				cheapest = t.Price
-			}
+			tiers = append(tiers, map[string]interface{}{
+				"id": t.ID, "label": t.Label, "price": t.Price,
+				"quantity": t.Quantity, "is_custom": t.IsCustom,
+			})
 		}
-		if cheapest != -1 {
-			return cheapest, "tiering", false
+		out["tiers"] = tiers
+		out["price"] = 0
+		return out
+	}
+
+	price := v.Variant.Price
+	isCustom := false
+	if loggedIn {
+		var override models.PriceOverride
+		if db.DB.Where("variant_id = ? AND target_user_id = ?", v.Variant.ID, userID).First(&override).Error == nil {
+			price, isCustom = override.Price, true
 		}
 	}
-	return 0, "", false
+	out["price"] = price
+	out["is_custom"] = isCustom
+	return out
 }
 
 // POST /auth/channels/register — public self-service registration for the

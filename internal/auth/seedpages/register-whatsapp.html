@@ -122,16 +122,46 @@
           <input type="hidden" name="initial_product" id="initial_product_hidden">
           <input type="hidden" name="product_selections" id="product_selections_hidden">
 
-          <div id="product-cards" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div id="product-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
             <p class="text-sm text-gray-400 dark:text-gray-500 col-span-full">Memuat produk…</p>
           </div>
+        </div>
 
-          <div id="product-summary" class="hidden mt-4 rounded-lg bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 p-4">
-            <div class="flex items-center justify-between text-sm font-semibold text-gray-800 dark:text-white/90">
-              <span>Estimasi Total</span>
-              <span id="product-summary-total">Rp 0</span>
+        <div>
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-3">Ringkasan Pembelian</h3>
+          <div class="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead>
+                  <tr class="bg-gray-50 dark:bg-gray-800/60">
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Nama Product</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Harga/Session</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Jumlah Session</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total</th>
+                  </tr>
+                </thead>
+                <tbody id="summary-rows" class="divide-y divide-gray-100 dark:divide-gray-800">
+                  <tr><td colspan="4" class="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">Belum ada produk dipilih.</td></tr>
+                </tbody>
+                <tfoot class="divide-y divide-gray-100 dark:divide-gray-800 border-t border-gray-200 dark:border-gray-800">
+                  <tr>
+                    <td colspan="2"></td>
+                    <td class="px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300">PPN (11%)</td>
+                    <td id="summary-ppn" class="px-4 py-3 text-sm text-gray-800 dark:text-white/90">Rp 0</td>
+                  </tr>
+                  <tr>
+                    <td colspan="2"></td>
+                    <td class="px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-300">Biaya Admin</td>
+                    <td id="summary-admin" class="px-4 py-3 text-sm text-gray-800 dark:text-white/90">Rp 0</td>
+                  </tr>
+                  <tr>
+                    <td colspan="2"></td>
+                    <td class="px-4 py-3 text-sm font-semibold text-gray-900 dark:text-white">Jumlah Tagihan</td>
+                    <td id="summary-total" class="px-4 py-3 text-base font-semibold text-gray-900 dark:text-white">Rp 0</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
-            <p id="product-summary-note" class="mt-1 text-xs text-gray-400 dark:text-gray-500"></p>
           </div>
         </div>
 
@@ -158,89 +188,141 @@
 <script src="/assets/auth/auth-api.js"></script>
 <script>
   var MANDATORY_CODE = "waba-service";
-  var PRODUCT_META = {}; // code -> {name, price, mode}
+  var PPN_RATE = 0.11;
+  var ADMIN_FEE = 0;
+  var PRODUCT_META = {}; // code -> {name, description, pricingMode, price, variantName, isCustom, tiers}
+  var checkedCodes = {}; // code -> true, tracks card checked state (custom checkbox, not a native input)
 
   function formatRupiah(n) {
     return "Rp " + Math.round(n).toLocaleString("id-ID");
   }
 
-  function priceLabel(meta) {
-    if (!meta.price) return "Harga menyusul";
-    if (meta.isCustom) return "Harga khusus Anda: " + formatRupiah(meta.price) + " / unit";
-    return (meta.mode === "tiering" ? "Mulai dari " : "") + formatRupiah(meta.price) + " / unit";
-  }
-
   function buildProductCard(p) {
     var mandatory = p.code === MANDATORY_CODE;
-    var card = document.createElement("label");
-    card.className = "waba-product-card block rounded-xl border border-gray-200 dark:border-gray-700 p-4 cursor-pointer transition";
+    var isTiering = p.pricing_mode === "tiering";
+    var card = document.createElement("div");
+    card.className = "waba-product-card flex flex-col rounded-2xl border-2 border-gray-200 dark:border-gray-700 p-5 transition-colors";
     card.dataset.code = p.code;
 
     card.innerHTML =
-      '<div class="flex items-start justify-between gap-2">' +
-        '<div class="flex items-start gap-2.5">' +
-          '<input type="checkbox" class="waba-product-checkbox mt-1 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-900"' + (mandatory ? " checked disabled" : "") + '>' +
-          '<div>' +
-            '<p class="text-sm font-semibold text-gray-800 dark:text-white/90"></p>' +
-            '<p class="waba-product-price text-xs text-blue-600 dark:text-blue-400 font-medium mt-0.5"></p>' +
-          '</div>' +
-        '</div>' +
-        (mandatory
-          ? '<span class="shrink-0 rounded-full bg-red-50 dark:bg-red-500/15 px-2 py-0.5 text-[11px] font-medium text-red-600 dark:text-red-400">Wajib</span>'
-          : '<span class="shrink-0 rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400">Opsional</span>') +
-      '</div>' +
-      '<div class="waba-product-qty-row flex items-center gap-2 mt-3">' +
-        '<span class="text-xs text-gray-500 dark:text-gray-400">Jumlah</span>' +
-        '<input type="number" class="waba-product-qty w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:outline-none" min="1" step="1" value="1">' +
-      '</div>' +
-      '<p class="waba-product-subtotal text-xs text-gray-400 dark:text-gray-500 mt-2"></p>';
+      '<div class="flex items-start gap-3">' +
+        '<button type="button" class="waba-checkbox-btn shrink-0 mt-0.5 w-6 h-6 rounded-md border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center transition-colors' + (mandatory ? " cursor-not-allowed" : "") + '">' +
+          '<svg class="waba-check-icon w-4 h-4 text-white hidden" fill="none" viewBox="0 0 20 20"><path d="M4 10l4 4 8-8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+        "</button>" +
+        '<h4 class="waba-title text-base font-bold text-gray-900 dark:text-white leading-snug"></h4>' +
+      "</div>" +
+      '<p class="waba-desc mt-3 text-sm text-gray-500 dark:text-gray-400 flex-1"></p>' +
+      (isTiering
+        ? '<div class="mt-4">' +
+            '<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Jumlah Session</label>' +
+            '<select class="waba-tier-select w-full h-10 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none disabled:bg-gray-50 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500" disabled>' +
+              '<option value="">Pilih paket sessi&hellip;</option>' +
+            "</select>" +
+          "</div>"
+        : "");
 
-    card.querySelector("p.text-sm").textContent = p.name;
+    card.querySelector(".waba-title").textContent = p.name;
+    card.querySelector(".waba-desc").textContent = p.description || "";
+
+    if (isTiering) {
+      var select = card.querySelector(".waba-tier-select");
+      (p.tiers || []).forEach(function (t) {
+        var opt = document.createElement("option");
+        opt.value = t.id;
+        opt.textContent = t.label + (t.is_custom ? " (custom)" : "");
+        select.appendChild(opt);
+      });
+    }
     return card;
   }
 
-  function updateCardVisual(card) {
-    var checked = card.querySelector(".waba-product-checkbox").checked;
-    card.classList.toggle("border-blue-500", checked);
-    card.classList.toggle("ring-1", checked);
-    card.classList.toggle("ring-blue-500", checked);
-    card.classList.toggle("bg-blue-50/50", checked);
-    card.classList.toggle("dark:bg-blue-500/10", checked);
-    card.querySelector(".waba-product-qty-row").classList.toggle("hidden", !checked);
+  function setCardChecked(card, checked) {
+    var code = card.dataset.code;
+    checkedCodes[code] = checked;
+
+    var btn = card.querySelector(".waba-checkbox-btn");
+    var icon = card.querySelector(".waba-check-icon");
+    card.classList.toggle("border-red-500", checked);
+    card.classList.toggle("dark:border-red-500", checked);
+    btn.classList.toggle("bg-red-500", checked);
+    btn.classList.toggle("border-red-500", checked);
+    icon.classList.toggle("hidden", !checked);
+
+    var select = card.querySelector(".waba-tier-select");
+    if (select) {
+      select.disabled = !checked;
+      if (checked && !select.value && select.options.length > 1) {
+        select.value = select.options[1].value; // auto-pick the first real tier
+      }
+    }
   }
 
-  function selectedItems() {
-    var items = [];
+  function toggleCard(card) {
+    if (card.dataset.code === MANDATORY_CODE) return; // always on, not toggleable
+    setCardChecked(card, !checkedCodes[card.dataset.code]);
+    updateSummary();
+  }
+
+  // Builds one summary line per checked product: fixed/no-variant pricing
+  // is a flat one-off charge (quantity 1); tiering resolves to whichever
+  // session package is selected in that card's <select>, with the
+  // per-session price derived from the bundle price / bundle quantity.
+  function selectedLines() {
+    var lines = [];
     document.querySelectorAll(".waba-product-card").forEach(function (card) {
-      var checkbox = card.querySelector(".waba-product-checkbox");
-      updateCardVisual(card);
-      var meta = PRODUCT_META[card.dataset.code] || { name: card.dataset.code, price: 0, mode: "" };
-      var qty = Math.max(1, parseInt(card.querySelector(".waba-product-qty").value, 10) || 1);
-      var subtotalEl = card.querySelector(".waba-product-subtotal");
-      subtotalEl.textContent = meta.price ? "Subtotal: " + formatRupiah(meta.price * qty) : "Subtotal: harga menyusul";
-      if (!checkbox.checked) return;
-      items.push({ code: card.dataset.code, name: meta.name, quantity: qty, unit_price: meta.price, amount: meta.price * qty, mandatory: card.dataset.code === MANDATORY_CODE });
+      var code = card.dataset.code;
+      if (!checkedCodes[code]) return;
+      var meta = PRODUCT_META[code];
+      if (!meta) return;
+
+      if (meta.pricingMode === "tiering") {
+        var select = card.querySelector(".waba-tier-select");
+        var tier = (meta.tiers || []).filter(function (t) { return String(t.id) === select.value; })[0];
+        if (!tier) return; // no package chosen yet — excluded until it is
+        var perSession = tier.quantity > 0 ? Math.round(tier.price / tier.quantity) : tier.price;
+        lines.push({
+          code: code, name: meta.name, subtitle: tier.label,
+          tier_id: tier.id, quantity: tier.quantity || 1,
+          unit_price: perSession, amount: tier.price,
+        });
+      } else {
+        lines.push({
+          code: code, name: meta.name, subtitle: meta.variantName || (meta.price ? "" : "Harga menyusul"),
+          quantity: 1, unit_price: meta.price, amount: meta.price,
+        });
+      }
     });
-    return items;
+    return lines;
   }
 
   function updateSummary() {
-    var items = selectedItems();
-    var total = 0;
-    var hasUnknown = false;
-    items.forEach(function (it) {
-      if (!it.unit_price) { hasUnknown = true; return; }
-      total += it.amount;
-    });
+    var lines = selectedLines();
+    var rows = document.getElementById("summary-rows");
 
-    var summaryEl = document.getElementById("product-summary");
-    if (items.length) summaryEl.classList.remove("hidden");
-    document.getElementById("product-summary-total").textContent = formatRupiah(total) + (hasUnknown ? "+" : "");
-    document.getElementById("product-summary-note").textContent = hasUnknown
-      ? "Beberapa produk belum memiliki harga tetap — nilai akhir dikonfirmasi admin."
-      : "Estimasi awal, dapat berubah setelah pendaftaran ditinjau admin.";
+    if (!lines.length) {
+      rows.innerHTML = '<tr><td colspan="4" class="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">Belum ada produk dipilih.</td></tr>';
+    } else {
+      rows.innerHTML = lines.map(function (l) {
+        return '<tr>' +
+          '<td class="px-4 py-3 align-top">' +
+            '<p class="text-sm font-medium text-gray-800 dark:text-white/90">' + l.name + '</p>' +
+            (l.subtitle ? '<p class="text-xs text-gray-400 dark:text-gray-500">' + l.subtitle + '</p>' : '') +
+          '</td>' +
+          '<td class="px-4 py-3 align-top text-sm text-gray-700 dark:text-gray-300">' + formatRupiah(l.unit_price) + '</td>' +
+          '<td class="px-4 py-3 align-top text-sm text-gray-700 dark:text-gray-300">' + l.quantity.toLocaleString("id-ID") + '</td>' +
+          '<td class="px-4 py-3 align-top text-sm font-medium text-gray-800 dark:text-white/90">' + formatRupiah(l.amount) + '</td>' +
+        '</tr>';
+      }).join("");
+    }
 
-    return items;
+    var subtotal = lines.reduce(function (sum, l) { return sum + l.amount; }, 0);
+    var ppn = Math.round(subtotal * PPN_RATE);
+    var grandTotal = subtotal + ppn + ADMIN_FEE;
+    document.getElementById("summary-ppn").textContent = formatRupiah(ppn);
+    document.getElementById("summary-admin").textContent = formatRupiah(ADMIN_FEE);
+    document.getElementById("summary-total").textContent = formatRupiah(grandTotal);
+
+    return lines;
   }
 
   (async function loadProducts() {
@@ -250,10 +332,14 @@
       var products = await res.json();
       container.innerHTML = "";
       (products || []).forEach(function (p) {
-        PRODUCT_META[p.code] = { name: p.name, price: p.price || 0, mode: p.pricing_mode || "", isCustom: !!p.is_custom };
+        PRODUCT_META[p.code] = {
+          name: p.name, description: p.description, pricingMode: p.pricing_mode || "",
+          price: p.price || 0, variantName: p.variant_name || "", isCustom: !!p.is_custom,
+          tiers: p.tiers || [],
+        };
         var card = buildProductCard(p);
-        card.querySelector(".waba-product-price").textContent = priceLabel(PRODUCT_META[p.code]);
         container.appendChild(card);
+        setCardChecked(card, p.code === MANDATORY_CODE);
       });
       if (!products || !products.length) {
         container.innerHTML = '<p class="text-sm text-gray-400 dark:text-gray-500 col-span-full">Belum ada produk tersedia — hubungi admin.</p>';
@@ -264,11 +350,12 @@
     }
   })();
 
-  document.getElementById("product-cards").addEventListener("change", function (e) {
-    if (e.target.classList.contains("waba-product-checkbox")) updateSummary();
+  document.getElementById("product-cards").addEventListener("click", function (e) {
+    var btn = e.target.closest(".waba-checkbox-btn");
+    if (btn) toggleCard(btn.closest(".waba-product-card"));
   });
-  document.getElementById("product-cards").addEventListener("input", function (e) {
-    if (e.target.classList.contains("waba-product-qty")) updateSummary();
+  document.getElementById("product-cards").addEventListener("change", function (e) {
+    if (e.target.classList.contains("waba-tier-select")) updateSummary();
   });
 
   document.getElementById("register-form").addEventListener("submit", async function (e) {
@@ -277,15 +364,23 @@
     var button = document.getElementById("register-submit");
     AuthAPI.hideAlert(alertEl);
 
-    var items = updateSummary();
-    var optionalChecked = items.filter(function (it) { return !it.mandatory; }).length;
+    var lines = updateSummary();
+    var optionalChecked = lines.filter(function (l) { return l.code !== MANDATORY_CODE; }).length;
     if (optionalChecked < 1) {
       AuthAPI.showAlert(alertEl, "Pilih minimal satu produk tambahan (Marketing, Utility, atau Authentication).", "error");
       return;
     }
+    var missingTier = Object.keys(checkedCodes).some(function (code) {
+      return checkedCodes[code] && PRODUCT_META[code] && PRODUCT_META[code].pricingMode === "tiering" &&
+        !lines.some(function (l) { return l.code === code; });
+    });
+    if (missingTier) {
+      AuthAPI.showAlert(alertEl, "Pilih paket session untuk setiap produk yang dicentang.", "error");
+      return;
+    }
 
     document.getElementById("initial_product_hidden").value = MANDATORY_CODE;
-    document.getElementById("product_selections_hidden").value = JSON.stringify(items);
+    document.getElementById("product_selections_hidden").value = JSON.stringify(lines);
 
     AuthAPI.setLoading(button, true, "Mengirim…");
 

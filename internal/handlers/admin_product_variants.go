@@ -120,6 +120,7 @@ func replaceVariantTiers(c echo.Context, variantID uint) {
 
 	form, _ := c.FormParams()
 	labels := form["tier_label[]"]
+	quantities := form["tier_quantity[]"]
 	prices := form["tier_price[]"]
 	isCustoms := form["tier_is_custom[]"]
 
@@ -127,9 +128,12 @@ func replaceVariantTiers(c echo.Context, variantID uint) {
 		if label == "" {
 			continue
 		}
-		var price int64
+		var price, quantity int64
 		if i < len(prices) {
 			price, _ = strconv.ParseInt(prices[i], 10, 64)
+		}
+		if i < len(quantities) {
+			quantity, _ = strconv.ParseInt(quantities[i], 10, 64)
 		}
 		isCustom := i < len(isCustoms) && isCustoms[i] == "true"
 
@@ -137,6 +141,7 @@ func replaceVariantTiers(c echo.Context, variantID uint) {
 			VariantID: variantID,
 			Label:     label,
 			Price:     price,
+			Quantity:  quantity,
 			IsCustom:  isCustom,
 		}
 		db.DB.Create(&tier)
@@ -204,57 +209,123 @@ func AdminDeleteProductVariant(c echo.Context) error {
 }
 
 type variantSearchJSON struct {
-	ID          uint   `json:"id"`
-	Name        string `json:"name"`
-	ProductName string `json:"productName"`
-	Price       int64  `json:"price"`
+	VariantID    uint   `json:"variant_id"` // 0 when HasVariant is false
+	ProductID    uint   `json:"product_id"`
+	Name         string `json:"name"`
+	ProductName  string `json:"product_name"`
+	Price        int64  `json:"price"`         // effective: target_user_id's override if one exists, else DefaultPrice
+	DefaultPrice int64  `json:"default_price"` // catalog price (variant's own, or the product's base if no variant) — ignores any override
+	PricingMode  string `json:"pricing_mode"`  // "fixed" | "tiering" | "" (no variant yet)
+	IsCustom     bool   `json:"is_custom"`     // true when Price is target_user_id's existing override
+	HasVariant   bool   `json:"has_variant"`   // false = picking this auto-creates a default variant
 }
 
-// GET /admin/products/variants/json?q=... — lightweight search across every product
-// variant in every category/product, matching by variant name or parent
-// product name. Used by pickers that need to target an arbitrary variant
-// (e.g. the Custom Pricing "add for this user" flow, admin_price_overrides.go),
-// unlike the Variant page's own picker which already has a fixed variant.
+// variantDisplayPrice resolves a variant's own catalog price: the fixed
+// price, or (tiering has no single "the" price — its Price field is
+// unused) the cheapest non-custom tier.
+func variantDisplayPrice(v models.ProductVariant) int64 {
+	if v.PricingMode == "fixed" {
+		return v.Price
+	}
+	var tiers []models.ProductVariantTier
+	db.DB.Where("variant_id = ?", v.ID).Order("id asc").Find(&tiers)
+	cheapest := int64(-1)
+	for _, t := range tiers {
+		if t.IsCustom {
+			continue
+		}
+		if cheapest == -1 || t.Price < cheapest {
+			cheapest = t.Price
+		}
+	}
+	if cheapest == -1 {
+		return 0
+	}
+	return cheapest
+}
+
+// GET /admin/products/variants/json?q=...&target_user_id=... — lightweight
+// search used by the Custom Pricing "add for this user" flow
+// (admin_price_overrides.go, custom_pricing_user.html) to pick what to
+// grant a price override on.
+//
+// Matches the pricing hierarchy note.md documents for a product: its own
+// base Price, overridden by a ProductVariant's price when one exists,
+// overridden again by a PriceOverride for the specific target user. So
+// products with NO variant configured yet are included too (priced at
+// their base Price, HasVariant: false) rather than being invisible to this
+// search — previously a product with no variant simply couldn't be found
+// here, so it could never be granted a custom price at all. Picking one
+// auto-provisions a default fixed-price variant seeded from the product's
+// base price (see AdminSetPriceOverrideForUser), since PriceOverride is
+// always anchored to a real variant. When target_user_id is given, Price/
+// IsCustom reflect that user's existing override if one already exists,
+// so the admin sees what they're currently paying, not just the catalog
+// default.
 func AdminVariantsJSON(c echo.Context) error {
 	query := strings.TrimSpace(c.QueryParam("q"))
+	targetUserID, _ := strconv.ParseUint(c.QueryParam("target_user_id"), 10, 64)
 
-	q := db.DB.Model(&models.ProductVariant{})
+	var matchingProductIDs []uint
+	vq := db.DB.Model(&models.ProductVariant{})
 	if query != "" {
 		like := "%" + query + "%"
-		var matchingProductIDs []uint
 		db.DB.Model(&models.Product{}).Where("name ILIKE ?", like).Pluck("id", &matchingProductIDs)
 		if len(matchingProductIDs) > 0 {
-			q = q.Where("name ILIKE ? OR product_id IN ?", like, matchingProductIDs)
+			vq = vq.Where("name ILIKE ? OR product_id IN ?", like, matchingProductIDs)
 		} else {
-			q = q.Where("name ILIKE ?", like)
+			vq = vq.Where("name ILIKE ?", like)
 		}
 	}
 
 	var variants []models.ProductVariant
-	q.Order("name asc").Limit(20).Find(&variants)
+	vq.Order("name asc").Limit(20).Find(&variants)
 
-	productIDs := make([]uint, 0, len(variants))
-	seen := map[uint]bool{}
+	hasVariant := map[uint]bool{}
+	productIDs := append([]uint{}, matchingProductIDs...)
 	for _, v := range variants {
-		if !seen[v.ProductID] {
-			seen[v.ProductID] = true
-			productIDs = append(productIDs, v.ProductID)
-		}
+		hasVariant[v.ProductID] = true
+		productIDs = append(productIDs, v.ProductID)
 	}
 	var products []models.Product
 	if len(productIDs) > 0 {
 		db.DB.Where("id IN ?", productIDs).Find(&products)
 	}
-	productNames := make(map[uint]string, len(products))
+	productByID := make(map[uint]models.Product, len(products))
 	for _, p := range products {
-		productNames[p.ID] = p.Name
+		productByID[p.ID] = p
 	}
 
-	out := make([]variantSearchJSON, 0, len(variants))
+	out := make([]variantSearchJSON, 0, 20)
 	for _, v := range variants {
+		defaultPrice := variantDisplayPrice(v)
+		price := defaultPrice
+		isCustom := false
+		if targetUserID > 0 {
+			var override models.PriceOverride
+			if db.DB.Where("variant_id = ? AND target_user_id = ?", v.ID, targetUserID).First(&override).Error == nil {
+				price, isCustom = override.Price, true
+			}
+		}
 		out = append(out, variantSearchJSON{
-			ID: v.ID, Name: v.Name, ProductName: productNames[v.ProductID], Price: v.Price,
+			VariantID: v.ID, ProductID: v.ProductID, Name: v.Name,
+			ProductName: productByID[v.ProductID].Name, Price: price, DefaultPrice: defaultPrice,
+			PricingMode: v.PricingMode, IsCustom: isCustom, HasVariant: true,
 		})
+	}
+	for _, id := range matchingProductIDs {
+		if hasVariant[id] {
+			continue
+		}
+		p := productByID[id]
+		out = append(out, variantSearchJSON{
+			ProductID: p.ID, Name: "Base Price", ProductName: p.Name,
+			Price: p.Price, DefaultPrice: p.Price, HasVariant: false,
+		})
+	}
+
+	if len(out) > 20 {
+		out = out[:20]
 	}
 	return c.JSON(http.StatusOK, out)
 }
