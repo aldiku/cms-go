@@ -12,12 +12,17 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
 const adminPagesPerPage = 10
 
 func AdminPages(c echo.Context) error {
 	query := strings.TrimSpace(c.QueryParam("q"))
+	filterType := c.QueryParam("type")
+	filterStatus := c.QueryParam("status")
+	filterLayoutID := c.QueryParam("layout_id")
+	filterAuthorID := c.QueryParam("author_id")
 
 	pageNum, err := strconv.Atoi(c.QueryParam("page"))
 	if err != nil || pageNum < 1 {
@@ -26,12 +31,27 @@ func AdminPages(c echo.Context) error {
 
 	like := "%" + query + "%"
 
-	var total int64
-	countQuery := db.DB.Model(&models.Page{})
-	if query != "" {
-		countQuery = countQuery.Where("title ILIKE ? OR slug ILIKE ?", like, like)
+	applyFilters := func(q *gorm.DB) *gorm.DB {
+		if query != "" {
+			q = q.Where("title ILIKE ? OR slug ILIKE ?", like, like)
+		}
+		if filterType != "" {
+			q = q.Where("type = ?", filterType)
+		}
+		if filterStatus != "" {
+			q = q.Where("status = ?", filterStatus)
+		}
+		if filterLayoutID != "" {
+			q = q.Where("layout_id = ?", filterLayoutID)
+		}
+		if filterAuthorID != "" {
+			q = q.Where("author_id = ?", filterAuthorID)
+		}
+		return q
 	}
-	countQuery.Count(&total)
+
+	var total int64
+	applyFilters(db.DB.Model(&models.Page{})).Count(&total)
 
 	totalPages := int((total + adminPagesPerPage - 1) / adminPagesPerPage)
 	if totalPages < 1 {
@@ -41,34 +61,39 @@ func AdminPages(c echo.Context) error {
 		pageNum = totalPages
 	}
 
-	findQuery := db.DB.Model(&models.Page{}).Preload("Author").Preload("Categories")
-	if query != "" {
-		findQuery = findQuery.Where("title ILIKE ? OR slug ILIKE ?", like, like)
-	}
-
 	var pages []models.Page
-	findQuery.Order("id desc").
+	applyFilters(db.DB.Model(&models.Page{}).Preload("Author").Preload("Categories")).
+		Order("id desc").
 		Limit(adminPagesPerPage).
 		Offset((pageNum - 1) * adminPagesPerPage).
 		Find(&pages)
 
 	var layouts []models.Layout
-	db.DB.Find(&layouts)
+	db.DB.Order("name asc").Find(&layouts)
 	layoutNames := make(map[uint]string, len(layouts))
 	for _, l := range layouts {
 		layoutNames[l.ID] = l.Name
 	}
 
+	var authors []models.User
+	db.DB.Order("firstname asc").Find(&authors)
+
 	data := map[string]interface{}{
-		"Pages":       pages,
-		"Query":       query,
-		"CurrentPage": pageNum,
-		"TotalPages":  totalPages,
-		"HasPrev":     pageNum > 1,
-		"HasNext":     pageNum < totalPages,
-		"PrevPage":    pageNum - 1,
-		"NextPage":    pageNum + 1,
-		"LayoutNames": layoutNames,
+		"Pages":          pages,
+		"Query":          query,
+		"FilterType":     filterType,
+		"FilterStatus":   filterStatus,
+		"FilterLayoutID": filterLayoutID,
+		"FilterAuthorID": filterAuthorID,
+		"CurrentPage":    pageNum,
+		"TotalPages":     totalPages,
+		"HasPrev":        pageNum > 1,
+		"HasNext":        pageNum < totalPages,
+		"PrevPage":       pageNum - 1,
+		"NextPage":       pageNum + 1,
+		"Layouts":        layouts,
+		"LayoutNames":    layoutNames,
+		"Authors":        authors,
 	}
 
 	return renderWithLayout(c, "internal/views/admin/admin-layout.html", "internal/views/admin/pages.html", data)
