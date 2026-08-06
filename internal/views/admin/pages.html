@@ -11,16 +11,70 @@
     </a>
   </div>
 
-  <div class="max-w-sm">
-    <div class="relative">
-      <span class="absolute top-1/2 left-4 -translate-y-1/2 text-gray-400 dark:text-gray-500">
-        <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill-rule="evenodd" clip-rule="evenodd" d="M3.04175 9.37363C3.04175 5.87693 5.87711 3.04199 9.37508 3.04199C12.8731 3.04199 15.7084 5.87693 15.7084 9.37363C15.7084 12.8703 12.8731 15.7053 9.37508 15.7053C5.87711 15.7053 3.04175 12.8703 3.04175 9.37363ZM9.37508 1.54199C5.04902 1.54199 1.54175 5.04817 1.54175 9.37363C1.54175 13.6991 5.04902 17.2053 9.37508 17.2053C11.2674 17.2053 13.003 16.5344 14.357 15.4176L17.177 18.238C17.4699 18.5309 17.9448 18.5309 18.2377 18.238C18.5306 17.9451 18.5306 17.4703 18.2377 17.1774L15.418 14.3573C16.5365 13.0033 17.2084 11.2669 17.2084 9.37363C17.2084 5.04817 13.7011 1.54199 9.37508 1.54199Z" fill=""/>
-        </svg>
-      </span>
-      <form method="GET" action="/admin/pages">
-        <input type="text" name="q" value="{{ .Query }}" placeholder="Search pages by title or slug..."
-          class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 pl-12 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+  <!-- Filters -->
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="p-5 sm:p-6">
+      <form method="GET" action="/admin/pages" class="flex flex-wrap items-end gap-3">
+        <div class="flex-1 relative min-w-[16rem]">
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Search</label>
+          <span class="absolute top-1/2 left-4 translate-y-1">
+            <svg class="fill-current text-gray-400 dark:text-gray-500" width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M3.04175 9.37363C3.04175 5.87693 5.87711 3.04199 9.37508 3.04199C12.8731 3.04199 15.7084 5.87693 15.7084 9.37363C15.7084 12.8703 12.8731 15.7053 9.37508 15.7053C5.87711 15.7053 3.04175 12.8703 3.04175 9.37363ZM9.37508 1.54199C5.04902 1.54199 1.54175 5.04817 1.54175 9.37363C1.54175 13.6991 5.04902 17.2053 9.37508 17.2053C11.2674 17.2053 13.003 16.5344 14.357 15.4176L17.177 18.238C17.4699 18.5309 17.9448 18.5309 18.2377 18.238C18.5306 17.9451 18.5306 17.4703 18.2377 17.1774L15.418 14.3573C16.5365 13.0033 17.2084 11.2669 17.2084 9.37363C17.2084 5.04817 13.7011 1.54199 9.37508 1.54199Z" fill=""/>
+            </svg>
+          </span>
+          <input type="text" name="q" value="{{ .Query }}" placeholder="Search pages by title or slug..."
+            class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 pl-12 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Type</label>
+          <select name="type" onchange="this.form.submit()"
+            class="h-11 w-40 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+            <option value="">All Types</option>
+            <option value="page" {{ if eq .FilterType "page" }}selected{{ end }}>Page</option>
+            <option value="post" {{ if eq .FilterType "post" }}selected{{ end }}>Post</option>
+            <option value="html" {{ if eq .FilterType "html" }}selected{{ end }}>Html</option>
+            <option value="builder" {{ if eq .FilterType "builder" }}selected{{ end }}>Builder (legacy)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Status</label>
+          <select name="status" onchange="this.form.submit()"
+            class="h-11 w-40 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+            <option value="">All Statuses</option>
+            <option value="publish" {{ if eq .FilterStatus "publish" }}selected{{ end }}>Publish</option>
+            <option value="pending" {{ if eq .FilterStatus "pending" }}selected{{ end }}>Pending Review</option>
+            <option value="draft" {{ if eq .FilterStatus "draft" }}selected{{ end }}>Draft</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Layout</label>
+          <select name="layout_id" onchange="this.form.submit()"
+            class="h-11 w-44 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+            <option value="">All Layouts</option>
+            {{ range .Layouts }}
+            <option value="{{ .ID }}" {{ if eq $.FilterLayoutID (printf "%d" .ID) }}selected{{ end }}>{{ .Name }}</option>
+            {{ end }}
+          </select>
+        </div>
+
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Author</label>
+          <select name="author_id" onchange="this.form.submit()"
+            class="h-11 w-44 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+            <option value="">All Authors</option>
+            {{ range .Authors }}
+            <option value="{{ .ID }}" {{ if eq $.FilterAuthorID (printf "%d" .ID) }}selected{{ end }}>{{ .FullName }}</option>
+            {{ end }}
+          </select>
+        </div>
+
+        <button type="submit" class="h-11 inline-flex items-center rounded-lg bg-indigo-600 px-5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors">Filter</button>
+        {{ if or .Query .FilterType .FilterStatus .FilterLayoutID .FilterAuthorID }}
+        <a href="/admin/pages" class="h-11 inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Clear</a>
+        {{ end }}
       </form>
     </div>
   </div>
@@ -109,12 +163,12 @@
       <p class="text-sm text-gray-500 dark:text-gray-400">Page {{ .CurrentPage }} of {{ .TotalPages }}</p>
       <div class="flex gap-2">
         {{ if .HasPrev }}
-        <a href="/admin/pages?q={{ .Query }}&page={{ .PrevPage }}" class="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Previous</a>
+        <a href="/admin/pages?q={{ .Query }}&type={{ .FilterType }}&status={{ .FilterStatus }}&layout_id={{ .FilterLayoutID }}&author_id={{ .FilterAuthorID }}&page={{ .PrevPage }}" class="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Previous</a>
         {{ else }}
         <span class="inline-flex items-center rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-1.5 text-sm text-gray-400 dark:text-gray-500">Previous</span>
         {{ end }}
         {{ if .HasNext }}
-        <a href="/admin/pages?q={{ .Query }}&page={{ .NextPage }}" class="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Next</a>
+        <a href="/admin/pages?q={{ .Query }}&type={{ .FilterType }}&status={{ .FilterStatus }}&layout_id={{ .FilterLayoutID }}&author_id={{ .FilterAuthorID }}&page={{ .NextPage }}" class="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Next</a>
         {{ else }}
         <span class="inline-flex items-center rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-1.5 text-sm text-gray-400 dark:text-gray-500">Next</span>
         {{ end }}
