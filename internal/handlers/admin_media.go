@@ -334,7 +334,38 @@ func AdminDeleteMedia(c echo.Context) error {
 		return c.String(http.StatusNotFound, "Media not found")
 	}
 
+	// Media rows are referenced by belongs-to FKs (Page.FeaturedImage,
+	// ProductCategory.Image, Product.Thumbnail, GeneralSetting.Favicon)
+	// with no ON DELETE clause, so a straight DELETE 500s with a FK
+	// violation that was previously swallowed — the page would redirect
+	// as if it succeeded while the row (and file) stayed put. Check usage
+	// up front and report it instead of silently no-op'ing.
+	var inUse []string
+	var count int64
+
+	db.DB.Model(&models.Page{}).Where("featured_image_id = ?", media.ID).Count(&count)
+	if count > 0 {
+		inUse = append(inUse, fmt.Sprintf("%d page(s)", count))
+	}
+	db.DB.Model(&models.ProductCategory{}).Where("image_id = ?", media.ID).Count(&count)
+	if count > 0 {
+		inUse = append(inUse, fmt.Sprintf("%d product categor(y/ies)", count))
+	}
+	db.DB.Model(&models.Product{}).Where("thumbnail_id = ?", media.ID).Count(&count)
+	if count > 0 {
+		inUse = append(inUse, fmt.Sprintf("%d product(s)", count))
+	}
+	db.DB.Model(&models.GeneralSetting{}).Where("favicon_id = ?", media.ID).Count(&count)
+	if count > 0 {
+		inUse = append(inUse, "the site favicon")
+	}
+	if len(inUse) > 0 {
+		return c.String(http.StatusBadRequest, "Cannot delete: this file is still used by "+strings.Join(inUse, ", "))
+	}
+
+	if err := db.DB.Delete(&media).Error; err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to delete media: "+err.Error())
+	}
 	os.Remove(filepath.Join("assets", media.Path))
-	db.DB.Delete(&media)
 	return c.Redirect(http.StatusSeeOther, "/admin/medias")
 }
