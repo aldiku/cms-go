@@ -82,6 +82,7 @@ func SeedAuth() {
 			{Menu: "Pages", Path: "/admin/pages", Icon: "📄", MenuType: "module"},
 			{Menu: "Components", Path: "/admin/components", Icon: "🧩", MenuType: "module"},
 			{Menu: "Layouts", Path: "/admin/layouts", Icon: "🖼️", MenuType: "module"},
+			{Menu: "WordPress Migration", Path: "/admin/migrate-wordpress", Icon: "📥", MenuType: "module"},
 			{Menu: "Users", Path: "/admin/users", Icon: "👤", MenuType: "settings"},
 			{Menu: "Roles", Path: "/admin/roles", Icon: "🛡️", MenuType: "settings"},
 			{Menu: "Menus", Path: "/admin/menus", Icon: "📋", MenuType: "settings"},

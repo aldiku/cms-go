@@ -1,0 +1,63 @@
+{{ define "content" }}
+<div class="max-w-2xl mx-auto space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">WordPress Migration</h2>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="p-5 sm:p-6">
+      <div class="space-y-4">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          This tool will migrate the first 5 posts and 5 pages from <strong>https://adsqoo.id</strong> WordPress site.
+        </p>
+
+        <div class="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/40 p-4 text-sm text-blue-700 dark:text-blue-400">
+          <p class="font-medium mb-2">What will be imported:</p>
+          <ul class="space-y-1">
+            <li>✓ 5 posts (type: "post") with HTML content</li>
+            <li>✓ 5 pages (type: "page") with HTML content</li>
+            <li>✓ Featured images (stored as URLs, no file download)</li>
+            <li>✓ Categories and tags (for posts only)</li>
+            <li>✓ Author information (matched or assigned to current user)</li>
+            <li>✓ Publication status (draft/publish)</li>
+          </ul>
+        </div>
+
+        <div class="space-y-3">
+          <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            The following records will be created:
+          </p>
+          <ul class="list-disc list-inside text-sm text-gray-600 dark:text-gray-400 space-y-1">
+            <li>5 <code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs">Page</code> records with type="post"</li>
+            <li>5 <code class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs">Page</code> records with type="page"</li>
+            <li>Media records for featured images (URL-only, no local files)</li>
+            <li>New categories and tags as needed (if not already in the system)</li>
+          </ul>
+        </div>
+
+        <div class="pt-4 border-t border-gray-100 dark:border-gray-800">
+          <form method="POST" action="/admin/migrate-wordpress/run" onsubmit="return confirm('Start WordPress migration? This will import 5 posts and 5 pages.');">
+            <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 transition-colors">
+              🚀 Start Migration
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="p-5 sm:p-6">
+      <h3 class="font-semibold text-gray-800 dark:text-white/90 mb-3">After Migration</h3>
+      <ol class="list-decimal list-inside space-y-2 text-sm text-gray-600 dark:text-gray-400">
+        <li>Check the <a href="/admin/pages" class="text-blue-600 dark:text-blue-400 hover:underline">Pages</a> section to see imported content</li>
+        <li>Review posts and pages — content comes with HTML, may need formatting review</li>
+        <li>Featured images are linked by URL; they'll display from the original WordPress site</li>
+        <li>When ready, proceed with phase 2: mount wp-content via Docker volume to serve local copies</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+{{ end }}

@@ -166,6 +166,10 @@ func New() *echo.Echo {
 	admin.GET("/pages/:id/edit", handlers.AdminPageEditor)
 	admin.POST("/pages/:id/edit", handlers.AdminUpdatePage)
 
+	// WordPress Migration
+	admin.GET("/migrate-wordpress", handlers.AdminMigrateWordPress)
+	admin.POST("/migrate-wordpress/run", handlers.AdminMigrateWordPressRun)
+
 	// Categories & Tags (post taxonomy)
 	admin.GET("/categories", handlers.AdminCategories)
 	admin.GET("/categories/new", handlers.AdminCategoryForm)
