@@ -62,7 +62,7 @@ func AdminPages(c echo.Context) error {
 	}
 
 	var pages []models.Page
-	applyFilters(db.DB.Model(&models.Page{}).Preload("Author").Preload("Categories")).
+	applyFilters(db.DB.Model(&models.Page{}).Preload("Author").Preload("Categories").Preload("FeaturedImage")).
 		Order("id desc").
 		Limit(adminPagesPerPage).
 		Offset((pageNum - 1) * adminPagesPerPage).

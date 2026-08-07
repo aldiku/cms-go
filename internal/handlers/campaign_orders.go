@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -12,6 +13,12 @@ import (
 
 	"github.com/labstack/echo/v4"
 )
+
+// errNoPriceConfigured is returned by resolveOrderPricing when a
+// variant-less leaf Product has no direct Price set — it isn't actually
+// selectable in the composer (see isSelectable in campaign form.html), so
+// this only fires against a tampered/stale request.
+var errNoPriceConfigured = errors.New("product has no price configured")
 
 type orderDetailJSON struct {
 	AudienceID string `json:"audience_id"`
@@ -114,15 +121,31 @@ func CampaignOrderGet(c echo.Context) error {
 	return c.JSON(http.StatusOK, orderToJSON(o, loadOrderDetails(o.ID), true))
 }
 
-// resolveOrderPricing loads the chosen Product+ProductVariant and returns
-// the unit price this user pays, its HPP cost basis, and whether the
-// product is taxable (IsCampaignable, per cart-transaction.md's "Taxable
-// flag (only product campaignable is taxable)").
+// resolveOrderPricing loads the chosen Product (and its ProductVariant, if
+// any) and returns the unit price this user pays, its HPP cost basis, and
+// whether the product is taxable (IsCampaignable, per cart-transaction.md's
+// "Taxable flag (only product campaignable is taxable)"). variantID == 0
+// means the leaf product has no variant layer and is priced directly on
+// the Product row itself (see the campaign composer's "Channel" picker —
+// a leaf is selectable if it has variants OR a direct Product.Price); a
+// direct price has no per-user override mechanism, unlike variant pricing.
 func resolveOrderPricing(productID, variantID uint, user models.User) (price, hpp int64, taxable bool, err error) {
 	var product models.Product
 	if err = db.DB.First(&product, productID).Error; err != nil {
 		return
 	}
+	taxable = product.IsCampaignable
+
+	if variantID == 0 {
+		if product.Price <= 0 {
+			err = errNoPriceConfigured
+			return
+		}
+		price = product.Price
+		hpp = product.HPP
+		return
+	}
+
 	var variant models.ProductVariant
 	if err = db.DB.Where("id = ? AND product_id = ?", variantID, productID).First(&variant).Error; err != nil {
 		return
@@ -133,7 +156,6 @@ func resolveOrderPricing(productID, variantID uint, user models.User) (price, hp
 		err = nil
 	}
 	hpp = variant.HPP
-	taxable = product.IsCampaignable
 	return
 }
 
@@ -147,11 +169,16 @@ func CampaignOrderSave(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid payload"})
 	}
-	if req.ProductID == 0 || req.ProductVariantID == 0 {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "product_id and product_variant_id are required"})
+	if req.ProductID == 0 {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "product_id is required"})
 	}
 
+	// product_variant_id is optional — 0 means the leaf product has no
+	// variant layer and is priced directly on the Product row itself.
 	price, hpp, taxable, err := resolveOrderPricing(req.ProductID, req.ProductVariantID, user)
+	if errors.Is(err, errNoPriceConfigured) {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": errNoPriceConfigured.Error()})
+	}
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "product/variant not found"})
 	}

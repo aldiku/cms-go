@@ -35,6 +35,11 @@ type campaignProductNode struct {
 	models.Product
 	HasChildren bool `json:"has_children"`
 	HasVariants bool `json:"has_variants"`
+	// HasPrice flags a leaf with no variant layer that's priced directly on
+	// the Product row itself (Price > 0) — the composer's "Channel" grid
+	// treats a leaf as selectable if it has variants OR this, since a leaf
+	// with neither has nothing to resolve a price from.
+	HasPrice bool `json:"has_price"`
 }
 
 // GET /campaign/api/products?category_id=&parent_id= — one level of the
@@ -49,7 +54,8 @@ func CampaignProducts(c echo.Context) error {
 	}
 
 	var products []models.Product
-	db.DB.Where("product_category_id = ? AND parent_id = ? AND is_campaignable = ? AND status = 1", categoryID, parentID, true).
+	db.DB.Preload("Thumbnail").
+		Where("product_category_id = ? AND parent_id = ? AND is_campaignable = ? AND status = 1", categoryID, parentID, true).
 		Order("list_order asc, id asc").Find(&products)
 
 	nodes := make([]campaignProductNode, 0, len(products))
@@ -57,7 +63,7 @@ func CampaignProducts(c echo.Context) error {
 		var childCount, variantCount int64
 		db.DB.Model(&models.Product{}).Where("parent_id = ?", p.ID).Count(&childCount)
 		db.DB.Model(&models.ProductVariant{}).Where("product_id = ? AND status = 1", p.ID).Count(&variantCount)
-		nodes = append(nodes, campaignProductNode{Product: p, HasChildren: childCount > 0, HasVariants: variantCount > 0})
+		nodes = append(nodes, campaignProductNode{Product: p, HasChildren: childCount > 0, HasVariants: variantCount > 0, HasPrice: p.Price > 0})
 	}
 	return c.JSON(http.StatusOK, nodes)
 }
@@ -68,7 +74,7 @@ func CampaignProducts(c echo.Context) error {
 // cascading picker just to see what's currently set.
 func CampaignProductGet(c echo.Context) error {
 	var product models.Product
-	if err := db.DB.First(&product, c.Param("id")).Error; err != nil {
+	if err := db.DB.Preload("Thumbnail").First(&product, c.Param("id")).Error; err != nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "product not found"})
 	}
 	return c.JSON(http.StatusOK, product)

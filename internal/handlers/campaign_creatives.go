@@ -78,6 +78,19 @@ func CampaignCreativeList(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": out, "total": total, "page": page, "per_page": perPage})
 }
 
+// creativeNameTaken reports whether user/sandbox already has a non-deleted
+// Creative named name — excludeID skips one row (itself) when checking on
+// update, and should be "" when checking on create.
+func creativeNameTaken(userID uint, sandbox bool, name, excludeID string) bool {
+	q := db.DB.Model(&models.Creative{}).Where("user_id = ? AND sandbox = ? AND name = ?", userID, sandbox, name)
+	if excludeID != "" {
+		q = q.Where("id <> ?", excludeID)
+	}
+	var count int64
+	q.Count(&count)
+	return count > 0
+}
+
 // POST /campaign/api/creatives
 func CampaignCreativeCreate(c echo.Context) error {
 	user, sandbox, source := campaignActor(c)
@@ -89,14 +102,21 @@ func CampaignCreativeCreate(c echo.Context) error {
 	if req.Name == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "name is required"})
 	}
+	if creativeNameTaken(user.ID, sandbox, req.Name, "") {
+		return c.JSON(http.StatusConflict, map[string]string{"error": "A creative named \"" + req.Name + "\" already exists"})
+	}
 
 	creative := models.Creative{UserID: user.ID, Sandbox: sandbox, Source: source}
 	bindCreativeFromJSON(req, &creative)
 
 	for attempt := 0; attempt < 5; attempt++ {
 		creative.ID = utils.GenerateEntityID("CRE-")
-		if err := db.DB.Create(&creative).Error; err == nil {
+		err := db.DB.Create(&creative).Error
+		if err == nil {
 			return c.JSON(http.StatusCreated, creativeToJSON(creative))
+		}
+		if isDuplicateKeyError(err) {
+			return c.JSON(http.StatusConflict, map[string]string{"error": "A creative named \"" + req.Name + "\" already exists"})
 		}
 	}
 	return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to create creative"})
@@ -130,8 +150,17 @@ func CampaignCreativeUpdate(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid payload"})
 	}
+	if req.Name == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "name is required"})
+	}
+	if creativeNameTaken(user.ID, sandbox, req.Name, cr.ID) {
+		return c.JSON(http.StatusConflict, map[string]string{"error": "A creative named \"" + req.Name + "\" already exists"})
+	}
 	bindCreativeFromJSON(req, &cr)
 	if err := db.DB.Save(&cr).Error; err != nil {
+		if isDuplicateKeyError(err) {
+			return c.JSON(http.StatusConflict, map[string]string{"error": "A creative named \"" + req.Name + "\" already exists"})
+		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to update creative"})
 	}
 	return c.JSON(http.StatusOK, creativeToJSON(cr))

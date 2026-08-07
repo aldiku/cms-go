@@ -89,6 +89,7 @@
           <thead>
             <tr class="border-y border-gray-100 dark:border-gray-800">
               <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">ID</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Thumbnail</p></th>
               <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Title</p></th>
               <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Slug</p></th>
               <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Type</p></th>
@@ -103,6 +104,13 @@
             {{ range .Pages }}
             <tr>
               <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .ID }}</td>
+              <td class="py-4 text-sm">
+                {{ if .FeaturedImageID }}
+                <img src="{{ .FeaturedImage.URL }}" alt="" class="h-8 w-8 rounded-md object-cover shrink-0 border border-gray-200 dark:border-gray-800">
+                {{ else }}
+                <div class="h-8 w-8 rounded-md border border-dashed border-gray-300 dark:border-gray-700"></div>
+                {{ end }}
+              </td>
               <td class="py-4 text-sm font-medium text-gray-800 dark:text-white/90">{{ .Title }}</td>
               <td class="py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">
                 <div class="flex items-center gap-2">
@@ -151,7 +159,7 @@
             </tr>
             {{ else }}
             <tr>
-              <td colspan="9" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No pages found.</td>
+              <td colspan="10" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No pages found.</td>
             </tr>
             {{ end }}
           </tbody>

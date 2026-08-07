@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,8 +11,22 @@ import (
 	"cms-go/internal/models"
 	"cms-go/internal/utils"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/labstack/echo/v4"
 )
+
+// isDuplicateKeyError reports whether err is a Postgres unique-violation
+// (SQLSTATE 23505) — the race-condition fallback behind the upfront
+// name-uniqueness check in CampaignAudienceCreate/CampaignCreativeCreate
+// (and their Update counterparts): two concurrent requests can both pass
+// the pre-check before either commits, so the DB constraint
+// (idx_audience_user_sandbox_name / idx_creative_user_sandbox_name) is the
+// actual source of truth — this just turns that into a clean 409 instead of
+// a raw driver error.
+func isDuplicateKeyError(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
+}
 
 // audienceJSON is the wire shape for the Audience JSON API — gender,
 // interests and whitelist_phones are arrays over the wire but stored as a
@@ -113,6 +128,19 @@ func CampaignAudienceList(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{"data": out, "total": total, "page": page, "per_page": perPage})
 }
 
+// audienceNameTaken reports whether user/sandbox already has a non-deleted
+// Audience named name — excludeID skips one row (itself) when checking on
+// update, and should be "" when checking on create.
+func audienceNameTaken(userID uint, sandbox bool, name, excludeID string) bool {
+	q := db.DB.Model(&models.Audience{}).Where("user_id = ? AND sandbox = ? AND name = ?", userID, sandbox, name)
+	if excludeID != "" {
+		q = q.Where("id <> ?", excludeID)
+	}
+	var count int64
+	q.Count(&count)
+	return count > 0
+}
+
 // POST /campaign/api/audiences
 func CampaignAudienceCreate(c echo.Context) error {
 	user, sandbox, source := campaignActor(c)
@@ -124,14 +152,21 @@ func CampaignAudienceCreate(c echo.Context) error {
 	if req.Name == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "name is required"})
 	}
+	if audienceNameTaken(user.ID, sandbox, req.Name, "") {
+		return c.JSON(http.StatusConflict, map[string]string{"error": "An audience named \"" + req.Name + "\" already exists"})
+	}
 
 	audience := models.Audience{UserID: user.ID, Sandbox: sandbox, Source: source}
 	bindAudienceFromJSON(req, &audience)
 
 	for attempt := 0; attempt < 5; attempt++ {
 		audience.ID = utils.GenerateEntityID("AUD-")
-		if err := db.DB.Create(&audience).Error; err == nil {
+		err := db.DB.Create(&audience).Error
+		if err == nil {
 			return c.JSON(http.StatusCreated, audienceToJSON(audience))
+		}
+		if isDuplicateKeyError(err) {
+			return c.JSON(http.StatusConflict, map[string]string{"error": "An audience named \"" + req.Name + "\" already exists"})
 		}
 	}
 	return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to create audience"})
@@ -167,8 +202,17 @@ func CampaignAudienceUpdate(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid payload"})
 	}
+	if req.Name == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "name is required"})
+	}
+	if audienceNameTaken(user.ID, sandbox, req.Name, a.ID) {
+		return c.JSON(http.StatusConflict, map[string]string{"error": "An audience named \"" + req.Name + "\" already exists"})
+	}
 	bindAudienceFromJSON(req, &a)
 	if err := db.DB.Save(&a).Error; err != nil {
+		if isDuplicateKeyError(err) {
+			return c.JSON(http.StatusConflict, map[string]string{"error": "An audience named \"" + req.Name + "\" already exists"})
+		}
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to update audience"})
 	}
 	return c.JSON(http.StatusOK, audienceToJSON(a))

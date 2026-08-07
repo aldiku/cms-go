@@ -63,13 +63,18 @@ type OrderDetail struct {
 // Audience is a reusable targeting definition, created standalone or inline
 // from the campaign composer's "New" tab. Not every field is populated for
 // every product type — see cart-transaction.md §Audience. ID format:
-// "AUD-" + YYMMDD + 6 random uppercase alnum chars.
+// "AUD-" + YYMMDD + 6 random uppercase alnum chars. Name is unique per
+// (UserID, Sandbox) among non-deleted rows — enforced by
+// idx_audience_user_sandbox_name (a partial index so a soft-deleted
+// Audience's name can be reused) and re-checked at the handler level
+// (internal/handlers/campaign_audiences.go) so a duplicate name reports a
+// clear 409 instead of a raw constraint-violation error.
 type Audience struct {
 	ID              string `gorm:"primaryKey;size:24"`
-	Name            string
+	Name            string `gorm:"uniqueIndex:idx_audience_user_sandbox_name,where:deleted_at IS NULL"`
 	ProductID       uint   // leaf Product this audience was defined for
 	ProductType     string // snapshot of Product.Code at creation time
-	UserID          uint   `gorm:"index"`
+	UserID          uint   `gorm:"index;uniqueIndex:idx_audience_user_sandbox_name,where:deleted_at IS NULL"`
 	LocationAddress string
 	MinAge          int
 	MaxAge          int
@@ -84,7 +89,7 @@ type Audience struct {
 	KelID           uint
 	WhitelistPhones string // JSON array of strings
 	FileURL         string // CSV/XLSX of phones/emails
-	Sandbox         bool
+	Sandbox         bool   `gorm:"uniqueIndex:idx_audience_user_sandbox_name,where:deleted_at IS NULL"`
 	Source          string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
@@ -94,13 +99,14 @@ type Audience struct {
 // Creative is a reusable ad asset, created standalone or inline from the
 // campaign composer's "New" tab. Superset of fields across product types —
 // see cart-transaction.md §Creative. ID format: "CRE-" + YYMMDD + 6 random
-// uppercase alnum chars.
+// uppercase alnum chars. Name is unique per (UserID, Sandbox) among
+// non-deleted rows — see the equivalent note on Audience above.
 type Creative struct {
 	ID          string `gorm:"primaryKey;size:24"`
-	Name        string
+	Name        string `gorm:"uniqueIndex:idx_creative_user_sandbox_name,where:deleted_at IS NULL"`
 	ProductID   uint
 	ProductType string
-	UserID      uint `gorm:"index"`
+	UserID      uint `gorm:"index;uniqueIndex:idx_creative_user_sandbox_name,where:deleted_at IS NULL"`
 	Title       string
 	Caption     string
 	Body        string
@@ -109,7 +115,7 @@ type Creative struct {
 	MediaID     uint
 	Media       Media `gorm:"foreignKey:MediaID"`
 	FileURL     string
-	Sandbox     bool
+	Sandbox     bool `gorm:"uniqueIndex:idx_creative_user_sandbox_name,where:deleted_at IS NULL"`
 	Source      string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
