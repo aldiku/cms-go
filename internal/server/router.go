@@ -74,6 +74,8 @@ func New() *echo.Echo {
 		&models.ProductCategory{}, &models.Product{}, &models.ProductVariant{}, &models.ProductVariantTier{},
 		&models.PriceOverride{}, &models.GeneralSetting{},
 		&models.Channel{}, &models.ChannelTopup{},
+		&models.Order{}, &models.OrderDetail{}, &models.Audience{}, &models.Creative{},
+		&models.Transaction{}, &models.TransactionOrder{},
 	)
 	auth.SeedAuth()
 	auth.SeedAuthPages()
@@ -145,6 +147,7 @@ func New() *echo.Echo {
 	account.POST("/setting/sessions/:token/revoke", handlers.AuthRevokeSession)
 	account.POST("/setting/sessions/revoke-others", handlers.AuthRevokeOtherSessions)
 	account.POST("/setting/api-key/reset", handlers.AuthResetAPIKey)
+	account.POST("/setting/api-key-sandbox/reset", handlers.AuthResetAPIKeySandbox)
 	account.GET("/pricing", handlers.AuthPricing)
 	account.POST("/pricing/set", handlers.AuthSetClientPrice)
 	account.GET("/channels", handlers.AuthChannels)
@@ -325,6 +328,52 @@ func New() *echo.Echo {
 	admin.GET("/file-manager/edit/*", handlers.AdminFileEdit)
 	admin.POST("/file-manager/save", handlers.AdminFileSave)
 	admin.POST("/file-manager/delete", handlers.AdminFileDelete)
+
+	// Admin Campaign pages — session+RBAC, reuse the client composer's
+	// templates/JS via the admin's own personal API key (admin_campaign.go).
+	admin.GET("/campaign", handlers.AdminCampaignList)
+	admin.GET("/campaign/add", handlers.AdminCampaignAdd)
+	admin.GET("/campaign/edit/:id", handlers.AdminCampaignEdit)
+	admin.GET("/campaign/detail/:id", handlers.AdminCampaignDetail)
+
+	// Client/reseller Campaign, Cart & Invoice pages — embeddable as an
+	// iframe on a reseller's own site (cart-transaction.md), authenticated
+	// via ?key={userkey} instead of a session cookie (see
+	// auth.ResolveKeyActor, internal/auth/keyauth.go). Which key matches
+	// (User.APIKey vs User.APIKeySandbox) flags the request sandbox/prod.
+	campaign := e.Group("/campaign", auth.ResolveKeyActor)
+	campaign.GET("", handlers.CampaignList)
+	campaign.GET("/add", handlers.CampaignAdd)
+	campaign.GET("/edit/:id", handlers.CampaignEdit)
+	campaign.GET("/detail/:id", handlers.CampaignDetail)
+
+	campaign.GET("/api/product-categories", handlers.CampaignProductCategories)
+	campaign.GET("/api/products", handlers.CampaignProducts)
+	campaign.GET("/api/products/:id", handlers.CampaignProductGet)
+	campaign.GET("/api/products/:id/variants", handlers.CampaignProductVariants)
+
+	campaign.GET("/api/audiences", handlers.CampaignAudienceList)
+	campaign.POST("/api/audiences", handlers.CampaignAudienceCreate)
+	campaign.GET("/api/audiences/:id", handlers.CampaignAudienceGet)
+	campaign.PUT("/api/audiences/:id", handlers.CampaignAudienceUpdate)
+	campaign.DELETE("/api/audiences/:id", handlers.CampaignAudienceDelete)
+
+	campaign.GET("/api/creatives", handlers.CampaignCreativeList)
+	campaign.POST("/api/creatives", handlers.CampaignCreativeCreate)
+	campaign.GET("/api/creatives/:id", handlers.CampaignCreativeGet)
+	campaign.PUT("/api/creatives/:id", handlers.CampaignCreativeUpdate)
+	campaign.DELETE("/api/creatives/:id", handlers.CampaignCreativeDelete)
+
+	campaign.GET("/api/orders", handlers.CampaignOrderList)
+	campaign.POST("/api/orders", handlers.CampaignOrderSave)
+	campaign.GET("/api/orders/:id", handlers.CampaignOrderGet)
+	campaign.DELETE("/api/orders/:id", handlers.CampaignOrderDelete)
+
+	campaign.POST("/api/transactions", handlers.CampaignTransactionCreate)
+	campaign.GET("/api/transactions/:id", handlers.CampaignTransactionGet)
+
+	e.GET("/cart", handlers.CartList, auth.ResolveKeyActor)
+	e.GET("/invoice/:code", handlers.InvoiceDetail, auth.ResolveKeyActor)
 
 	// Public frontend routes
 	e.Static("/assets", "assets")

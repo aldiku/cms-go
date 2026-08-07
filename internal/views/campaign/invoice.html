@@ -1,0 +1,101 @@
+{{ define "content" }}
+<div x-data="invoicePage()" x-init="load()" class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-semibold text-gray-900 flex items-center gap-2"><i class="fa-solid fa-file-invoice"></i> Invoice Details</h1>
+      <p class="text-sm text-gray-500" x-text="'Invoice ID: ' + txn.invoice_id"></p>
+    </div>
+    <span class="px-3 py-1 rounded-full text-xs font-semibold uppercase" :class="statusColor(txn.status)" x-text="txn.status"></span>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 rounded-2xl border border-gray-200 bg-white p-6 space-y-6">
+      <div class="flex items-start justify-between">
+        <div class="text-blue-600 text-2xl font-bold">INVOICE</div>
+      </div>
+      <div class="text-sm text-gray-600 space-y-1">
+        <p class="font-medium text-gray-900" x-text="'Tgl. Pemesanan: ' + fmtDate(txn.created_at)"></p>
+        <p x-text="'No. Invoice: ' + txn.invoice_id"></p>
+        <p x-text="'Status: ' + txn.status"></p>
+      </div>
+
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-gray-400 border-b border-gray-100">
+            <th class="py-2">No</th><th class="py-2">Produk</th><th class="py-2 text-right">Total Harga</th>
+          </tr>
+        </thead>
+        <tbody>
+          <template x-for="(line, idx) in txn.orders" :key="line.order_id">
+            <tr class="border-b border-gray-50">
+              <td class="py-2" x-text="idx + 1"></td>
+              <td class="py-2" x-text="line.campaign_name || line.order_id"></td>
+              <td class="py-2 text-right" x-text="formatRupiah(line.grand_total)"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+
+      <div class="flex justify-end">
+        <div class="w-64 space-y-1 text-sm">
+          <div class="flex justify-between text-gray-600"><span>Subtotal</span><span x-text="formatRupiah(txn.subtotal)"></span></div>
+          <div class="flex justify-between text-gray-600"><span>Pajak 11%</span><span x-text="formatRupiah(txn.tax)"></span></div>
+          <div class="flex justify-between text-gray-600"><span>Biaya Admin</span><span x-text="formatRupiah(txn.fee)"></span></div>
+          <div class="flex justify-between font-semibold text-gray-900 pt-1 border-t border-gray-100"><span>Total</span><span x-text="formatRupiah(txn.grand_total)"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 space-y-4 h-fit">
+      <h2 class="font-medium text-gray-900 flex items-center gap-2"><i class="fa-regular fa-credit-card"></i> Payment Details</h2>
+      <div>
+        <div class="text-xs text-gray-400">Payment Method</div>
+        <div class="font-medium text-gray-800 uppercase" x-text="txn.bank_code || txn.payment_method"></div>
+      </div>
+      <div x-show="txn.va_number">
+        <div class="text-xs text-gray-400">Virtual Account Number</div>
+        <div class="flex items-center gap-2">
+          <code class="flex-1 rounded-lg bg-gray-100 px-3 py-2 text-sm" x-text="txn.va_number"></code>
+          <button type="button" @click="copy(txn.va_number)" class="h-9 px-3 rounded-lg bg-red-500 text-white text-xs">Copy</button>
+        </div>
+      </div>
+      <div>
+        <div class="text-xs text-gray-400">Total Amount</div>
+        <div class="flex items-center gap-2">
+          <code class="flex-1 rounded-lg bg-gray-100 px-3 py-2 text-sm" x-text="formatRupiah(txn.grand_total)"></code>
+          <button type="button" @click="copy(String(txn.grand_total))" class="h-9 px-3 rounded-lg bg-green-600 text-white text-xs">Copy</button>
+        </div>
+      </div>
+      <div>
+        <div class="text-xs text-gray-400">Expiry Date</div>
+        <div class="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-sm" x-text="fmtDateTime(txn.expires_at)"></div>
+      </div>
+      <div>
+        <div class="text-xs text-gray-400">Payment Status</div>
+        <span class="inline-block px-3 py-1 rounded-full text-sm font-semibold uppercase" :class="statusColor(txn.status)" x-text="txn.status"></span>
+      </div>
+      <button type="button" onclick="window.print()" class="w-full h-11 rounded-lg border border-red-300 text-red-600 text-sm font-medium hover:bg-red-50">
+        Download Invoice
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('invoicePage', () => ({
+    txn: { orders: [] },
+    statusColor(status) {
+      const map = { pending: 'bg-amber-100 text-amber-700', paid: 'bg-green-100 text-green-700', expired: 'bg-gray-200 text-gray-600', cancelled: 'bg-red-100 text-red-600' };
+      return map[status] || 'bg-gray-100 text-gray-600';
+    },
+    fmtDate(v) { return v ? new Date(v).toLocaleDateString('id-ID') : '-'; },
+    fmtDateTime(v) { return v ? new Date(v).toLocaleString('id-ID') : '-'; },
+    copy(text) { navigator.clipboard && navigator.clipboard.writeText(text || ''); },
+    load() {
+      campaignApi(`/campaign/api/transactions/{{ .InvoiceID }}`).then(t => this.txn = t);
+    },
+  }));
+});
+</script>
+{{ end }}

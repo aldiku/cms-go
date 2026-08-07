@@ -1,0 +1,404 @@
+{{ define "content" }}
+<div x-data="campaignFormPage()" x-init="init()" class="space-y-6 pb-24">
+
+  <div class="flex items-center justify-between gap-3">
+    <h1 class="text-xl font-semibold text-gray-900" x-text="mode === 'edit' ? 'Edit Campaign' : 'Add Campaign'"></h1>
+    <span class="text-xs text-gray-400" x-show="savedAt" x-text="'Draft saved ' + (savedAt ? savedAt.toLocaleTimeString() : '')"></span>
+  </div>
+
+  <div x-show="error" x-cloak class="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3" x-text="error"></div>
+
+  <!-- Campaign info -->
+  <div class="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-4">
+    <h2 class="font-medium text-gray-900">Campaign Info</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="mb-1.5 block text-sm font-medium text-gray-700">Campaign Name</label>
+        <input type="text" x-model="campaignName"
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700">Start</label>
+          <input type="date" x-model="scheduleStart"
+            class="h-11 w-full rounded-lg border border-gray-300 px-4 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+        </div>
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700">End</label>
+          <input type="date" x-model="scheduleEnd"
+            class="h-11 w-full rounded-lg border border-gray-300 px-4 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+        </div>
+      </div>
+    </div>
+    <div>
+      <label class="mb-1.5 block text-sm font-medium text-gray-700">Description</label>
+      <textarea x-model="campaignDescription" rows="2"
+        class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none"></textarea>
+    </div>
+  </div>
+
+  <!-- Campaign type / product picker -->
+  <div class="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-4">
+    <h2 class="font-medium text-gray-900">Campaign Type</h2>
+    <template x-if="mode === 'edit' && selectedProductId && levels.length === 0">
+      <p class="text-sm text-gray-500">Current: <span class="font-medium text-gray-800" x-text="selectedProductName || ('#' + selectedProductId)"></span> — pick below to change.</p>
+    </template>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div>
+        <label class="mb-1.5 block text-sm font-medium text-gray-700">Category</label>
+        <select x-model="selectedCategoryId" @change="onCategoryChange()"
+          class="h-11 w-full rounded-lg border border-gray-300 px-4 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          <option value="">Select category</option>
+          <template x-for="cat in categories" :key="cat.ID">
+            <option :value="cat.ID" x-text="cat.Name"></option>
+          </template>
+        </select>
+      </div>
+      <template x-for="(level, idx) in levels" :key="idx">
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700" x-text="idx === 0 ? 'Product' : 'Sub-product'"></label>
+          <select x-model="level.selectedId" @change="onLevelChange(idx)"
+            class="h-11 w-full rounded-lg border border-gray-300 px-4 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+            <option value="">Select</option>
+            <template x-for="item in level.items" :key="item.ID">
+              <option :value="item.ID" x-text="item.Name"></option>
+            </template>
+          </select>
+        </div>
+      </template>
+    </div>
+
+    <div x-show="variants.length > 0" x-cloak>
+      <label class="mb-1.5 block text-sm font-medium text-gray-700">Variant</label>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <template x-for="v in variants" :key="v.ID">
+          <button type="button" @click="pickVariant(v)"
+            class="text-left rounded-lg border p-3 text-sm"
+            :class="selectedVariantId === v.ID ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-gray-300'">
+            <div class="font-medium text-gray-900" x-text="v.Name"></div>
+            <div class="text-gray-500" x-text="formatRupiah(v.resolved_price)"></div>
+          </button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- Targeting & Creative -->
+  <div class="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 space-y-6">
+    <div class="flex items-center justify-between">
+      <h2 class="font-medium text-gray-900">Targeting &amp; Creative</h2>
+      <button type="button" @click="addRow()" class="text-sm text-indigo-600 hover:text-indigo-800">+ Add target</button>
+    </div>
+
+    <template x-for="(row, idx) in rows" :key="idx">
+      <div class="rounded-xl border border-gray-200 p-4 space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-gray-500" x-text="'Target ' + (idx + 1)"></span>
+          <button type="button" x-show="rows.length > 1" @click="removeRow(idx)" class="text-xs text-red-500 hover:text-red-700">Remove</button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Audience -->
+          <div class="space-y-2">
+            <div class="flex items-center gap-1 text-sm">
+              <button type="button" @click="row.audienceMode = 'new'"
+                :class="row.audienceMode === 'new' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'"
+                class="px-3 py-1.5 rounded-l-lg">New</button>
+              <button type="button" @click="row.audienceMode = 'existing'"
+                :class="row.audienceMode === 'existing' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'"
+                class="px-3 py-1.5 rounded-r-lg">Use existing</button>
+              <span class="ml-2 text-gray-400 text-xs">Audience</span>
+            </div>
+
+            <div x-show="row.audienceMode === 'existing'" x-cloak class="relative">
+              <input type="text" x-model="row.audienceQuery" @input.debounce.300ms="searchAudience(row)"
+                placeholder="Search audience..."
+                class="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              <div x-show="row.audienceResults.length" class="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg max-h-40 overflow-y-auto">
+                <template x-for="a in row.audienceResults" :key="a.audience_id">
+                  <button type="button" @click="pickAudience(row, a)" class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50" x-text="a.name"></button>
+                </template>
+              </div>
+            </div>
+
+            <div x-show="row.audienceMode === 'new'" x-cloak class="space-y-2">
+              <input type="text" x-model="row.newAudience.name" placeholder="Audience name"
+                class="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm">
+              <input type="text" x-model="row.newAudience.location_address" placeholder="Location address"
+                class="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm">
+              <div class="grid grid-cols-3 gap-2">
+                <input type="number" x-model.number="row.newAudience.min_age" placeholder="Min age" class="h-10 rounded-lg border border-gray-300 px-3 text-sm">
+                <input type="number" x-model.number="row.newAudience.max_age" placeholder="Max age" class="h-10 rounded-lg border border-gray-300 px-3 text-sm">
+                <input type="number" x-model.number="row.newAudience.radius" placeholder="Radius (m)" class="h-10 rounded-lg border border-gray-300 px-3 text-sm">
+              </div>
+              <input type="text" x-model="row.newAudience.whitelist_phones_raw" placeholder="Whitelist phones (comma separated)"
+                class="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm">
+            </div>
+          </div>
+
+          <!-- Creative -->
+          <div class="space-y-2">
+            <div class="flex items-center gap-1 text-sm">
+              <button type="button" @click="row.creativeMode = 'new'"
+                :class="row.creativeMode === 'new' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'"
+                class="px-3 py-1.5 rounded-l-lg">New</button>
+              <button type="button" @click="row.creativeMode = 'existing'"
+                :class="row.creativeMode === 'existing' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'"
+                class="px-3 py-1.5 rounded-r-lg">Use existing</button>
+              <span class="ml-2 text-gray-400 text-xs">Creative</span>
+            </div>
+
+            <div x-show="row.creativeMode === 'existing'" x-cloak class="relative">
+              <input type="text" x-model="row.creativeQuery" @input.debounce.300ms="searchCreative(row)"
+                placeholder="Search creative..."
+                class="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+              <div x-show="row.creativeResults.length" class="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg max-h-40 overflow-y-auto">
+                <template x-for="cr in row.creativeResults" :key="cr.creative_id">
+                  <button type="button" @click="pickCreative(row, cr)" class="block w-full text-left px-3 py-2 text-sm hover:bg-gray-50" x-text="cr.name"></button>
+                </template>
+              </div>
+            </div>
+
+            <div x-show="row.creativeMode === 'new'" x-cloak class="space-y-2">
+              <input type="text" x-model="row.newCreative.name" placeholder="Creative name"
+                class="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm">
+              <input type="text" x-model="row.newCreative.title" placeholder="Headline / title"
+                class="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm">
+              <textarea x-model="row.newCreative.caption" placeholder="Caption / body" rows="2"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"></textarea>
+              <select x-model="row.newCreative.footer_type" class="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm">
+                <option value="none">No footer</option>
+                <option value="cta">Call to action</option>
+              </select>
+              <div x-show="row.newCreative.footer_type === 'cta'" x-cloak class="grid grid-cols-2 gap-2">
+                <select x-model="row.newCreative.cta_type" class="h-10 rounded-lg border border-gray-300 px-3 text-sm">
+                  <option value="url">URL</option>
+                  <option value="phone">Phone</option>
+                  <option value="quick-reply">Quick reply</option>
+                </select>
+                <input type="text" x-model="row.newCreative.cta_title" placeholder="Button label" class="h-10 rounded-lg border border-gray-300 px-3 text-sm">
+                <input type="text" x-model="row.newCreative.cta_value" placeholder="URL / phone / reply text" class="h-10 col-span-2 rounded-lg border border-gray-300 px-3 text-sm">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="w-40">
+          <label class="mb-1.5 block text-sm font-medium text-gray-700">Qty</label>
+          <input type="number" x-model.number="row.qty" min="0"
+            class="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm">
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- Budget summary — fixed footer -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 sm:px-6 py-4">
+    <div class="max-w-6xl mx-auto flex items-center justify-between gap-4">
+      <div class="text-sm text-gray-600">
+        Qty: <span class="font-medium text-gray-900" x-text="totalQty"></span> ×
+        <span class="font-medium text-gray-900" x-text="formatRupiah(unitPrice)"></span> =
+        <span class="font-semibold text-gray-900 text-base" x-text="formatRupiah(grandTotal)"></span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button type="button" @click="save(false)" :disabled="saving"
+          class="h-11 px-5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+          Save Draft
+        </button>
+        <button type="button" @click="save(true)" :disabled="saving"
+          class="h-11 px-5 rounded-lg bg-indigo-600 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+          Save &amp; View
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('campaignFormPage', () => ({
+    mode: '{{ .Mode }}',
+    orderId: '{{ .OrderID }}',
+    campaignName: '', campaignDescription: '', scheduleStart: '', scheduleEnd: '',
+    categories: [], selectedCategoryId: '',
+    levels: [],
+    selectedProductId: 0, selectedProductName: '',
+    variants: [], selectedVariantId: 0, unitPrice: 0,
+    rows: [],
+    saving: false, savedAt: null, error: '',
+    _autosaveTimer: null,
+
+    blankRow() {
+      return {
+        qty: 0,
+        audienceMode: 'existing', audienceId: '', audienceQuery: '', audienceResults: [],
+        newAudience: { name: '', location_address: '', min_age: 18, max_age: 55, radius: 1000, whitelist_phones_raw: '' },
+        creativeMode: 'existing', creativeId: '', creativeQuery: '', creativeResults: [],
+        newCreative: { name: '', title: '', caption: '', body: '', footer_type: 'none', cta_type: 'url', cta_title: '', cta_value: '' },
+      };
+    },
+
+    get totalQty() { return this.rows.reduce((s, r) => s + (Number(r.qty) || 0), 0); },
+    get grandTotal() { return this.totalQty * this.unitPrice; },
+
+    init() {
+      this.rows = [this.blankRow()];
+      this.loadCategories();
+      if (this.mode === 'edit' && this.orderId) this.loadOrder();
+
+      this.$watch(
+        () => JSON.stringify({ n: this.campaignName, d: this.campaignDescription, s: this.scheduleStart, e: this.scheduleEnd, v: this.selectedVariantId, r: this.rows }),
+        () => {
+          clearTimeout(this._autosaveTimer);
+          this._autosaveTimer = setTimeout(() => this.save(false), 1500);
+        }
+      );
+    },
+
+    loadCategories() {
+      campaignApi('/campaign/api/product-categories').then(data => this.categories = data || []);
+    },
+
+    onCategoryChange() {
+      this.levels = [];
+      this.selectedProductId = 0; this.selectedProductName = ''; this.selectedVariantId = 0; this.unitPrice = 0; this.variants = [];
+      if (this.selectedCategoryId) this.fetchLevel(0);
+    },
+
+    fetchLevel(parentId) {
+      const params = new URLSearchParams({ category_id: this.selectedCategoryId, parent_id: parentId });
+      campaignApi('/campaign/api/products?' + params.toString()).then(items => {
+        if (items && items.length) this.levels.push({ items, selectedId: '' });
+      });
+    },
+
+    onLevelChange(levelIndex) {
+      this.levels = this.levels.slice(0, levelIndex + 1);
+      this.selectedProductId = 0; this.selectedProductName = ''; this.selectedVariantId = 0; this.unitPrice = 0; this.variants = [];
+      const level = this.levels[levelIndex];
+      const picked = level.items.find(i => String(i.ID) === String(level.selectedId));
+      if (!picked) return;
+      if (picked.has_children) {
+        this.fetchLevel(picked.ID);
+      } else if (picked.has_variants) {
+        this.selectedProductId = picked.ID;
+        this.selectedProductName = picked.Name;
+        this.loadVariants(picked.ID);
+      }
+    },
+
+    loadVariants(productId) {
+      campaignApi(`/campaign/api/products/${productId}/variants`).then(data => this.variants = data || []);
+    },
+
+    pickVariant(v) { this.selectedVariantId = v.ID; this.unitPrice = v.resolved_price; },
+
+    addRow() { this.rows.push(this.blankRow()); },
+    removeRow(i) { this.rows.splice(i, 1); },
+
+    searchAudience(row) {
+      if (!row.audienceQuery) { row.audienceResults = []; return; }
+      campaignApi('/campaign/api/audiences?q=' + encodeURIComponent(row.audienceQuery)).then(res => row.audienceResults = res.data || []);
+    },
+    pickAudience(row, a) { row.audienceId = a.audience_id; row.audienceQuery = a.name; row.audienceResults = []; },
+
+    searchCreative(row) {
+      if (!row.creativeQuery) { row.creativeResults = []; return; }
+      campaignApi('/campaign/api/creatives?q=' + encodeURIComponent(row.creativeQuery)).then(res => row.creativeResults = res.data || []);
+    },
+    pickCreative(row, cr) { row.creativeId = cr.creative_id; row.creativeQuery = cr.name; row.creativeResults = []; },
+
+    async resolveRowIds(row) {
+      let audienceId = row.audienceId;
+      if (row.audienceMode === 'new' && row.newAudience.name) {
+        const whitelist = (row.newAudience.whitelist_phones_raw || '').split(',').map(s => s.trim()).filter(Boolean);
+        const payload = {
+          name: row.newAudience.name, product_id: this.selectedProductId, product_type: this.selectedProductName,
+          location_address: row.newAudience.location_address, min_age: row.newAudience.min_age, max_age: row.newAudience.max_age,
+          radius: row.newAudience.radius, whitelist_phones: whitelist,
+        };
+        const created = await campaignApi('/campaign/api/audiences', { method: 'POST', body: JSON.stringify(payload) });
+        audienceId = created.audience_id;
+        row.audienceId = audienceId; row.audienceMode = 'existing'; row.audienceQuery = created.name;
+      }
+      let creativeId = row.creativeId;
+      if (row.creativeMode === 'new' && row.newCreative.name) {
+        const nc = row.newCreative;
+        let ctaProps = '';
+        if (nc.footer_type === 'cta') {
+          const p = { type: nc.cta_type, title: nc.cta_title };
+          p[nc.cta_type === 'phone' ? 'phone' : (nc.cta_type === 'quick-reply' ? 'reply' : 'url')] = nc.cta_value;
+          ctaProps = JSON.stringify(p);
+        }
+        const payload = {
+          name: nc.name, product_id: this.selectedProductId, product_type: this.selectedProductName,
+          title: nc.title, caption: nc.caption, body: nc.body, footer_type: nc.footer_type, cta_props: ctaProps,
+        };
+        const created = await campaignApi('/campaign/api/creatives', { method: 'POST', body: JSON.stringify(payload) });
+        creativeId = created.creative_id;
+        row.creativeId = creativeId; row.creativeMode = 'existing'; row.creativeQuery = created.name;
+      }
+      return { audience_id: audienceId, creative_id: creativeId, qty: Number(row.qty) || 0 };
+    },
+
+    async save(explicit) {
+      if (!this.selectedProductId || !this.selectedVariantId) {
+        if (explicit) this.error = 'Please choose a campaign type first.';
+        return;
+      }
+      this.saving = true; this.error = '';
+      try {
+        const details = await Promise.all(this.rows.map(r => this.resolveRowIds(r)));
+        const payload = {
+          order_id: this.orderId || undefined,
+          campaign_name: this.campaignName, campaign_description: this.campaignDescription,
+          product_id: this.selectedProductId, product_variant_id: this.selectedVariantId,
+          schedule_start: this.scheduleStart ? this.scheduleStart + 'T00:00:00Z' : null,
+          schedule_end: this.scheduleEnd ? this.scheduleEnd + 'T00:00:00Z' : null,
+          details,
+        };
+        const saved = await campaignApi('/campaign/api/orders', { method: 'POST', body: JSON.stringify(payload) });
+        this.orderId = saved.order_id;
+        this.mode = 'edit';
+        history.replaceState(null, '', `{{ .BasePath }}/edit/${this.orderId}{{ if .Embedded }}?key={{ .CampaignKey }}{{ end }}`);
+        this.savedAt = new Date();
+        if (explicit) window.location.href = `{{ .BasePath }}/detail/${this.orderId}{{ if .Embedded }}?key={{ .CampaignKey }}{{ end }}`;
+      } catch (e) {
+        this.error = e.message;
+      } finally {
+        this.saving = false;
+      }
+    },
+
+    loadOrder() {
+      campaignApi(`/campaign/api/orders/${this.orderId}`).then(o => {
+        this.campaignName = o.campaign_name || '';
+        this.campaignDescription = o.campaign_description || '';
+        this.scheduleStart = (o.schedule_start || '').substring(0, 10);
+        this.scheduleEnd = (o.schedule_end || '').substring(0, 10);
+        this.selectedProductId = o.product_id;
+        this.selectedVariantId = o.product_variant_id;
+        this.unitPrice = o.qty ? Math.round(o.grand_total / o.qty) : 0;
+        campaignApi(`/campaign/api/products/${o.product_id}`).then(p => this.selectedProductName = p.Name).catch(() => {});
+
+        if (o.details && o.details.length) {
+          this.rows = o.details.map(d => {
+            const row = this.blankRow();
+            row.qty = d.qty;
+            if (d.audience_id) {
+              row.audienceId = d.audience_id; row.audienceMode = 'existing';
+              campaignApi(`/campaign/api/audiences/${d.audience_id}`).then(a => row.audienceQuery = a.name).catch(() => {});
+            }
+            if (d.creative_id) {
+              row.creativeId = d.creative_id; row.creativeMode = 'existing';
+              campaignApi(`/campaign/api/creatives/${d.creative_id}`).then(cr => row.creativeQuery = cr.name).catch(() => {});
+            }
+            return row;
+          });
+        }
+      });
+    },
+  }));
+});
+</script>
+{{ end }}

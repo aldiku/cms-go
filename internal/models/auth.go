@@ -7,25 +7,26 @@ import (
 )
 
 type User struct {
-	ID         uint `gorm:"primaryKey"`
-	Firstname  string
-	Lastname   string
-	Email      string `gorm:"uniqueIndex"`
-	Phone      string
-	Password   string // bcrypt hash, never rendered
-	Address    string
-	Company    string
-	EmployeeID string
-	Avatar     string
-	RoleID     uint
-	Status     uint8   // 1 = active
-	APIKey     *string `gorm:"uniqueIndex"` // nil = not generated; personal token for the "auth"-tagged API Builder header
-	ReferralID uint    `gorm:"index"`       // 0 = none; ID of the user who referred this one ("parent" user)
-	VerifiedAt *time.Time
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	DeletedAt  gorm.DeletedAt `gorm:"index"`
-	Role       Role
+	ID            uint `gorm:"primaryKey"`
+	Firstname     string
+	Lastname      string
+	Email         string `gorm:"uniqueIndex"`
+	Phone         string
+	Password      string // bcrypt hash, never rendered
+	Address       string
+	Company       string
+	EmployeeID    string
+	Avatar        string
+	RoleID        uint
+	Status        uint8   // 1 = active
+	APIKey        *string `gorm:"uniqueIndex"` // nil = not generated; personal token for the "auth"-tagged API Builder header
+	APIKeySandbox *string `gorm:"uniqueIndex"` // nil = not generated; same as APIKey but flags sandbox=true on /campaign requests
+	ReferralID    uint    `gorm:"index"`       // 0 = none; ID of the user who referred this one ("parent" user)
+	VerifiedAt    *time.Time
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	DeletedAt     gorm.DeletedAt `gorm:"index"`
+	Role          Role
 }
 
 func (u User) FullName() string {

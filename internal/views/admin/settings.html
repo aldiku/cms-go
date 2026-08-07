@@ -11,6 +11,68 @@
   </div>
   {{ end }}
 
+    <!-- API access key -->
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="px-5 py-4 sm:px-6 border-b border-gray-100 dark:border-gray-800">
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">API access key</h3>
+    </div>
+    <div class="p-5 sm:p-6 space-y-4">
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        Send this key as the <span class="font-mono">X-API-Key</span> header to call any API Builder endpoint tagged <span class="font-mono">auth</span>.
+      </p>
+
+      {{ if .APIKey }}
+      <div class="flex items-center gap-2">
+        <input type="text" id="apiKeyField" readonly value="{{ .APIKey }}"
+          class="h-11 flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-4 py-2.5 text-sm font-mono text-gray-800 dark:text-white/90">
+        <button type="button" data-target="apiKeyField"
+          class="copyKeyBtn inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Copy</button>
+      </div>
+      {{ else }}
+      <p class="text-sm text-gray-400 dark:text-gray-500 italic">No API key generated yet.</p>
+      {{ end }}
+
+      <form method="POST" action="/auth/setting/api-key/reset"
+        onsubmit="return confirm('{{ if .APIKey }}This will invalidate the current key immediately — anything using it will stop working until updated. Continue?{{ else }}Generate a new API key?{{ end }}');">
+        <button type="submit" class="inline-flex items-center gap-2 rounded-lg {{ if .APIKey }}border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20{{ else }}bg-indigo-600 text-white hover:bg-indigo-700{{ end }} px-4 py-2.5 text-sm font-medium transition-colors">
+          {{ if .APIKey }}Reset Key{{ else }}Generate Key{{ end }}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Sandbox API access key -->
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="px-5 py-4 sm:px-6 border-b border-gray-100 dark:border-gray-800 flex items-center gap-2">
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Sandbox API access key</h3>
+      <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-medium">Sandbox</span>
+    </div>
+    <div class="p-5 sm:p-6 space-y-4">
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        Use this key instead of the production key above (as <span class="font-mono">?key=</span> or the <span class="font-mono">X-API-Key</span> header)
+        to call Campaign/Cart/Transaction pages and APIs in sandbox mode — data created with it never mixes with production.
+      </p>
+
+      {{ if .APIKeySandbox }}
+      <div class="flex items-center gap-2">
+        <input type="text" id="apiKeySandboxField" readonly value="{{ .APIKeySandbox }}"
+          class="h-11 flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-4 py-2.5 text-sm font-mono text-gray-800 dark:text-white/90">
+        <button type="button" data-target="apiKeySandboxField"
+          class="copyKeyBtn inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Copy</button>
+      </div>
+      {{ else }}
+      <p class="text-sm text-gray-400 dark:text-gray-500 italic">No sandbox API key generated yet.</p>
+      {{ end }}
+
+      <form method="POST" action="/auth/setting/api-key-sandbox/reset"
+        onsubmit="return confirm('{{ if .APIKeySandbox }}This will invalidate the current sandbox key immediately — anything using it will stop working until updated. Continue?{{ else }}Generate a new sandbox API key?{{ end }}');">
+        <button type="submit" class="inline-flex items-center gap-2 rounded-lg {{ if .APIKeySandbox }}border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20{{ else }}bg-indigo-600 text-white hover:bg-indigo-700{{ end }} px-4 py-2.5 text-sm font-medium transition-colors">
+          {{ if .APIKeySandbox }}Reset Key{{ else }}Generate Key{{ end }}
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- Active sessions -->
   <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
     <div class="px-5 py-4 sm:px-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
@@ -61,49 +123,20 @@
     </div>
   </div>
 
-  <!-- API access key -->
-  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
-    <div class="px-5 py-4 sm:px-6 border-b border-gray-100 dark:border-gray-800">
-      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">API access key</h3>
-    </div>
-    <div class="p-5 sm:p-6 space-y-4">
-      <p class="text-sm text-gray-500 dark:text-gray-400">
-        Send this key as the <span class="font-mono">X-API-Key</span> header to call any API Builder endpoint tagged <span class="font-mono">auth</span>.
-      </p>
 
-      {{ if .APIKey }}
-      <div class="flex items-center gap-2">
-        <input type="text" id="apiKeyField" readonly value="{{ .APIKey }}"
-          class="h-11 flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-950 px-4 py-2.5 text-sm font-mono text-gray-800 dark:text-white/90">
-        <button type="button" id="copyApiKeyBtn"
-          class="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Copy</button>
-      </div>
-      {{ else }}
-      <p class="text-sm text-gray-400 dark:text-gray-500 italic">No API key generated yet.</p>
-      {{ end }}
-
-      <form method="POST" action="/auth/setting/api-key/reset"
-        onsubmit="return confirm('{{ if .APIKey }}This will invalidate the current key immediately — anything using it will stop working until updated. Continue?{{ else }}Generate a new API key?{{ end }}');">
-        <button type="submit" class="inline-flex items-center gap-2 rounded-lg {{ if .APIKey }}border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20{{ else }}bg-indigo-600 text-white hover:bg-indigo-700{{ end }} px-4 py-2.5 text-sm font-medium transition-colors">
-          {{ if .APIKey }}Reset Key{{ else }}Generate Key{{ end }}
-        </button>
-      </form>
-    </div>
-  </div>
 
 </div>
 
 <script>
-  var copyBtn = document.getElementById("copyApiKeyBtn");
-  if (copyBtn) {
-    copyBtn.addEventListener("click", function () {
-      var field = document.getElementById("apiKeyField");
+  document.querySelectorAll(".copyKeyBtn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var field = document.getElementById(btn.dataset.target);
       navigator.clipboard.writeText(field.value).then(function () {
-        var original = copyBtn.textContent;
-        copyBtn.textContent = "Copied!";
-        setTimeout(function () { copyBtn.textContent = original; }, 1500);
+        var original = btn.textContent;
+        btn.textContent = "Copied!";
+        setTimeout(function () { btn.textContent = original; }, 1500);
       });
     });
-  }
+  });
 </script>
 {{ end }}

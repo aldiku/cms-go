@@ -171,9 +171,10 @@ func AuthSettingsForm(c echo.Context) error {
 	}
 
 	return renderWithLayout(c, "internal/views/admin/admin-layout.html", "internal/views/admin/settings.html", map[string]interface{}{
-		"Sessions": views,
-		"APIKey":   user.APIKey,
-		"Reset":    c.QueryParam("reset") == "1",
+		"Sessions":      views,
+		"APIKey":        user.APIKey,
+		"APIKeySandbox": user.APIKeySandbox,
+		"Reset":         c.QueryParam("reset") == "1",
 	})
 }
 
@@ -231,6 +232,32 @@ func AuthResetAPIKey(c echo.Context) error {
 	user.APIKey = &key
 	if err := db.DB.Save(&user).Error; err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to save API key")
+	}
+
+	return c.Redirect(http.StatusSeeOther, "/auth/setting?reset=1")
+}
+
+// POST /auth/setting/api-key-sandbox/reset — same as AuthResetAPIKey, but
+// for models.User.APIKeySandbox: the key that flags a /campaign,
+// /cart, /invoice request as sandbox instead of production (see
+// internal/auth/keyauth.go's ResolveKeyActor).
+func AuthResetAPIKeySandbox(c echo.Context) error {
+	current, ok := currentUser(c)
+	if !ok {
+		return c.Redirect(http.StatusFound, "/admin/login")
+	}
+	var user models.User
+	if err := db.DB.First(&user, current.ID).Error; err != nil {
+		return c.Redirect(http.StatusFound, "/admin/login")
+	}
+
+	key, err := auth.GenerateAPIKey()
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to generate sandbox API key")
+	}
+	user.APIKeySandbox = &key
+	if err := db.DB.Save(&user).Error; err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to save sandbox API key")
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/auth/setting?reset=1")

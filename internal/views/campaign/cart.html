@@ -1,0 +1,120 @@
+{{ define "content" }}
+<div x-data="cartPage()" x-init="load()" class="space-y-6">
+  <nav class="text-sm text-gray-500">Dashboard &gt; <span class="text-gray-800">Daftar Cart</span></nav>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-4">
+      <div class="flex items-center justify-between gap-3">
+        <button type="button" @click="allSelected ? deselectAll() : selectAll()"
+          class="h-10 px-4 rounded-lg border border-red-300 text-red-600 text-sm font-medium hover:bg-red-50"
+          x-text="allSelected ? 'Batalkan Pilih' : 'Pilih Semua'"></button>
+        <input type="text" x-model="search" placeholder="Cari..."
+          class="h-10 flex-1 rounded-lg border border-gray-300 px-4 text-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+      </div>
+
+      <div x-show="!loading && filteredOrders.length === 0" class="text-center text-gray-500 py-16 rounded-2xl border border-dashed border-gray-300">
+        Cart is empty.
+      </div>
+
+      <template x-for="order in filteredOrders" :key="order.order_id">
+        <div class="rounded-2xl border border-gray-200 bg-white p-4 flex items-center gap-4">
+          <input type="checkbox" :value="order.order_id" x-model="selected" class="h-5 w-5 rounded border-gray-300 text-red-500 focus:ring-red-400">
+          <div class="flex-1 min-w-0">
+            <div class="font-medium text-gray-900 truncate" x-text="order.campaign_name || '(untitled campaign)'"></div>
+            <div class="text-xs text-gray-400" x-text="order.order_id"></div>
+          </div>
+          <div class="font-semibold text-gray-900 whitespace-nowrap" x-text="formatRupiah(order.grand_total)"></div>
+          <a :href="`{{ .BasePath }}/edit/${order.order_id}{{ if .Embedded }}?key={{ .CampaignKey }}{{ end }}`" class="text-gray-400 hover:text-gray-700"><i class="fa-regular fa-pen-to-square"></i></a>
+          <button type="button" @click="remove(order.order_id)" class="text-red-400 hover:text-red-600"><i class="fa-regular fa-trash-can"></i></button>
+        </div>
+      </template>
+    </div>
+
+    <!-- Summary -->
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 space-y-4 h-fit">
+      <h2 class="font-medium text-gray-900">Ringkasan belanja</h2>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between text-gray-600"><span>Subtotal</span><span x-text="formatRupiah(subtotal)"></span></div>
+        <div class="flex justify-between text-gray-600"><span>PPN 11%</span><span x-text="formatRupiah(tax)"></span></div>
+        <div class="flex justify-between text-gray-600"><span>Fee</span><span x-text="formatRupiah(fee)"></span></div>
+        <div class="flex justify-between font-semibold text-gray-900 pt-2 border-t border-gray-100"><span>Total Harga</span><span x-text="formatRupiah(total)"></span></div>
+      </div>
+
+      <p class="text-xs text-gray-400">Pilih salah satu metode pembayaran dibawah ini sesuai kebutuhan Anda.</p>
+      <div class="space-y-2">
+        <button type="button" @click="paymentMethod = 'token_adsqoo'"
+          class="w-full flex items-center justify-between rounded-lg border px-4 py-3 text-sm"
+          :class="paymentMethod === 'token_adsqoo' ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-gray-300'">
+          <span>Token Adsqoo</span><i class="fa-solid fa-chevron-right text-gray-400"></i>
+        </button>
+        <div class="rounded-lg border" :class="paymentMethod && paymentMethod.startsWith('bank:') ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-gray-300'">
+          <div class="flex items-center justify-between px-4 py-3 text-sm">
+            <span>Bank Transfer</span><i class="fa-solid fa-chevron-down text-gray-400"></i>
+          </div>
+          <div class="grid grid-cols-2 gap-2 px-4 pb-3">
+            <template x-for="bank in ['mandiri','bca','bsi','bjb']" :key="bank">
+              <button type="button" @click="paymentMethod = 'bank:' + bank"
+                class="h-10 rounded-lg border text-xs font-medium uppercase"
+                :class="paymentMethod === 'bank:' + bank ? 'border-indigo-500 ring-2 ring-indigo-100' : 'border-gray-300'"
+                x-text="bank"></button>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+        <span class="text-sm text-gray-600" x-text="`Total (${selected.length} pesanan)`"></span>
+        <span class="font-semibold text-gray-900" x-text="formatRupiah(total)"></span>
+      </div>
+      <button type="button" @click="checkout()" :disabled="selected.length === 0 || !paymentMethod || paying"
+        class="w-full h-11 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 disabled:opacity-40">
+        Bayar
+      </button>
+      <p x-show="error" x-cloak class="text-sm text-red-600" x-text="error"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+  Alpine.data('cartPage', () => ({
+    orders: [], selected: [], search: '', loading: false, paying: false, error: '',
+    paymentMethod: '',
+    get filteredOrders() {
+      if (!this.search) return this.orders;
+      const q = this.search.toLowerCase();
+      return this.orders.filter(o => (o.campaign_name || '').toLowerCase().includes(q));
+    },
+    get selectedOrders() { return this.orders.filter(o => this.selected.includes(o.order_id)); },
+    get subtotal() { return this.selectedOrders.reduce((s, o) => s + (o.grand_total || 0), 0); },
+    get tax() { return Math.round(this.subtotal * 0.11); },
+    get fee() { return this.selected.length ? 4000 : 0; },
+    get total() { return this.subtotal + this.tax + this.fee; },
+    get allSelected() { return this.orders.length > 0 && this.selected.length === this.orders.length; },
+    selectAll() { this.selected = this.orders.map(o => o.order_id); },
+    deselectAll() { this.selected = []; },
+    load() {
+      this.loading = true;
+      campaignApi('/campaign/api/orders?status=0').then(res => {
+        this.orders = res.data || [];
+        this.selected = this.orders.map(o => o.order_id);
+      }).finally(() => this.loading = false);
+    },
+    remove(id) {
+      if (!confirm('Remove this campaign from the cart?')) return;
+      campaignApi(`/campaign/api/orders/${id}`, { method: 'DELETE' }).then(() => this.load());
+    },
+    checkout() {
+      this.paying = true; this.error = '';
+      const [method, bank] = this.paymentMethod.split(':');
+      campaignApi('/campaign/api/transactions', {
+        method: 'POST',
+        body: JSON.stringify({ order_ids: this.selected, payment_method: method, bank_code: bank || '' }),
+      }).then(txn => {
+        window.location.href = `/invoice/${txn.invoice_id}{{ if .Embedded }}?key={{ .CampaignKey }}{{ end }}`;
+      }).catch(e => this.error = e.message).finally(() => this.paying = false);
+    },
+  }));
+});
+</script>
+{{ end }}

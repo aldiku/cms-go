@@ -1,0 +1,61 @@
+{{ define "layout" }}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ .SiteName }} — Campaign</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+    body { font-family: ui-sans-serif, system-ui, sans-serif; background-color: #f9fafb; }
+  </style>
+</head>
+
+<body class="text-gray-800">
+  {{ if not .Embedded }}
+  <header class="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex items-center justify-between">
+    <a href="/campaign?key={{ .CampaignKey }}" class="font-semibold text-lg text-gray-900">{{ .SiteName }}</a>
+    <nav class="flex items-center gap-4 text-sm">
+      <a href="/campaign?key={{ .CampaignKey }}" class="text-gray-600 hover:text-gray-900">Campaign</a>
+      <a href="/cart?key={{ .CampaignKey }}" class="text-gray-600 hover:text-gray-900">Cart</a>
+      {{ if .CurrentUser.Email }}<span class="text-gray-400">{{ .CurrentUser.Email }}</span>{{ end }}
+      {{ if .Sandbox }}<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-medium">Sandbox</span>{{ end }}
+    </nav>
+  </header>
+  {{ end }}
+
+  <script>
+    // Shared helper, defined before <main> so it exists before any content
+    // script runs. Every /campaign/api/* call re-attaches the resolved key
+    // so ResolveKeyActor (internal/auth/keyauth.go) can identify the caller
+    // — see cart-transaction.md's ?key={userkey} convention. Content
+    // templates are shared between this layout and admin-layout.html, so
+    // each one defers its own logic to DOMContentLoaded rather than
+    // assuming script execution order.
+    const CAMPAIGN_KEY = "{{ .CampaignKey }}";
+    function campaignApi(path, opts) {
+      const url = new URL(path, window.location.origin);
+      url.searchParams.set('key', CAMPAIGN_KEY);
+      opts = opts || {};
+      opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+      return fetch(url, opts).then(async (r) => {
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(body.error || ('Request failed (' + r.status + ')'));
+        return body;
+      });
+    }
+    function formatRupiah(n) {
+      return 'Rp' + Math.round(n || 0).toLocaleString('id-ID');
+    }
+  </script>
+
+  <main class="max-w-6xl mx-auto p-4 sm:p-6">
+    {{ template "content" . }}
+  </main>
+</body>
+</html>
+{{ end }}

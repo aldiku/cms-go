@@ -219,6 +219,12 @@ func SeedAuth() {
 	}
 	db.DB.Where("path = ?", channelsMenu.Path).Attrs(channelsMenu).FirstOrCreate(&channelsMenu)
 
+	campaignMenu := models.Menu{
+		Menu: "Campaign", Path: "/admin/campaign", Icon: "📣",
+		MenuType: "module", Status: 1, ListOrder: 21, MenuGroupID: backendGroup.ID,
+	}
+	db.DB.Where("path = ?", campaignMenu.Path).Attrs(campaignMenu).FirstOrCreate(&campaignMenu)
+
 	// Backfill: any menu row without a group (pre-dates MenuGroupID, or was
 	// just created above without one) belongs to the system Backend group.
 	db.DB.Model(&models.Menu{}).Where("menu_group_id = 0 OR menu_group_id IS NULL").Update("menu_group_id", backendGroup.ID)
