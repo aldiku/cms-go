@@ -168,11 +168,19 @@ func findOrCreateTags(terms []wpTerm) []models.Tag {
 }
 
 // createOrUpdateMediaFromWP creates a Media record with a URL reference (no file download).
-func createOrUpdateMediaFromWP(wpMedia wpMedia) (uint, error) {
+func createOrUpdateMediaFromWP(wpMedia wpMedia, uploaderID uint) (uint, error) {
 	var existing models.Media
 	path := extractPathFromURL(wpMedia.SourceURL)
 	if err := db.DB.Where("url = ?", wpMedia.SourceURL).First(&existing).Error; err == nil {
+		fmt.Printf("    Media exists: %s (ID: %d)\n", wpMedia.SourceURL, existing.ID)
 		return existing.ID, nil
+	}
+
+	// Use default uploader ID if not provided
+	if uploaderID == 0 {
+		var user models.User
+		db.DB.Order("id asc").First(&user)
+		uploaderID = user.ID
 	}
 
 	media := models.Media{
@@ -185,10 +193,13 @@ func createOrUpdateMediaFromWP(wpMedia wpMedia) (uint, error) {
 		Height:       wpMedia.Details.Height,
 		Title:        wpMedia.Title.Rendered,
 		AltText:      wpMedia.AltText,
+		UploaderID:   uploaderID,
 	}
 	if err := db.DB.Create(&media).Error; err != nil {
+		fmt.Printf("    ERROR creating media: %v\n", err)
 		return 0, fmt.Errorf("create media: %w", err)
 	}
+	fmt.Printf("    Created media: %s (ID: %d)\n", wpMedia.SourceURL, media.ID)
 	return media.ID, nil
 }
 
@@ -277,23 +288,33 @@ func migrateSinglePost(wp wpPost, defaultAuthorID uint, pageType string) error {
 		return nil
 	}
 
+	// Find or create author first (needed for UploaderID)
+	authorID := findOrCreateAuthor(wp.Embedded.Author, defaultAuthorID)
+
 	// Create featured image if present
 	var featuredImageID uint
 	if len(wp.Embedded.FeaturedMedia) > 0 && wp.FeaturedMedia != 0 {
-		if id, err := createOrUpdateMediaFromWP(wp.Embedded.FeaturedMedia[0]); err == nil {
+		fmt.Printf("  Migrating featured image (WP ID: %d)\n", wp.FeaturedMedia)
+		if id, err := createOrUpdateMediaFromWP(wp.Embedded.FeaturedMedia[0], authorID); err == nil {
 			featuredImageID = id
+			fmt.Printf("  Set featured image ID: %d\n", id)
+		} else {
+			fmt.Printf("  Failed to create featured image: %v\n", err)
 		}
 	}
-
-	// Find or create author
-	authorID := findOrCreateAuthor(wp.Embedded.Author, defaultAuthorID)
 
 	// Parse published date
 	var publishedAt *time.Time
 	if wp.Status == "publish" {
-		if t, err := time.Parse(time.RFC3339, wp.Date); err == nil {
+		t, err := time.Parse(time.RFC3339, wp.Date)
+		if err != nil {
+			fmt.Printf("  ERROR parsing date '%s': %v\n", wp.Date, err)
+		} else {
 			publishedAt = &t
+			fmt.Printf("  Set published_at: %v\n", publishedAt)
 		}
+	} else {
+		fmt.Printf("  Status is '%s', not setting published_at\n", wp.Status)
 	}
 
 	// Prepare content: add CSS for pages, featured image for posts
@@ -319,6 +340,9 @@ func migrateSinglePost(wp wpPost, defaultAuthorID uint, pageType string) error {
 	if err := db.DB.Create(&page).Error; err != nil {
 		return fmt.Errorf("create page: %w", err)
 	}
+
+	fmt.Printf("  ✓ Created %s: '%s' (ID: %d)\n", pageType, page.Title, page.ID)
+	fmt.Printf("    FeaturedImageID: %d, PublishedAt: %v\n", page.FeaturedImageID, page.PublishedAt)
 
 	// Apply categories and tags (only for "post" type in WP)
 	if len(wp.Embedded.Terms) > 0 && pageType == "post" {
