@@ -1,0 +1,90 @@
+{{ define "content" }}
+<div class="max-w-2xl mx-auto space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Setup Posts API</h2>
+    <a href="/admin/api-builder" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">← Back</a>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="p-5 sm:p-6">
+      <div class="space-y-4">
+
+        <div>
+          <h3 class="font-semibold text-gray-800 dark:text-white/90 mb-2">{{ .APIName }}</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{{ .Description }}</p>
+        </div>
+
+        <div class="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/40 p-4 text-sm text-blue-700 dark:text-blue-400 space-y-2">
+          <p class="font-semibold">API Details:</p>
+          <ul class="space-y-1 text-xs">
+            <li><strong>Endpoint:</strong> <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">{{ .Method }} {{ .BaseURL }}{{ .Path }}</code></li>
+            <li><strong>Query Parameters:</strong>
+              <ul class="list-disc list-inside ml-2 mt-1">
+                <li><code>page</code> (integer, default: 1) - Page number</li>
+                <li><code>per_page</code> (integer, default: 10) - Items per page</li>
+              </ul>
+            </li>
+            <li><strong>Response Fields:</strong>
+              <ul class="list-disc list-inside ml-2 mt-1">
+                <li>id - Post ID</li>
+                <li>title - Post title</li>
+                <li>meta_description - SEO description (from excerpt)</li>
+                <li>thumbnail - Featured image URL</li>
+                <li>published_at - Publication date</li>
+                <li>author - Author name</li>
+                <li>tags - Comma-separated tag names</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <div class="rounded-lg border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/40 p-4 text-sm text-green-700 dark:text-green-400">
+          <p class="font-semibold mb-2">✓ What will be created:</p>
+          <ul class="space-y-1">
+            <li>• API endpoint in "public" group (no authentication required)</li>
+            <li>• Automatic pagination calculation based on query params</li>
+            <li>• SQL query with LEFT JOINs for related data</li>
+            <li>• JSON response with data envelope</li>
+          </ul>
+        </div>
+
+        <div class="rounded-lg border border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950/40 p-4 text-sm text-yellow-700 dark:text-yellow-400">
+          <p class="font-semibold mb-1">Example Request:</p>
+          <code class="block bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs break-all">
+            GET /api/public/posts?page=1&per_page=10
+          </code>
+        </div>
+
+        <div class="rounded-lg border border-purple-200 bg-purple-50 dark:border-purple-900 dark:bg-purple-950/40 p-4 text-sm text-purple-700 dark:text-purple-400">
+          <p class="font-semibold mb-2">Example Response:</p>
+          <pre class="bg-purple-100 dark:bg-purple-900 px-2 py-1 rounded text-xs overflow-x-auto">{
+  "data": [
+    {
+      "id": 1,
+      "title": "Post Title",
+      "meta_description": "Short description from excerpt...",
+      "thumbnail": "/assets/uploads/2026/08/image.jpg",
+      "published_at": "2026-08-06T13:33:09Z",
+      "author": "John Doe",
+      "tags": "tag1, tag2, tag3"
+    }
+  ]
+}</pre>
+        </div>
+
+        <div class="pt-4 border-t border-gray-100 dark:border-gray-800 space-y-3">
+          <form method="POST" onsubmit="return confirm('Create the Posts API endpoint?');">
+            <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
+              ✓ Create API Endpoint
+            </button>
+          </form>
+          <p class="text-xs text-gray-500 dark:text-gray-400">After creation, you'll be able to edit, test, and manage the endpoint in the API Builder.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}

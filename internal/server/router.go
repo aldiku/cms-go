@@ -315,6 +315,8 @@ func New() *echo.Echo {
 	admin.POST("/api-builder/:id/edit", handlers.AdminUpdateAPIEndpoint)
 	admin.POST("/api-builder/:id/delete", handlers.AdminDeleteAPIEndpoint)
 	admin.POST("/api-builder/test", handlers.AdminTestAPIEndpoint)
+	admin.GET("/api-setup/posts", handlers.AdminSetupPostsAPI)
+	admin.POST("/api-setup/posts", handlers.AdminSetupPostsAPI)
 
 	// DB Manager — native Postgres table browser/editor + SQL console
 	admin.GET("/db-manager", handlers.AdminDBManager)
