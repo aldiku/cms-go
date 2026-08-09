@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -339,6 +340,42 @@ func RollbackWPData() error {
 	return nil
 }
 
+// cleanExcerpt removes HTML tags and truncates excerpt for meta_description.
+// WordPress excerpts come with <p> tags and may have closing tags like </p>
+func cleanExcerpt(excerpt string) string {
+	if excerpt == "" {
+		return ""
+	}
+
+	// Remove HTML tags
+	re := regexp.MustCompile(`<[^>]*>`)
+	clean := re.ReplaceAllString(excerpt, "")
+
+	// Decode HTML entities (e.g., &quot; → ")
+	clean = strings.ReplaceAll(clean, "&quot;", "\"")
+	clean = strings.ReplaceAll(clean, "&amp;", "&")
+	clean = strings.ReplaceAll(clean, "&lt;", "<")
+	clean = strings.ReplaceAll(clean, "&gt;", ">")
+	clean = strings.ReplaceAll(clean, "&hellip;", "…")
+
+	// Trim whitespace and ellipsis
+	clean = strings.TrimSpace(clean)
+	clean = strings.TrimSuffix(clean, "…")
+	clean = strings.TrimSpace(clean)
+
+	// Truncate to 160 chars (SEO standard)
+	if len(clean) > 160 {
+		clean = clean[:160]
+		// Try to cut at word boundary
+		if lastSpace := strings.LastIndex(clean, " "); lastSpace > 120 {
+			clean = clean[:lastSpace]
+		}
+		clean = strings.TrimSpace(clean) + "…"
+	}
+
+	return clean
+}
+
 // preparePageContent prepends Elementor CSS links to page content.
 func preparePageContent(wpID int, content string) string {
 	cssLinks := fmt.Sprintf(`<link rel="stylesheet" href="https://adsqoo.id/wp-content/uploads/elementor/css/post-%d.css">
@@ -412,6 +449,16 @@ func migrateSinglePost(wp wpPost, defaultAuthorID uint, pageType string) error {
 		content = preparePostContent(&wp.Embedded.FeaturedMedia[0], wp.Title.Rendered, content)
 	}
 
+	// Clean excerpt for meta_description
+	metaDesc := cleanExcerpt(wp.Excerpt.Rendered)
+	if metaDesc != "" {
+		preview := metaDesc
+		if len(preview) > 50 {
+			preview = preview[:50]
+		}
+		fmt.Printf("  Set meta_description: %s...\n", preview)
+	}
+
 	// Create page record
 	page := models.Page{
 		Title:           wp.Title.Rendered,
@@ -422,6 +469,7 @@ func migrateSinglePost(wp wpPost, defaultAuthorID uint, pageType string) error {
 		AuthorID:        authorID,
 		FeaturedImageID: featuredImageID,
 		PublishedAt:     publishedAt,
+		MetaDescription: metaDesc,
 	}
 
 	if err := db.DB.Create(&page).Error; err != nil {
