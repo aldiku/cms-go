@@ -1,0 +1,63 @@
+{{ define "content" }}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Rollback WordPress Migration</h2>
+    <a href="/admin/migrate-wordpress" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">← Back</a>
+  </div>
+
+  {{ if eq .Count 0 }}
+  <div class="rounded-lg border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950/40 px-4 py-3 text-sm text-blue-700 dark:text-blue-400">
+    ✓ No migrated posts found. Your database is clean.
+  </div>
+  {{ else }}
+
+  <div class="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40 px-4 py-4 text-sm text-red-700 dark:text-red-400 space-y-2">
+    <p class="font-semibold">⚠️ Warning: This action cannot be undone!</p>
+    <p>This will permanently delete:</p>
+    <ul class="list-disc list-inside space-y-1 ml-2">
+      <li><strong>{{ .Count }} post(s)/page(s)</strong> migrated from WordPress</li>
+      <li>All their <strong>associations</strong> (categories, tags)</li>
+      <li>Their <strong>featured images</strong> (if not used elsewhere)</li>
+    </ul>
+    <p class="mt-2">Categories and tags created during migration will be preserved for future use.</p>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="p-5 sm:p-6">
+      <h3 class="mb-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Posts/Pages to Remove ({{ .Count }})</h3>
+      <div class="space-y-2 max-h-96 overflow-y-auto">
+        {{ range .MigratedPosts }}
+        <div class="flex items-start justify-between rounded-lg border border-gray-200 dark:border-gray-800 px-3 py-2 text-sm">
+          <div class="flex-1 min-w-0">
+            <p class="font-medium text-gray-800 dark:text-white/90 truncate">{{ .Title }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              <span class="inline-block bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">{{ .Type }}</span>
+              <span class="mx-2">•</span>
+              <span>ID: {{ .ID }}</span>
+              {{ if .FeaturedImageID }}<span class="mx-2">•</span><span>Featured: #{{ .FeaturedImageID }}</span>{{ end }}
+            </p>
+          </div>
+        </div>
+        {{ end }}
+      </div>
+    </div>
+  </div>
+
+  <div class="flex gap-3 justify-end pt-4 border-t border-gray-200 dark:border-gray-800">
+    <a href="/admin/migrate-wordpress"
+      class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+      Cancel
+    </a>
+    <form method="POST" action="/admin/migrate-wordpress/rollback/execute" style="display: inline;">
+      <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-red-700 transition-colors"
+        onclick="return confirm('Are you absolutely sure? This will permanently delete {{ .Count }} post(s) and cannot be undone.')">
+        🗑️ Confirm Rollback
+      </button>
+    </form>
+  </div>
+
+  {{ end }}
+
+</div>
+{{ end }}

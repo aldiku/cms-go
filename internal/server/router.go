@@ -169,6 +169,8 @@ func New() *echo.Echo {
 	// WordPress Migration
 	admin.GET("/migrate-wordpress", handlers.AdminMigrateWordPress)
 	admin.POST("/migrate-wordpress/run", handlers.AdminMigrateWordPressRun)
+	admin.GET("/migrate-wordpress/rollback", handlers.AdminWPMigrateRollback)
+	admin.POST("/migrate-wordpress/rollback/execute", handlers.AdminWPMigrateRollbackExecute)
 
 	// Categories & Tags (post taxonomy)
 	admin.GET("/categories", handlers.AdminCategories)

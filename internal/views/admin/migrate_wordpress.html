@@ -5,6 +5,12 @@
     <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">WordPress Migration</h2>
   </div>
 
+  {{ if .RolledBack }}
+  <div class="rounded-lg border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/40 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+    ✓ Migration rollback completed. All migrated posts and related media have been removed.
+  </div>
+  {{ end }}
+
   <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
     <div class="p-5 sm:p-6">
       <div class="space-y-4">
@@ -50,12 +56,20 @@
   <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
     <div class="p-5 sm:p-6">
       <h3 class="font-semibold text-gray-800 dark:text-white/90 mb-3">After Migration</h3>
-      <ol class="list-decimal list-inside space-y-2 text-sm text-gray-600 dark:text-gray-400">
+      <ol class="list-decimal list-inside space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
         <li>Check the <a href="/admin/pages" class="text-blue-600 dark:text-blue-400 hover:underline">Pages</a> section to see imported content</li>
         <li>Review posts and pages — content comes with HTML, may need formatting review</li>
         <li>Featured images are linked by URL; they'll display from the original WordPress site</li>
         <li>When ready, proceed with phase 2: mount wp-content via Docker volume to serve local copies</li>
       </ol>
+
+      <div class="pt-4 border-t border-gray-100 dark:border-gray-800">
+        <a href="/admin/migrate-wordpress/rollback"
+          class="inline-flex items-center gap-2 rounded-lg border border-red-300 dark:border-red-700 px-6 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors">
+          🗑️ Rollback Migration
+        </a>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Remove all migrated posts and their media</p>
+      </div>
     </div>
   </div>
 
