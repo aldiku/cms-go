@@ -260,6 +260,85 @@ func MigrateWPData(defaultAuthorID uint) error {
 	return nil
 }
 
+// GetMigratedPosts returns posts/pages that were likely migrated from WordPress
+// by checking for featured images from the WordPress site.
+func GetMigratedPosts() ([]models.Page, error) {
+	var pages []models.Page
+
+	// Find posts where featured image came from WordPress URL
+	db.DB.
+		Joins("LEFT JOIN media m ON pages.featured_image_id = m.id").
+		Where("(m.url LIKE ? OR m.url LIKE ?)", "%adsqoo.id%", "%/wp-content/%").
+		Order("pages.created_at desc").
+		Preload("FeaturedImage").
+		Preload("Categories").
+		Preload("Tags").
+		Find(&pages)
+
+	return pages, nil
+}
+
+// RollbackWPData removes all posts/pages that were migrated from WordPress.
+// It deletes the posts and their relations, but leaves categories/tags for reuse.
+func RollbackWPData() error {
+	fmt.Println("Starting WordPress migration rollback...")
+
+	// Find migrated posts
+	pages, err := GetMigratedPosts()
+	if err != nil {
+		return fmt.Errorf("get migrated posts: %w", err)
+	}
+
+	if len(pages) == 0 {
+		fmt.Println("No migrated posts found to rollback")
+		return nil
+	}
+
+	fmt.Printf("Found %d migrated posts/pages to remove\n", len(pages))
+
+	// Collect featured image IDs for later cleanup
+	orphanedMediaIDs := make(map[uint]bool)
+	for _, page := range pages {
+		if page.FeaturedImageID > 0 {
+			orphanedMediaIDs[page.FeaturedImageID] = true
+		}
+		fmt.Printf("  Deleting: %s (ID: %d, featured_image_id: %d)\n",
+			page.Title, page.ID, page.FeaturedImageID)
+	}
+
+	// Delete page_categories associations
+	pageIDs := make([]uint, len(pages))
+	for i, p := range pages {
+		pageIDs[i] = p.ID
+	}
+	if len(pageIDs) > 0 {
+		if err := db.DB.Table("page_categories").Where("page_id IN ?", pageIDs).Delete(nil).Error; err != nil {
+			fmt.Printf("Warning: failed to delete page_categories: %v\n", err)
+		}
+		if err := db.DB.Table("page_tags").Where("page_id IN ?", pageIDs).Delete(nil).Error; err != nil {
+			fmt.Printf("Warning: failed to delete page_tags: %v\n", err)
+		}
+	}
+
+	// Delete the pages themselves
+	if err := db.DB.Delete(&pages).Error; err != nil {
+		return fmt.Errorf("delete pages: %w", err)
+	}
+
+	// Clean up orphaned media (featured images that are no longer referenced)
+	for mediaID := range orphanedMediaIDs {
+		var count int64
+		db.DB.Model(&models.Page{}).Where("featured_image_id = ?", mediaID).Count(&count)
+		if count == 0 {
+			fmt.Printf("  Orphaned media ID %d, marking for cleanup\n", mediaID)
+			db.DB.Delete(&models.Media{}, mediaID)
+		}
+	}
+
+	fmt.Printf("✓ Successfully rolled back %d migrated posts/pages\n", len(pages))
+	return nil
+}
+
 // preparePageContent prepends Elementor CSS links to page content.
 func preparePageContent(wpID int, content string) string {
 	cssLinks := fmt.Sprintf(`<link rel="stylesheet" href="https://adsqoo.id/wp-content/uploads/elementor/css/post-%d.css">
