@@ -382,15 +382,23 @@ func migrateSinglePost(wp wpPost, defaultAuthorID uint, pageType string) error {
 		}
 	}
 
-	// Parse published date
+	// Parse published date (WordPress format: 2026-08-06T13:33:09, no timezone)
 	var publishedAt *time.Time
 	if wp.Status == "publish" {
-		t, err := time.Parse(time.RFC3339, wp.Date)
+		// Try WordPress date format first (no timezone)
+		t, err := time.Parse("2006-01-02T15:04:05", wp.Date)
 		if err != nil {
-			fmt.Printf("  ERROR parsing date '%s': %v\n", wp.Date, err)
+			// Fallback to RFC3339 if it has timezone info
+			t, err = time.Parse(time.RFC3339, wp.Date)
+			if err != nil {
+				fmt.Printf("  ERROR parsing date '%s': %v\n", wp.Date, err)
+			} else {
+				publishedAt = &t
+				fmt.Printf("  Set published_at: %v (RFC3339 format)\n", publishedAt)
+			}
 		} else {
 			publishedAt = &t
-			fmt.Printf("  Set published_at: %v\n", publishedAt)
+			fmt.Printf("  Set published_at: %v (WordPress format)\n", publishedAt)
 		}
 	} else {
 		fmt.Printf("  Status is '%s', not setting published_at\n", wp.Status)
