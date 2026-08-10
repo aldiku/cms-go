@@ -1,0 +1,112 @@
+{{ define "content" }}
+<div class="max-w-2xl mx-auto space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">{{if .Gateway.ID}}Edit Payment Gateway: {{.Gateway.Name}}{{else}}Create New Payment Gateway{{end}}</h2>
+    <a href="/admin/payment-gateways" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">&larr; Back to Payment Gateways</a>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="p-5 sm:p-6">
+      <form method="POST" action="{{if .Gateway.ID}}/admin/payment-gateways/{{.Gateway.ID}}/edit{{else}}/admin/payment-gateways/new{{end}}" class="space-y-6">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="name" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Name</label>
+            <input type="text" id="name" name="name" required value="{{.Gateway.Name}}" placeholder="e.g. Midtrans Production"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+          <div>
+            <label for="provider" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Provider</label>
+            <input type="text" id="provider" name="provider" required value="{{.Gateway.Provider}}" placeholder="e.g. midtrans, xendit, manual"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label for="base_url" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Base URL</label>
+          <input type="text" id="base_url" name="base_url" value="{{.Gateway.BaseURL}}" placeholder="https://api.sandbox.midtrans.com"
+            class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 font-mono placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">The gateway's API base URL, e.g. https://api.xendit.co or https://api.sandbox.midtrans.com</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="api_key" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">API Key / Server Key</label>
+            <input type="password" id="api_key" name="api_key" autocomplete="new-password"
+              placeholder="{{if .Gateway.ID}}Leave blank to keep the current key{{end}}"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Stored encrypted. Used to authenticate outbound calls to the gateway.</p>
+          </div>
+          <div>
+            <label for="callback_token" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Callback / Webhook Secret</label>
+            <input type="password" id="callback_token" name="callback_token" autocomplete="new-password"
+              placeholder="{{if .Gateway.ID}}Leave blank to keep the current secret{{end}}"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Stored encrypted. Used to verify inbound webhook signatures.</p>
+          </div>
+        </div>
+
+        <div class="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-4">
+          <div>
+            <h3 class="text-sm font-medium text-gray-800 dark:text-white/90">Charge request</h3>
+            <p class="text-xs text-gray-400 dark:text-gray-500">Configures how a charge is opened with this gateway — no code needed per provider, just the request/response shape.</p>
+          </div>
+
+          <div>
+            <label for="request_path" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Request path</label>
+            <input type="text" id="request_path" name="request_path" value="{{.Gateway.RequestPath}}" placeholder="/callback_virtual_accounts"
+              class="h-11 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 font-mono placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">
+            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">Appended to Base URL. Always POSTed with HTTP Basic Auth (API Key as username).</p>
+          </div>
+
+          <div>
+            <label for="request_body_template" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Request body template</label>
+            <textarea id="request_body_template" name="request_body_template" rows="6" placeholder='{"external_id": "&#123;&#123;order_id&#125;&#125;", "bank_code": "BCA", "expected_amount": &#123;&#123;amount&#125;&#125;}'
+              class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 font-mono placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">{{.Gateway.RequestBodyTemplate}}</textarea>
+            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">JSON body. Placeholders: <code>&#123;&#123;order_id&#125;&#125;</code>, <code>&#123;&#123;amount&#125;&#125;</code>, <code>&#123;&#123;bank_code&#125;&#125;</code>, <code>&#123;&#123;customer_name&#125;&#125;</code>, <code>&#123;&#123;customer_email&#125;&#125;</code>. Omit quotes around numeric placeholders like amount.</p>
+          </div>
+
+          <div>
+            <label for="response_field_map" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Response field map</label>
+            <textarea id="response_field_map" name="response_field_map" rows="4" placeholder='{"va_number": "account_number", "bank_code": "bank_code", "reference_id": "id", "expires_at": "expiration_date"}'
+              class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 font-mono placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">{{.Gateway.ResponseFieldMap}}</textarea>
+            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">JSON object mapping <code>va_number</code>, <code>bank_code</code>, <code>payment_url</code>, <code>reference_id</code>, <code>expires_at</code> to a dot-path in the gateway's JSON response (numeric segments index arrays, e.g. <code>va_numbers.0.va_number</code>).</p>
+          </div>
+        </div>
+
+        <div>
+          <label for="notes" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Notes</label>
+          <textarea id="notes" name="notes" rows="2"
+            class="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent dark:bg-gray-900 px-4 py-2.5 text-sm text-gray-800 dark:text-white/90 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:outline-none">{{.Gateway.Notes}}</textarea>
+        </div>
+
+        <div class="flex flex-wrap gap-6 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="sandbox" {{if .Gateway.Sandbox}}checked{{end}}
+              class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
+            <span class="text-sm text-gray-700 dark:text-gray-400">Sandbox mode</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="status" {{if eq .Gateway.Status 1}}checked{{end}} {{if not .Gateway.ID}}checked{{end}}
+              class="h-4 w-4 rounded border-gray-300 dark:border-gray-700 text-indigo-600 focus:ring-indigo-500">
+            <span class="text-sm text-gray-700 dark:text-gray-400">Active</span>
+          </label>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <a href="/admin/payment-gateways" class="inline-flex items-center rounded-lg border border-gray-300 dark:border-gray-700 px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">Cancel</a>
+          <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
+            <svg class="fill-current" width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
+            </svg>
+            Save
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>
+{{ end }}

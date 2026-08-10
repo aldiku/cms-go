@@ -122,27 +122,33 @@ type Creative struct {
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
 }
 
-// Transaction bundles one or more Orders into a single payable invoice. No
-// payment gateway exists yet (note.md §10.11) — it's created "pending" with
-// a stub virtual account number, same manually-reviewable shape as
-// ChannelTopup. ID format: "TRX-" + YYMMDD + 6 random uppercase alnum chars.
+// Transaction bundles one or more Orders into a single payable invoice.
+// Created "pending" with a VA number/payment URL resolved via
+// internal/paymentgateway.CreateCharge — a real gateway call when an active
+// PaymentGateway is configured, otherwise the same locally-generated stub
+// VA this always used (note.md §10.11), so existing installs keep working
+// unchanged until a gateway is set up. ID format: "TRX-" + YYMMDD + 6
+// random uppercase alnum chars.
 type Transaction struct {
-	ID            string `gorm:"primaryKey;size:24"`
-	UserID        uint   `gorm:"index"`
-	Subtotal      int64
-	Tax           int64 // PPN 11%
-	Fee           int64
-	GrandTotal    int64
-	Status        string // "pending" | "paid" | "expired" | "cancelled"
-	PaymentMethod string // e.g. "bank_transfer:bca", "token_adsqoo"
-	BankCode      string
-	VANumber      string
-	ExpiresAt     *time.Time
-	Sandbox       bool
-	Source        string
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	DeletedAt     gorm.DeletedAt `gorm:"index"`
+	ID                 string `gorm:"primaryKey;size:24"`
+	UserID             uint   `gorm:"index"`
+	Subtotal           int64
+	Tax                int64 // PPN 11%
+	Fee                int64
+	GrandTotal         int64
+	Status             string // "pending" | "paid" | "expired" | "cancelled"
+	PaymentMethod      string // e.g. "bank_transfer:bca", "token_adsqoo"
+	BankCode           string
+	VANumber           string
+	PaymentGatewayID   uint   // 0 = no gateway configured, VANumber is a local stub
+	GatewayReferenceID string // the gateway's own transaction/reference id
+	PaymentURL         string // set when the gateway returns a hosted payment page instead of/alongside a VA
+	ExpiresAt          *time.Time
+	Sandbox            bool
+	Source             string
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+	DeletedAt          gorm.DeletedAt `gorm:"index"`
 }
 
 // TransactionOrder is the join row backing a Transaction's order_ids[]

@@ -1,0 +1,93 @@
+{{ define "content" }}
+<div class="max-w-3xl mx-auto space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">{{ .Workflow.Name }}</h2>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ .Workflow.Description }}</p>
+    </div>
+    <a href="/admin/workflows" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">&larr; Back to Workflows</a>
+  </div>
+
+  <div class="space-y-0">
+    {{ $total := len .Steps }}
+    {{ range $i, $step := .Steps }}
+    <div class="relative pl-14">
+      {{ if ne $step.StepOrder $total }}
+      <div class="absolute left-[27px] top-14 bottom-0 w-px bg-gray-200 dark:bg-gray-700"></div>
+      {{ end }}
+
+      <div class="absolute left-0 top-0 flex h-14 w-14 items-center justify-center rounded-full border text-xl
+        {{ if eq $step.StepType "trigger" }}border-indigo-200 bg-indigo-50 dark:border-indigo-500/30 dark:bg-indigo-500/10
+        {{ else if eq $step.StepType "hook" }}border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10
+        {{ else if eq $step.StepType "service" }}border-green-200 bg-green-50 dark:border-green-500/30 dark:bg-green-500/10
+        {{ else }}border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800{{ end }}">
+        {{ $step.Icon }}
+      </div>
+
+      <div class="mb-6 rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900" x-data="{ open: false }">
+        <button type="button" @click="open = !open" class="flex w-full items-center justify-between gap-3 p-5 text-left">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="rounded-full px-2 py-0.5 text-xs font-medium
+                {{ if eq $step.StepType "trigger" }}bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400
+                {{ else if eq $step.StepType "hook" }}bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400
+                {{ else if eq $step.StepType "service" }}bg-green-50 text-green-600 dark:bg-green-500/15 dark:text-green-400
+                {{ else }}bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400{{ end }}">
+                {{ $step.StepType }}
+              </span>
+              <h3 class="text-sm font-semibold text-gray-800 dark:text-white/90">Step {{ $step.StepOrder }}: {{ $step.Title }}</h3>
+            </div>
+            <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400">{{ $step.Description }}</p>
+          </div>
+          <svg class="h-5 w-5 flex-shrink-0 text-gray-400 transition-transform" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/></svg>
+        </button>
+
+        <div x-show="open" x-transition class="border-t border-gray-100 dark:border-gray-800 px-5 py-4 space-y-4">
+          {{ if $step.Config }}
+          <div>
+            <p class="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Configured</p>
+            <dl class="space-y-1.5">
+              {{ range $key, $val := $step.Config }}
+              <div class="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2 text-sm">
+                <dt class="w-48 flex-shrink-0 font-mono text-xs text-gray-500 dark:text-gray-400">{{ $key }}</dt>
+                <dd class="font-mono text-xs text-gray-700 dark:text-gray-300 break-all">{{ $val }}</dd>
+              </div>
+              {{ end }}
+            </dl>
+          </div>
+          {{ end }}
+
+          {{ if $step.ActiveGateways }}
+          <div>
+            <p class="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">Live binding — active payment gateway{{ if gt (len $step.ActiveGateways) 1 }}s{{ end }} right now</p>
+            <div class="space-y-2">
+              {{ range $step.ActiveGateways }}
+              <div class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-gray-100 dark:border-gray-800 px-3 py-2">
+                <div class="text-sm">
+                  <span class="font-medium text-gray-800 dark:text-white/90">{{ .Name }}</span>
+                  <span class="text-gray-400 dark:text-gray-500"> &middot; {{ .Provider }}</span>
+                  {{ if .Sandbox }}<span class="ml-2 rounded-full bg-amber-50 dark:bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">Sandbox</span>{{ end }}
+                </div>
+                <a href="/admin/payment-gateways/{{ .ID }}/edit" class="text-xs font-medium text-indigo-600 hover:text-indigo-800">Configure &rarr;</a>
+              </div>
+              {{ else }}
+              <p class="text-sm text-gray-400 dark:text-gray-600">No active gateway — falls back to the manual/stub VA generator.</p>
+              {{ end }}
+            </div>
+          </div>
+          {{ end }}
+
+          {{ if eq $step.StepType "hook" }}
+          <a href="/admin/notification-hooks/new" class="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800">Wire a hook in Notification Manager &rarr;</a>
+          {{ end }}
+        </div>
+      </div>
+    </div>
+    {{ else }}
+    <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">No steps configured for this workflow yet.</p>
+    {{ end }}
+  </div>
+
+</div>
+{{ end }}

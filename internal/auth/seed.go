@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"encoding/json"
 	"log"
 	"os"
 
@@ -184,6 +185,12 @@ func SeedAuth() {
 	}
 	db.DB.Where("path = ?", smtpMenu.Path).Attrs(smtpMenu).FirstOrCreate(&smtpMenu)
 
+	paymentGatewaysMenu := models.Menu{
+		Menu: "Payment Gateways", Path: "/admin/payment-gateways", Icon: "💳",
+		MenuType: "module", Status: 1, ListOrder: 2, ParentID: settingsMenu.ID, MenuGroupID: backendGroup.ID,
+	}
+	db.DB.Where("path = ?", paymentGatewaysMenu.Path).Attrs(paymentGatewaysMenu).FirstOrCreate(&paymentGatewaysMenu)
+
 	emailTemplateMenu := models.Menu{
 		Menu: "Email Template", Path: "/admin/email-templates", Icon: "✉️",
 		MenuType: "module", Status: 1, ListOrder: 15, MenuGroupID: backendGroup.ID,
@@ -226,6 +233,14 @@ func SeedAuth() {
 	}
 	db.DB.Where("path = ?", campaignMenu.Path).Attrs(campaignMenu).FirstOrCreate(&campaignMenu)
 
+	workflowsMenu := models.Menu{
+		Menu: "Workflow Builder", Path: "/admin/workflows", Icon: "🧵",
+		MenuType: "module", Status: 1, ListOrder: 22, MenuGroupID: backendGroup.ID,
+		MenuDescription: "Visualizes how a request actually flows through the app end-to-end — trigger, hook, actions, services.",
+	}
+	db.DB.Where("path = ?", workflowsMenu.Path).Attrs(workflowsMenu).FirstOrCreate(&workflowsMenu)
+	seedWorkflows()
+
 	// Backfill: any menu row without a group (pre-dates MenuGroupID, or was
 	// just created above without one) belongs to the system Backend group.
 	db.DB.Model(&models.Menu{}).Where("menu_group_id = 0 OR menu_group_id IS NULL").Update("menu_group_id", backendGroup.ID)
@@ -235,5 +250,121 @@ func SeedAuth() {
 	}
 	if os.Getenv("APP_KEY") == "" {
 		log.Println("⚠️  seed: APP_KEY is not set — SMTP config passwords will be encrypted with a guessable key")
+	}
+}
+
+// cfgJSON marshals a step's ConfigJSON, dropping the error since every call
+// site passes a fixed literal map — a marshal failure here would be a typo,
+// not a runtime condition.
+func cfgJSON(v map[string]string) string {
+	b, _ := json.Marshal(v)
+	return string(b)
+}
+
+// seedWorkflows creates one sample workflow, "Workflow Transaction", that
+// documents the real internal/handlers/campaign_transactions.go pipeline —
+// trigger, actions, the payment-gateway service call, and the (currently
+// unwired) confirmation-email hook — so /admin/workflows has something real
+// to show rather than an empty state. Idempotent: only runs if no workflow
+// with this slug exists yet, so it never fights hand-edited steps.
+func seedWorkflows() {
+	var existing models.Workflow
+	if err := db.DB.Where("slug = ?", "workflow-transaction").First(&existing).Error; err == nil {
+		return
+	}
+
+	wf := models.Workflow{
+		Name:        "Workflow Transaction",
+		Slug:        "workflow-transaction",
+		Description: "How a checkout request turns into a real charge with the active payment gateway — from the API call through to the persisted Transaction.",
+		Status:      1,
+	}
+	if err := db.DB.Create(&wf).Error; err != nil {
+		log.Printf("seed: create workflow failed: %v", err)
+		return
+	}
+
+	steps := []models.WorkflowStep{
+		{
+			WorkflowID: wf.ID, StepOrder: 1, StepType: models.WorkflowStepTrigger,
+			Title:       "API Request Received",
+			Description: "A campaign-authenticated client bundles one or more draft Orders into a single payable invoice.",
+			Icon:        "⚡",
+			ConfigJSON: cfgJSON(map[string]string{
+				"method":  "POST",
+				"path":    "/campaign/api/transactions",
+				"auth":    "Campaign API key (query \"key=\" or \"X-API-Key\" header) — see auth.ResolveKeyActor",
+				"handler": "CampaignTransactionCreate",
+			}),
+		},
+		{
+			WorkflowID: wf.ID, StepOrder: 2, StepType: models.WorkflowStepAction,
+			Title:       "Validate & Price Orders",
+			Description: "Loads the requested draft Orders for the authenticated user, sums their totals, and applies tax plus a flat admin fee.",
+			Icon:        "🧮",
+			ConfigJSON: cfgJSON(map[string]string{
+				"tax_rate":    "11% (PPN)",
+				"admin_fee":   "Rp 4,000 flat",
+				"source_file": "internal/handlers/campaign_transactions.go",
+			}),
+		},
+		{
+			WorkflowID: wf.ID, StepOrder: 3, StepType: models.WorkflowStepService,
+			Title:       "Resolve Active Payment Gateway",
+			Description: "Looks up the first active PaymentGateway row. If none is active, falls back to a built-in manual/stub VA generator so checkout still works.",
+			Icon:        "🏦",
+			ConfigJSON: cfgJSON(map[string]string{
+				"function": "resolveActiveGateway()",
+				"policy":   "single active gateway, first by id — routing by payment method is a later phase",
+				"fallback": "manual (locally-generated stub VA, no HTTP call)",
+			}),
+		},
+		{
+			WorkflowID: wf.ID, StepOrder: 4, StepType: models.WorkflowStepAction,
+			Title:       "Call Payment Gateway",
+			Description: "Renders the gateway's request body template with order_id/amount/bank_code/customer fields and POSTs to Base URL + Request Path with HTTP Basic Auth — no per-provider Go code.",
+			Icon:        "🔌",
+			ConfigJSON: cfgJSON(map[string]string{
+				"package":         "internal/paymentgateway",
+				"function":        "CreateCharge",
+				"template_engine": "notify.Render (\"{{key}}\" placeholders)",
+				"auth":            "HTTP Basic Auth, decrypted API key as username",
+			}),
+		},
+		{
+			WorkflowID: wf.ID, StepOrder: 5, StepType: models.WorkflowStepAction,
+			Title:       "Log Gateway Call",
+			Description: "Writes a PaymentGatewayLog row — request, response, success flag — for every call, success or failure, for auditing and debugging.",
+			Icon:        "🧾",
+			ConfigJSON: cfgJSON(map[string]string{
+				"model":     "PaymentGatewayLog",
+				"direction": "outbound",
+				"function":  "logGatewayCall()",
+			}),
+		},
+		{
+			WorkflowID: wf.ID, StepOrder: 6, StepType: models.WorkflowStepHook,
+			Title:       "Notification Hook",
+			Description: "No notification hook currently fires after a successful charge. Wire one in the Notification Manager (e.g. a \"Transaction Created\" confirmation email) to add one.",
+			Icon:        "🔔",
+			ConfigJSON: cfgJSON(map[string]string{
+				"registry_key": "not configured",
+				"suggested_at": "internal/notify.Registry — add a key such as \"transaction_created\"",
+				"see_also":     "/admin/notification-hooks",
+			}),
+		},
+		{
+			WorkflowID: wf.ID, StepOrder: 7, StepType: models.WorkflowStepAction,
+			Title:       "Persist Transaction & Orders",
+			Description: "Inside a single DB transaction: creates the Transaction row with the gateway's real reference/VA/payment URL, links each Order, and moves those Orders to Awaiting Payment.",
+			Icon:        "💾",
+			ConfigJSON: cfgJSON(map[string]string{
+				"models":             "Transaction, TransactionOrder",
+				"order_status_after": "Awaiting Payment",
+			}),
+		},
+	}
+	if err := db.DB.Create(&steps).Error; err != nil {
+		log.Printf("seed: create workflow steps failed: %v", err)
 	}
 }

@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"errors"
+	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,12 +16,21 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const addr = ":8080"
+
 func main() {
 	godotenv.Load()
+
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Fatalf("cannot start: port %s is already in use: %v", addr, err)
+	}
+
 	srv := server.New()
+	srv.Listener = listener
 
 	go func() {
-		if err := srv.Start(":8080"); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := srv.Start(addr); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			srv.Logger.Fatal(err)
 		}
 	}()

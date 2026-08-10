@@ -1,0 +1,57 @@
+{{ define "content" }}
+<div class="space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Workflow Builder</h2>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Visual maps of how a request actually flows through the app — trigger, hook, actions, services.</p>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="px-5 py-4 sm:px-6 sm:py-5">
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">All Workflows</h3>
+    </div>
+    <div class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
+      <div class="w-full overflow-x-auto">
+        <table class="min-w-full">
+          <thead>
+            <tr class="border-y border-gray-100 dark:border-gray-800">
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Name</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Description</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Steps</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Status</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Action</p></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            {{ $counts := .StepCounts }}
+            {{ range .Workflows }}
+            <tr>
+              <td class="py-4 text-sm font-medium text-gray-800 dark:text-white/90">{{ .Name }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400 max-w-md">{{ .Description }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ index $counts .ID }} steps</td>
+              <td class="py-4 text-sm">
+                {{ if eq .Status 1 }}
+                <span class="rounded-full bg-green-50 dark:bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-600 dark:text-green-400">Active</span>
+                {{ else }}
+                <span class="rounded-full bg-gray-50 dark:bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-500 dark:text-gray-400">Inactive</span>
+                {{ end }}
+              </td>
+              <td class="py-4 text-sm">
+                <a href="/admin/workflows/{{ .ID }}" class="text-indigo-600 hover:text-indigo-800 font-medium">Open Builder &rarr;</a>
+              </td>
+            </tr>
+            {{ else }}
+            <tr>
+              <td colspan="5" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No workflows found.</td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}

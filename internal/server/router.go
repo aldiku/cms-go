@@ -76,6 +76,8 @@ func New() *echo.Echo {
 		&models.Channel{}, &models.ChannelTopup{},
 		&models.Order{}, &models.OrderDetail{}, &models.Audience{}, &models.Creative{},
 		&models.Transaction{}, &models.TransactionOrder{},
+		&models.PaymentGateway{}, &models.PaymentGatewayLog{},
+		&models.Workflow{}, &models.WorkflowStep{},
 	)
 	auth.SeedAuth()
 	auth.SeedAuthPages()
@@ -243,6 +245,14 @@ func New() *echo.Echo {
 	admin.POST("/smtp/:id/delete", handlers.AdminDeleteSMTPConfig)
 	admin.POST("/smtp/:id/test", handlers.AdminTestSMTPConfig)
 
+	// Payment Gateways (Settings > Payment Gateways)
+	admin.GET("/payment-gateways", handlers.AdminPaymentGateways)
+	admin.GET("/payment-gateways/new", handlers.AdminPaymentGatewayForm)
+	admin.POST("/payment-gateways/new", handlers.AdminCreatePaymentGateway)
+	admin.GET("/payment-gateways/:id/edit", handlers.AdminPaymentGatewayForm)
+	admin.POST("/payment-gateways/:id/edit", handlers.AdminUpdatePaymentGateway)
+	admin.POST("/payment-gateways/:id/delete", handlers.AdminDeletePaymentGateway)
+
 	// Email Templates
 	admin.GET("/email-templates", handlers.AdminEmailTemplates)
 	admin.GET("/email-templates/new", handlers.AdminEmailTemplateForm)
@@ -295,6 +305,11 @@ func New() *echo.Echo {
 	admin.GET("/roles/:id/edit", handlers.AdminRoleForm)
 	admin.POST("/roles/:id/edit", handlers.AdminUpdateRole)
 	admin.POST("/roles/:id/delete", handlers.AdminDeleteRole)
+
+	// Workflow Builder — read-only visualization of how a real request flows
+	// through the app end-to-end (trigger, hook, actions, services)
+	admin.GET("/workflows", handlers.AdminWorkflows)
+	admin.GET("/workflows/:id", handlers.AdminWorkflowDetail)
 
 	// Menus
 	admin.GET("/menus", handlers.AdminMenus)

@@ -1,21 +1,22 @@
 package handlers
 
 import (
-	"crypto/rand"
+	"encoding/json"
 	"net/http"
 	"time"
 
 	"cms-go/internal/db"
 	"cms-go/internal/models"
+	"cms-go/internal/paymentgateway"
 	"cms-go/internal/utils"
 
 	"github.com/labstack/echo/v4"
 )
 
 // adminFee is a flat processing fee added to every transaction, matching
-// the "Fee"/"Biaya Admin" line in the cart/invoice screenshots. No payment
-// gateway exists yet (note.md §10.11), so this is a fixed placeholder, not
-// a gateway-quoted amount.
+// the "Fee"/"Biaya Admin" line in the cart/invoice screenshots. Not
+// gateway-quoted — gateways don't return a separate admin fee, this is the
+// platform's own markup.
 const adminFee int64 = 4000
 
 // taxRateBps is PPN 11%, expressed in basis points to avoid float rounding.
@@ -43,6 +44,7 @@ type transactionJSON struct {
 	PaymentMethod string                 `json:"payment_method"`
 	BankCode      string                 `json:"bank_code"`
 	VANumber      string                 `json:"va_number"`
+	PaymentURL    string                 `json:"payment_url,omitempty"`
 	ExpiresAt     *time.Time             `json:"expires_at"`
 	CreatedAt     time.Time              `json:"created_at"`
 	Sandbox       bool                   `json:"sandbox"`
@@ -54,7 +56,7 @@ func transactionToJSON(txn models.Transaction, lines []transactionOrderLine) tra
 	return transactionJSON{
 		ID: txn.ID, Subtotal: txn.Subtotal, Tax: txn.Tax, Fee: txn.Fee, GrandTotal: txn.GrandTotal,
 		Status: txn.Status, PaymentMethod: txn.PaymentMethod, BankCode: txn.BankCode,
-		VANumber: txn.VANumber, ExpiresAt: txn.ExpiresAt, CreatedAt: txn.CreatedAt,
+		VANumber: txn.VANumber, PaymentURL: txn.PaymentURL, ExpiresAt: txn.ExpiresAt, CreatedAt: txn.CreatedAt,
 		Sandbox: txn.Sandbox, Source: txn.Source, Orders: lines,
 	}
 }
@@ -79,20 +81,46 @@ func transactionOrderLines(transactionID string) []transactionOrderLine {
 	return lines
 }
 
-func generateVANumber() string {
-	digits := "0123456789"
-	buf := make([]byte, 16)
-	rand.Read(buf)
-	for i, b := range buf {
-		buf[i] = digits[int(b)%len(digits)]
+// resolveActiveGateway returns the gateway to charge a new Transaction
+// through. v1 policy: the single active PaymentGateway, first by ID —
+// routing by payment method across multiple active gateways is a later
+// phase. No active gateway falls back to an in-memory "manual" one
+// (PaymentGatewayID stays 0 on the Transaction), which keeps checkout
+// working with the original locally-generated stub VA until a real gateway
+// is configured.
+func resolveActiveGateway() models.PaymentGateway {
+	var gw models.PaymentGateway
+	if err := db.DB.Where("status = 1").Order("id asc").First(&gw).Error; err == nil {
+		return gw
 	}
-	return string(buf)
+	return models.PaymentGateway{Provider: "manual"}
+}
+
+// logGatewayCall records one call to internal/paymentgateway.CreateCharge —
+// success or failure — as the always-on "save payment gateway log" step
+// from payment-gateway.md's workflow description. Best-effort: a logging
+// failure never blocks or unwinds the checkout itself.
+func logGatewayCall(gw models.PaymentGateway, subjectID string, req paymentgateway.ChargeRequest, resp paymentgateway.ChargeResponse, callErr error) {
+	reqJSON, _ := json.Marshal(req)
+	entry := models.PaymentGatewayLog{
+		PaymentGatewayID: gw.ID,
+		SubjectType:      "transaction",
+		SubjectID:        subjectID,
+		Direction:        "outbound",
+		RequestJSON:      string(reqJSON),
+		ResponseJSON:     resp.Raw,
+		Success:          callErr == nil,
+	}
+	if callErr != nil {
+		entry.ErrorMessage = callErr.Error()
+	}
+	db.DB.Create(&entry)
 }
 
 // POST /campaign/api/transactions — bundles one or more draft Orders into a
 // single payable invoice (cart-transaction.md's "post api dengan isi
-// orderids []"). No real payment gateway: creates a "pending" record with a
-// stub VA number, mirroring the existing ChannelTopup manual-review shape.
+// orderids []"), then runs the payment gateway (internal/paymentgateway) to
+// open the actual charge and get a real VA number / payment URL back.
 func CampaignTransactionCreate(c echo.Context) error {
 	user, sandbox, source := campaignActor(c)
 
@@ -115,22 +143,43 @@ func CampaignTransactionCreate(c echo.Context) error {
 	tax := subtotal * taxRateBps / 10000
 	grandTotal := subtotal + tax + adminFee
 
-	txn := models.Transaction{
-		UserID: user.ID, Subtotal: subtotal, Tax: tax, Fee: adminFee, GrandTotal: grandTotal,
-		Status: "pending", PaymentMethod: req.PaymentMethod, BankCode: req.BankCode,
-		VANumber: generateVANumber(), Sandbox: sandbox, Source: source,
+	// The transaction ID is generated up front (rather than after the DB
+	// write, as before) so the same ID can be handed to the gateway as its
+	// order reference — the gateway call happens before any DB write, to
+	// avoid holding one open for the duration of an outbound HTTP request.
+	txnID := utils.GenerateEntityID("TRX-")
+
+	gw := resolveActiveGateway()
+	chargeReq := paymentgateway.ChargeRequest{
+		OrderID: txnID, Amount: grandTotal, BankCode: req.BankCode,
+		CustomerName: user.FullName(), CustomerEmail: user.Email,
 	}
-	expires := time.Now().Add(24 * time.Hour)
-	txn.ExpiresAt = &expires
+	chargeResp, err := paymentgateway.CreateCharge(gw, chargeReq)
+	logGatewayCall(gw, txnID, chargeReq, chargeResp, err)
+	if err != nil {
+		return c.JSON(http.StatusBadGateway, map[string]string{"error": "failed to open payment with the gateway: " + err.Error()})
+	}
+
+	bankCode := chargeResp.BankCode
+	if bankCode == "" {
+		bankCode = req.BankCode
+	}
+	expiresAt := chargeResp.ExpiresAt
+	if expiresAt == nil {
+		fallback := time.Now().Add(24 * time.Hour)
+		expiresAt = &fallback
+	}
+
+	txn := models.Transaction{
+		ID: txnID, UserID: user.ID, Subtotal: subtotal, Tax: tax, Fee: adminFee, GrandTotal: grandTotal,
+		Status: "pending", PaymentMethod: req.PaymentMethod, BankCode: bankCode,
+		VANumber: chargeResp.VANumber, PaymentGatewayID: gw.ID,
+		GatewayReferenceID: chargeResp.GatewayReferenceID, PaymentURL: chargeResp.PaymentURL,
+		ExpiresAt: expiresAt, Sandbox: sandbox, Source: source,
+	}
 
 	dbTx := db.DB.Begin()
-	for attempt := 0; attempt < 5; attempt++ {
-		txn.ID = utils.GenerateEntityID("TRX-")
-		if err := dbTx.Create(&txn).Error; err == nil {
-			break
-		}
-	}
-	if txn.ID == "" {
+	if err := dbTx.Create(&txn).Error; err != nil {
 		dbTx.Rollback()
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to create transaction"})
 	}
