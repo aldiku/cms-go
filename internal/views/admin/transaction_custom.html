@@ -1,0 +1,213 @@
+{{ define "content" }}
+<div class="space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Create Custom Transaction</h2>
+    <a href="/admin/transactions" class="inline-flex items-center gap-2 rounded-lg bg-gray-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-gray-700 transition-colors">
+      ← Back to Transactions
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Form -->
+    <div class="lg:col-span-2">
+      <div class="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+        <div class="px-5 py-4 sm:px-6 sm:py-5 border-b border-gray-100 dark:border-gray-800">
+          <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Transaction Details</h3>
+        </div>
+        <div class="p-5 sm:p-6">
+          <form method="POST" class="space-y-6">
+
+            <!-- User Selection -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">User *</label>
+              <select name="user_id" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                <option value="">-- Select User --</option>
+                {{ range .Users }}
+                <option value="{{ .ID }}">{{ .FullName }} ({{ .Email }})</option>
+                {{ end }}
+              </select>
+            </div>
+
+            <!-- Items Section -->
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Products *</label>
+                <button type="button" onclick="addItem()" class="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium">+ Add Item</button>
+              </div>
+              <div id="items-container" class="space-y-4">
+                <!-- Items will be added here -->
+                <div class="item-row space-y-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Product Name</label>
+                      <input type="text" name="items[0][name]" placeholder="e.g., SMS Campaign" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"/>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Quantity</label>
+                      <input type="number" name="items[0][qty]" placeholder="1" value="1" min="1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"/>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Unit Price (Rp)</label>
+                      <input type="number" name="items[0][price]" placeholder="50000" min="0" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" onchange="calculateTotal()"/>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">HPP/Cost (Rp)</label>
+                      <input type="number" name="items[0][hpp]" placeholder="30000" min="0" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" onchange="calculateTotal()"/>
+                    </div>
+                  </div>
+                  <div class="flex justify-end">
+                    <button type="button" onclick="removeItem(this)" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium">Remove</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Billing Type -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Billing Type</label>
+              <div class="flex gap-4">
+                <label class="flex items-center">
+                  <input type="radio" name="billing_type" value="prepaid" checked class="border-gray-300 dark:border-gray-700 dark:bg-gray-800"/>
+                  <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Prepaid</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="radio" name="billing_type" value="postpaid" class="border-gray-300 dark:border-gray-700 dark:bg-gray-800"/>
+                  <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Postpaid</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Status -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Status *</label>
+              <select name="status" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                <option value="">-- Select Status --</option>
+                <option value="pending">Pending</option>
+                <option value="paid">Paid</option>
+                <option value="expired">Expired</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium text-sm">Create Transaction</button>
+              <a href="/admin/transactions" class="px-4 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 font-medium text-sm">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div>
+      <div class="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 sticky top-6">
+        <div class="px-5 py-4 sm:px-6 sm:py-5 border-b border-gray-100 dark:border-gray-800">
+          <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Summary</h3>
+        </div>
+        <div class="p-5 sm:p-6">
+          <div class="space-y-3">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600 dark:text-gray-400">Subtotal</span>
+              <span id="subtotal" class="font-medium text-gray-900 dark:text-white">Rp 0</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600 dark:text-gray-400">Tax (11%)</span>
+              <span id="tax" class="font-medium text-gray-900 dark:text-white">Rp 0</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600 dark:text-gray-400">Admin Fee</span>
+              <span id="fee" class="font-medium text-gray-900 dark:text-white">Rp 4,000</span>
+            </div>
+            <div class="pt-3 border-t border-gray-200 dark:border-gray-800 flex justify-between">
+              <span class="font-semibold text-gray-900 dark:text-white">Total</span>
+              <span id="total" class="text-xl font-bold text-indigo-600 dark:text-indigo-400">Rp 0</span>
+            </div>
+          </div>
+
+          <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <h4 class="font-medium text-sm text-blue-900 dark:text-blue-200 mb-2">Info</h4>
+            <ul class="text-xs text-blue-800 dark:text-blue-300 space-y-1">
+              <li>• Tax is automatically calculated at 11%</li>
+              <li>• Admin fee is fixed at Rp 4,000</li>
+              <li>• Items are editable in transaction detail</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let itemCount = 1;
+const TAX_RATE = 0.11;
+const ADMIN_FEE = 4000;
+
+function addItem() {
+  const container = document.getElementById('items-container');
+  const newItem = document.createElement('div');
+  newItem.className = 'item-row space-y-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg';
+  newItem.innerHTML = `
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Product Name</label>
+        <input type="text" name="items[${itemCount}][name]" placeholder="e.g., SMS Campaign" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"/>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Quantity</label>
+        <input type="number" name="items[${itemCount}][qty]" placeholder="1" value="1" min="1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"/>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Unit Price (Rp)</label>
+        <input type="number" name="items[${itemCount}][price]" placeholder="50000" min="0" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" onchange="calculateTotal()"/>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">HPP/Cost (Rp)</label>
+        <input type="number" name="items[${itemCount}][hpp]" placeholder="30000" min="0" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" onchange="calculateTotal()"/>
+      </div>
+    </div>
+    <div class="flex justify-end">
+      <button type="button" onclick="removeItem(this)" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium">Remove</button>
+    </div>
+  `;
+  container.appendChild(newItem);
+  itemCount++;
+  calculateTotal();
+}
+
+function removeItem(btn) {
+  btn.closest('.item-row').remove();
+  calculateTotal();
+}
+
+function calculateTotal() {
+  let subtotal = 0;
+  document.querySelectorAll('.item-row').forEach(row => {
+    const priceInput = row.querySelector('input[name*="[price]"]');
+    const qtyInput = row.querySelector('input[name*="[qty]"]');
+    if (priceInput && qtyInput) {
+      const price = parseFloat(priceInput.value) || 0;
+      const qty = parseFloat(qtyInput.value) || 0;
+      subtotal += price * qty;
+    }
+  });
+
+  const tax = Math.round(subtotal * TAX_RATE);
+  const total = subtotal + tax + ADMIN_FEE;
+
+  document.getElementById('subtotal').textContent = 'Rp ' + subtotal.toLocaleString('id-ID');
+  document.getElementById('tax').textContent = 'Rp ' + tax.toLocaleString('id-ID');
+  document.getElementById('total').textContent = 'Rp ' + total.toLocaleString('id-ID');
+}
+
+// Initial calculation
+calculateTotal();
+</script>
+{{ end }}

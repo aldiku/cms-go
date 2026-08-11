@@ -8,7 +8,7 @@ import (
 	"cms-go/internal/handlers"
 	"cms-go/internal/models"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -65,27 +65,47 @@ func New() *echo.Echo {
 
 	// init DB
 	db.Connect()
-	db.DB.AutoMigrate(
-		&models.Page{}, &models.Layout{}, &models.MenuGroup{}, &models.Menu{}, &models.Component{},
-		&models.User{}, &models.Role{}, &models.Permission{}, &models.Session{},
-		&models.Revision{}, &models.ApiEndpoint{}, &models.Category{}, &models.Tag{},
-		&models.Media{}, &models.SMTPConfig{}, &models.EmailTemplate{}, &models.NotificationHook{},
-		&models.EmailVerification{}, &models.PasswordReset{},
-		&models.ProductCategory{}, &models.Product{}, &models.ProductVariant{}, &models.ProductVariantTier{},
-		&models.PriceOverride{}, &models.GeneralSetting{},
-		&models.Channel{}, &models.ChannelTopup{},
-		&models.Order{}, &models.OrderDetail{}, &models.Audience{}, &models.Creative{},
-		&models.Transaction{}, &models.TransactionOrder{},
-		&models.PaymentGateway{}, &models.PaymentGatewayLog{},
-		&models.Workflow{}, &models.WorkflowStep{},
-	)
+
+	// Check if migrations are needed (skip expensive AutoMigrate if tables exist)
+	var tableCount int64
+	db.DB.Raw("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'pages'").Scan(&tableCount)
+
+	if tableCount == 0 {
+		log.Println("First boot: running database migrations (this may take 1-2 minutes)...")
+		db.DB.AutoMigrate(
+			&models.Page{}, &models.Layout{}, &models.MenuGroup{}, &models.Menu{}, &models.Component{},
+			&models.User{}, &models.Role{}, &models.Permission{}, &models.Session{},
+			&models.Revision{}, &models.ApiEndpoint{}, &models.Category{}, &models.Tag{},
+			&models.Media{}, &models.SMTPConfig{}, &models.EmailTemplate{}, &models.NotificationHook{},
+			&models.EmailVerification{}, &models.PasswordReset{},
+			&models.ProductCategory{}, &models.Product{}, &models.ProductVariant{}, &models.ProductVariantTier{},
+			&models.PriceOverride{}, &models.GeneralSetting{},
+			&models.Channel{}, &models.ChannelTopup{},
+			&models.Order{}, &models.OrderDetail{}, &models.Audience{}, &models.Creative{},
+			&models.Transaction{}, &models.TransactionOrder{},
+			&models.PaymentGateway{}, &models.PaymentGatewayLog{},
+			&models.Workflow{}, &models.WorkflowStep{},
+		)
+		log.Println("Database migrations completed")
+	} else {
+		log.Println("Database tables already exist, skipping migrations")
+	}
+
+	// Quick sync seeding (fast, needed for auth to work)
 	auth.SeedAuth()
 	auth.SeedAuthPages()
 	migratePageDefaults()
-	// generate templates from DB into views/generated
-	if err := generator.GenerateTemplatesFromDB(); err != nil {
-		fmt.Println("template generation error:", err)
-	}
+	log.Println("Database seeding completed")
+
+	// Generate templates asynchronously (doesn't block request handling)
+	go func() {
+		log.Println("Generating templates from database...")
+		if err := generator.GenerateTemplatesFromDB(); err != nil {
+			log.Printf("template generation error: %v", err)
+		} else {
+			log.Println("Template generation completed")
+		}
+	}()
 
 	e.Renderer = NewRenderer()
 
@@ -358,6 +378,15 @@ func New() *echo.Echo {
 	admin.GET("/campaign/add", handlers.AdminCampaignAdd)
 	admin.GET("/campaign/edit/:id", handlers.AdminCampaignEdit)
 	admin.GET("/campaign/detail/:id", handlers.AdminCampaignDetail)
+
+	// Admin Transactions — CRUD management for billing transactions
+	admin.GET("/transactions", handlers.AdminTransactionsList)
+	admin.GET("/transactions/:id", handlers.AdminTransactionDetail)
+	admin.POST("/transactions/:id/edit", handlers.AdminUpdateTransaction)
+	admin.GET("/transactions/import", handlers.AdminTransactionImportForm)
+	admin.POST("/transactions/import", handlers.AdminTransactionImportProcess)
+	admin.GET("/transactions/custom/new", handlers.AdminTransactionCustomForm)
+	admin.POST("/transactions/custom/new", handlers.AdminTransactionCustomCreate)
 
 	// Client/reseller Campaign, Cart & Invoice pages — embeddable as an
 	// iframe on a reseller's own site (cart-transaction.md), authenticated

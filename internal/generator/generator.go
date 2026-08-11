@@ -36,6 +36,24 @@ func ParseTemplates() (*template.Template, error) {
 		"renderComponent": func(name string, data interface{}) template.HTML {
 			return template.HTML("")
 		},
+		"add": func(a, b int) int {
+			return a + b
+		},
+		"sub": func(a, b int) int {
+			return a - b
+		},
+		"float64": func(v interface{}) float64 {
+			switch val := v.(type) {
+			case float64:
+				return val
+			case int:
+				return float64(val)
+			case int64:
+				return float64(val)
+			default:
+				return 0
+			}
+		},
 	})
 
 	tmpl, err := root.ParseGlob("internal/views/**/*.html")

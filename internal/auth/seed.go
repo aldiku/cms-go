@@ -233,9 +233,15 @@ func SeedAuth() {
 	}
 	db.DB.Where("path = ?", campaignMenu.Path).Attrs(campaignMenu).FirstOrCreate(&campaignMenu)
 
+	transactionsMenu := models.Menu{
+		Menu: "Transactions", Path: "/admin/transactions", Icon: "💰",
+		MenuType: "module", Status: 1, ListOrder: 22, MenuGroupID: backendGroup.ID,
+	}
+	db.DB.Where("path = ?", transactionsMenu.Path).Attrs(transactionsMenu).FirstOrCreate(&transactionsMenu)
+
 	workflowsMenu := models.Menu{
 		Menu: "Workflow Builder", Path: "/admin/workflows", Icon: "🧵",
-		MenuType: "module", Status: 1, ListOrder: 22, MenuGroupID: backendGroup.ID,
+		MenuType: "module", Status: 1, ListOrder: 23, MenuGroupID: backendGroup.ID,
 		MenuDescription: "Visualizes how a request actually flows through the app end-to-end — trigger, hook, actions, services.",
 	}
 	db.DB.Where("path = ?", workflowsMenu.Path).Attrs(workflowsMenu).FirstOrCreate(&workflowsMenu)

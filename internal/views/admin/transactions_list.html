@@ -1,0 +1,139 @@
+{{ define "content" }}
+<div class="space-y-6">
+
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">Transactions</h2>
+    <div class="flex gap-2">
+      <a href="/admin/transactions/custom/new" class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-700 transition-colors">
+        <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M10 3.75C10.4142 3.75 10.75 4.08579 10.75 4.5V9.25H15.5C15.9142 9.25 16.25 9.58579 16.25 10C16.25 10.4142 15.9142 10.75 15.5 10.75H10.75V15.5C10.75 15.9142 10.4142 16.25 10 16.25C9.58579 16.25 9.25 15.9142 9.25 15.5V10.75H4.5C4.08579 10.75 3.75 10.4142 3.75 10C3.75 9.58579 4.08579 9.25 4.5 9.25H9.25V4.5C9.25 4.08579 9.58579 3.75 10 3.75Z" fill=""/>
+        </svg>
+        + New Transaction
+      </a>
+      <a href="/admin/transactions/import" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 transition-colors">
+        <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+          <path d="M10 6.5V13.5M6.5 10H13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Import
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4">
+      <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Transactions</p>
+      <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{{ .Stats.TotalTransactions }}</p>
+    </div>
+    <div class="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4">
+      <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</p>
+      <p class="mt-2 text-2xl font-bold text-gray-900 dark:text-white">{{ .Stats.TotalRevenue }}</p>
+    </div>
+    <div class="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4">
+      <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Pending</p>
+      <p class="mt-2 text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ .Stats.PendingCount }}</p>
+    </div>
+    <div class="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4">
+      <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Paid</p>
+      <p class="mt-2 text-2xl font-bold text-green-600 dark:text-green-400">{{ .Stats.PaidCount }}</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4">
+    <form method="GET" class="flex flex-wrap gap-3">
+      <div>
+        <input type="text" name="user" placeholder="User ID" value="{{ .Filters.user }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"/>
+      </div>
+      <div>
+        <select name="status" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm">
+          <option value="">All Statuses</option>
+          {{ range .Statuses }}
+          <option value="{{ . }}" {{ if eq . $.Filters.status }}selected{{ end }}>{{ . }}</option>
+          {{ end }}
+        </select>
+      </div>
+      <div>
+        <input type="date" name="date_from" value="{{ .Filters.date_from }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"/>
+      </div>
+      <div>
+        <input type="date" name="date_to" value="{{ .Filters.date_to }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"/>
+      </div>
+      <button type="submit" class="px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium">Filter</button>
+      <a href="/admin/transactions" class="px-3 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-sm font-medium">Clear</a>
+    </form>
+  </div>
+
+  <!-- Transactions Table -->
+  <div class="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div class="px-5 py-4 sm:px-6 sm:py-5">
+      <h3 class="text-base font-medium text-gray-800 dark:text-white/90">Transaction List ({{ .Total }} total)</h3>
+    </div>
+    <div class="border-t border-gray-100 dark:border-gray-800 p-5 sm:p-6">
+      <div class="w-full overflow-x-auto">
+        <table class="min-w-full">
+          <thead>
+            <tr class="border-y border-gray-100 dark:border-gray-800">
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Transaction ID</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">User</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Email</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Date</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Amount</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Status</p></th>
+              <th class="py-3 text-left"><p class="font-medium text-gray-500 dark:text-gray-400 text-xs">Action</p></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            {{ range .Transactions }}
+            <tr>
+              <td class="py-4 text-sm font-medium text-gray-800 dark:text-white/90 font-mono">{{ .ID }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .User.FullName }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .User.Email }}</td>
+              <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .CreatedAt.Format "2006-01-02 15:04" }}</td>
+              <td class="py-4 text-sm font-medium text-gray-800 dark:text-white/90">Rp {{ printf "%.0f" (float64 .GrandTotal) }}</td>
+              <td class="py-4 text-sm">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                  {{ if eq .Status "paid" }}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{{ else if eq .Status "pending" }}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{{ else if eq .Status "expired" }}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200{{ else }}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200{{ end }}">
+                  {{ .Status }}
+                </span>
+              </td>
+              <td class="py-4 text-sm">
+                <div class="flex items-center gap-3">
+                  <a href="/admin/transactions/{{ .ID }}" class="text-indigo-600 hover:text-indigo-800 font-medium">View</a>
+                  {{ if ne .Status "paid" }}
+                  <a href="/admin/transactions/{{ .ID }}" class="text-indigo-600 hover:text-indigo-800 font-medium">Edit</a>
+                  {{ end }}
+                </div>
+              </td>
+            </tr>
+            {{ else }}
+            <tr>
+              <td colspan="7" class="py-8 text-sm text-gray-500 dark:text-gray-400 text-center">No transactions found.</td>
+            </tr>
+            {{ end }}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  {{ if gt .TotalPages 1 }}
+  <div class="flex items-center justify-center gap-2">
+    {{ if gt .Page 1 }}
+    <a href="/admin/transactions?page=1{{ if .Filters.user }}&user={{ .Filters.user }}{{ end }}{{ if .Filters.status }}&status={{ .Filters.status }}{{ end }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">First</a>
+    <a href="/admin/transactions?page={{ sub .Page 1 }}{{ if .Filters.user }}&user={{ .Filters.user }}{{ end }}{{ if .Filters.status }}&status={{ .Filters.status }}{{ end }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Prev</a>
+    {{ end }}
+
+    <span class="px-4 py-2 text-gray-600 dark:text-gray-400">Page {{ .Page }} of {{ .TotalPages }}</span>
+
+    {{ if lt .Page .TotalPages }}
+    <a href="/admin/transactions?page={{ add .Page 1 }}{{ if .Filters.user }}&user={{ .Filters.user }}{{ end }}{{ if .Filters.status }}&status={{ .Filters.status }}{{ end }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Next</a>
+    <a href="/admin/transactions?page={{ .TotalPages }}{{ if .Filters.user }}&user={{ .Filters.user }}{{ end }}{{ if .Filters.status }}&status={{ .Filters.status }}{{ end }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Last</a>
+    {{ end }}
+  </div>
+  {{ end }}
+
+</div>
+{{ end }}

@@ -1,0 +1,35 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath' | { read -r f; [[ \"$f\" == *.go ]] && goimports -w \"$f\" 2>/dev/null || true; }",
+            "statusMessage": "Formatting Go code with goimports...",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "cd /Users/apple/Projects/cms-go && go build ./... 2>&1",
+            "statusMessage": "Checking if code builds...",
+            "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "cd /Users/apple/Projects/cms-go && golangci-lint run ./... 2>&1 || true",
+            "statusMessage": "Running linter...",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "cd /Users/apple/Projects/cms-go && go test ./... 2>&1 || true",
+            "statusMessage": "Running tests...",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

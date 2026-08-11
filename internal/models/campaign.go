@@ -132,6 +132,7 @@ type Creative struct {
 type Transaction struct {
 	ID                 string `gorm:"primaryKey;size:24"`
 	UserID             uint   `gorm:"index"`
+	User               User   `gorm:"foreignKey:UserID;references:ID"`
 	Subtotal           int64
 	Tax                int64 // PPN 11%
 	Fee                int64
