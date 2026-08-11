@@ -38,20 +38,34 @@
               <div id="items-container" class="space-y-4">
                 <!-- Items will be added here -->
                 <div class="item-row space-y-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                  <div class="grid grid-cols-2 gap-3">
+                  <div class="grid grid-cols-3 gap-3">
                     <div>
-                      <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Product Name</label>
-                      <input type="text" name="items[0][name]" placeholder="e.g., SMS Campaign" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"/>
+                      <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Category</label>
+                      <select name="items[0][category_id]" class="item-category w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" onchange="updateProductSelect(this)">
+                        <option value="">-- Select Category --</option>
+                      </select>
                     </div>
                     <div>
-                      <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Quantity</label>
-                      <input type="number" name="items[0][qty]" placeholder="1" value="1" min="1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"/>
+                      <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Product</label>
+                      <select name="items[0][product_id]" class="item-product w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" onchange="updateVariantSelect(this)">
+                        <option value="">-- Select Product --</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Variant</label>
+                      <select name="items[0][variant_id]" class="item-variant w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" onchange="updatePriceFromProduct(this)">
+                        <option value="">-- Select Variant --</option>
+                      </select>
                     </div>
                   </div>
-                  <div class="grid grid-cols-2 gap-3">
+                  <div class="grid grid-cols-3 gap-3">
+                    <div>
+                      <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Quantity</label>
+                      <input type="number" name="items[0][qty]" placeholder="1" value="1" min="1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" onchange="calculateTotal()"/>
+                    </div>
                     <div>
                       <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Unit Price (Rp)</label>
-                      <input type="number" name="items[0][price]" placeholder="50000" min="0" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" onchange="calculateTotal()"/>
+                      <input type="number" name="items[0][price]" placeholder="50000" min="0" class="item-price w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" onchange="calculateTotal()"/>
                     </div>
                     <div>
                       <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">HPP/Cost (Rp)</label>
@@ -147,26 +161,136 @@
 let itemCount = 1;
 const TAX_RATE = 0.11;
 const ADMIN_FEE = 4000;
+let productTree = null;
+
+// Load product tree on page load
+async function loadProductTree() {
+  try {
+    const response = await fetch('/admin/transactions/api/products');
+    productTree = await response.json();
+    populateCategorySelects();
+  } catch (err) {
+    console.error('Error loading products:', err);
+  }
+}
+
+function populateCategorySelects() {
+  if (!productTree) return;
+  document.querySelectorAll('.item-category').forEach(select => {
+    select.innerHTML = '<option value="">-- Select Category --</option>';
+    productTree.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat.id;
+      option.textContent = cat.text;
+      select.appendChild(option);
+    });
+  });
+}
+
+function updateProductSelect(categorySelect) {
+  if (!productTree) return;
+  const row = categorySelect.closest('.item-row');
+  const productSelect = row.querySelector('.item-product');
+  const variantSelect = row.querySelector('.item-variant');
+
+  productSelect.innerHTML = '<option value="">-- Select Product --</option>';
+  variantSelect.innerHTML = '<option value="">-- Select Variant --</option>';
+  row.querySelector('.item-price').value = '';
+
+  const catId = parseInt(categorySelect.value);
+  if (!catId) return;
+
+  const category = productTree.find(c => c.id === catId);
+  if (category && category.children) {
+    category.children.forEach(product => {
+      const option = document.createElement('option');
+      option.value = product.id;
+      option.textContent = product.text;
+      option.dataset.price = product.price || 0;
+      option.dataset.children = JSON.stringify(product.children || []);
+      productSelect.appendChild(option);
+    });
+  }
+}
+
+function updateVariantSelect(productSelect) {
+  if (!productTree) return;
+  const row = productSelect.closest('.item-row');
+  const variantSelect = row.querySelector('.item-variant');
+  const priceInput = row.querySelector('.item-price');
+
+  variantSelect.innerHTML = '<option value="">-- Select Variant --</option>';
+  priceInput.value = '';
+
+  const selectedOption = productSelect.options[productSelect.selectedIndex];
+  if (!selectedOption.value) return;
+
+  try {
+    const children = JSON.parse(selectedOption.dataset.children || '[]');
+    if (children.length > 0) {
+      children.forEach(variant => {
+        const option = document.createElement('option');
+        option.value = variant.id;
+        option.textContent = variant.text;
+        option.dataset.price = variant.price || 0;
+        variantSelect.appendChild(option);
+      });
+    } else {
+      const option = document.createElement('option');
+      option.value = selectedOption.value;
+      option.textContent = selectedOption.textContent;
+      option.dataset.price = selectedOption.dataset.price;
+      variantSelect.appendChild(option);
+    }
+  } catch (err) {
+    console.error('Error parsing children:', err);
+  }
+}
+
+function updatePriceFromProduct(variantSelect) {
+  const row = variantSelect.closest('.item-row');
+  const priceInput = row.querySelector('.item-price');
+  const selectedOption = variantSelect.options[variantSelect.selectedIndex];
+
+  if (selectedOption.value) {
+    priceInput.value = selectedOption.dataset.price || '';
+  }
+  calculateTotal();
+}
 
 function addItem() {
   const container = document.getElementById('items-container');
   const newItem = document.createElement('div');
   newItem.className = 'item-row space-y-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg';
   newItem.innerHTML = `
-    <div class="grid grid-cols-2 gap-3">
+    <div class="grid grid-cols-3 gap-3">
       <div>
-        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Product Name</label>
-        <input type="text" name="items[${itemCount}][name]" placeholder="e.g., SMS Campaign" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"/>
+        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Category</label>
+        <select name="items[${itemCount}][category_id]" class="item-category w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" onchange="updateProductSelect(this)">
+          <option value="">-- Select Category --</option>
+        </select>
       </div>
       <div>
-        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Quantity</label>
-        <input type="number" name="items[${itemCount}][qty]" placeholder="1" value="1" min="1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"/>
+        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Product</label>
+        <select name="items[${itemCount}][product_id]" class="item-product w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" onchange="updateVariantSelect(this)">
+          <option value="">-- Select Product --</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Variant</label>
+        <select name="items[${itemCount}][variant_id]" class="item-variant w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" onchange="updatePriceFromProduct(this)">
+          <option value="">-- Select Variant --</option>
+        </select>
       </div>
     </div>
-    <div class="grid grid-cols-2 gap-3">
+    <div class="grid grid-cols-3 gap-3">
+      <div>
+        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Quantity</label>
+        <input type="number" name="items[${itemCount}][qty]" placeholder="1" value="1" min="1" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" onchange="calculateTotal()"/>
+      </div>
       <div>
         <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Unit Price (Rp)</label>
-        <input type="number" name="items[${itemCount}][price]" placeholder="50000" min="0" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" onchange="calculateTotal()"/>
+        <input type="number" name="items[${itemCount}][price]" placeholder="50000" min="0" class="item-price w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm" onchange="calculateTotal()"/>
       </div>
       <div>
         <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">HPP/Cost (Rp)</label>
@@ -178,6 +302,7 @@ function addItem() {
     </div>
   `;
   container.appendChild(newItem);
+  populateCategorySelects();
   itemCount++;
   calculateTotal();
 }
@@ -207,7 +332,8 @@ function calculateTotal() {
   document.getElementById('total').textContent = 'Rp ' + total.toLocaleString('id-ID');
 }
 
-// Initial calculation
+// Load products and calculate initial totals
+loadProductTree();
 calculateTotal();
 </script>
 {{ end }}

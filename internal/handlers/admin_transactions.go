@@ -88,6 +88,8 @@ func AdminTransactionsList(c echo.Context) error {
 		"Transactions": transactions,
 		"Stats":        stats,
 		"Page":         page,
+		"PrevPage":     page - 1,
+		"NextPage":     page + 1,
 		"PageSize":     pageSize,
 		"TotalPages":   totalPages,
 		"Total":        total,
@@ -184,4 +186,88 @@ func AdminTransactionCustomForm(c echo.Context) error {
 func AdminTransactionCustomCreate(c echo.Context) error {
 	// TODO: Implement custom transaction creation
 	return c.String(http.StatusNotImplemented, "Custom transaction creation coming soon")
+}
+
+// GET /admin/transactions/api/users-search - AJAX endpoint for user search
+func AdminTransactionUsersSearch(c echo.Context) error {
+	query := c.QueryParam("q")
+	var users []models.User
+	db.DB.Where("firstname ILIKE ? OR lastname ILIKE ? OR email ILIKE ?",
+		"%"+query+"%", "%"+query+"%", "%"+query+"%").
+		Order("firstname asc, lastname asc").
+		Limit(20).
+		Find(&users)
+
+	type userResult struct {
+		ID    uint   `json:"id"`
+		Name  string `json:"text"`
+		Email string `json:"email"`
+	}
+
+	results := make([]userResult, 0, len(users))
+	for _, u := range users {
+		results = append(results, userResult{
+			ID:    u.ID,
+			Name:  u.FullName() + " (" + u.Email + ")",
+			Email: u.Email,
+		})
+	}
+
+	return c.JSON(http.StatusOK, results)
+}
+
+// GET /admin/transactions/api/products - AJAX endpoint for product tree
+func AdminTransactionProductsTree(c echo.Context) error {
+	type productNode struct {
+		ID       uint          `json:"id"`
+		Text     string        `json:"text"`
+		Children []productNode `json:"children,omitempty"`
+		Price    int64         `json:"price,omitempty"`
+		Code     string        `json:"code,omitempty"`
+	}
+
+	var categories []models.ProductCategory
+	db.DB.Order("name asc").Find(&categories)
+
+	results := make([]productNode, 0, len(categories))
+	for _, cat := range categories {
+		var roots []models.Product
+		db.DB.Where("product_category_id = ? AND parent_id = 0", cat.ID).
+			Order("list_order asc").
+			Find(&roots)
+
+		catNode := productNode{
+			ID:       cat.ID,
+			Text:     cat.Name,
+			Children: make([]productNode, 0, len(roots)),
+		}
+
+		// Recursively build product tree
+		var buildTree func(parentID uint, categoryID uint) []productNode
+		buildTree = func(parentID uint, categoryID uint) []productNode {
+			var products []models.Product
+			db.DB.Where("product_category_id = ? AND parent_id = ?", categoryID, parentID).
+				Order("list_order asc").
+				Find(&products)
+
+			nodes := make([]productNode, 0, len(products))
+			for _, p := range products {
+				children := buildTree(p.ID, categoryID)
+				node := productNode{
+					ID:       p.ID,
+					Text:     p.Name,
+					Price:    p.Price,
+					Code:     p.Code,
+					Children: children,
+				}
+				nodes = append(nodes, node)
+			}
+			return nodes
+		}
+
+		catNode.Children = buildTree(0, cat.ID)
+		results = append(results, catNode)
+	}
+
+	return c.JSON(http.StatusOK, results)
 }

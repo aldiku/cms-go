@@ -387,6 +387,9 @@ func New() *echo.Echo {
 	admin.POST("/transactions/import", handlers.AdminTransactionImportProcess)
 	admin.GET("/transactions/custom/new", handlers.AdminTransactionCustomForm)
 	admin.POST("/transactions/custom/new", handlers.AdminTransactionCustomCreate)
+	// AJAX endpoints for transaction management
+	admin.GET("/transactions/api/users-search", handlers.AdminTransactionUsersSearch)
+	admin.GET("/transactions/api/products", handlers.AdminTransactionProductsTree)
 
 	// Client/reseller Campaign, Cart & Invoice pages — embeddable as an
 	// iframe on a reseller's own site (cart-transaction.md), authenticated

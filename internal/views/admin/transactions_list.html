@@ -43,8 +43,10 @@
   <!-- Filters -->
   <div class="rounded-lg border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 p-4">
     <form method="GET" class="flex flex-wrap gap-3">
-      <div>
-        <input type="text" name="user" placeholder="User ID" value="{{ .Filters.user }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"/>
+      <div class="relative" style="width: 250px;">
+        <input type="hidden" id="user_id" name="user" value="{{ .Filters.user }}"/>
+        <input type="text" id="user_search" placeholder="Search user..." autocomplete="off" class="px-3 py-2 w-full border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"/>
+        <div id="user_dropdown" class="hidden absolute top-full left-0 w-full mt-1 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 shadow-lg max-h-48 overflow-y-auto z-10"></div>
       </div>
       <div>
         <select name="status" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm">
@@ -91,7 +93,7 @@
               <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .User.FullName }}</td>
               <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .User.Email }}</td>
               <td class="py-4 text-sm text-gray-500 dark:text-gray-400">{{ .CreatedAt.Format "2006-01-02 15:04" }}</td>
-              <td class="py-4 text-sm font-medium text-gray-800 dark:text-white/90">Rp {{ printf "%.0f" (float64 .GrandTotal) }}</td>
+              <td class="py-4 text-sm font-medium text-gray-800 dark:text-white/90">Rp {{ .GrandTotal }}</td>
               <td class="py-4 text-sm">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                   {{ if eq .Status "paid" }}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{{ else if eq .Status "pending" }}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{{ else if eq .Status "expired" }}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200{{ else }}bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200{{ end }}">
@@ -123,17 +125,68 @@
   <div class="flex items-center justify-center gap-2">
     {{ if gt .Page 1 }}
     <a href="/admin/transactions?page=1{{ if .Filters.user }}&user={{ .Filters.user }}{{ end }}{{ if .Filters.status }}&status={{ .Filters.status }}{{ end }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">First</a>
-    <a href="/admin/transactions?page={{ sub .Page 1 }}{{ if .Filters.user }}&user={{ .Filters.user }}{{ end }}{{ if .Filters.status }}&status={{ .Filters.status }}{{ end }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Prev</a>
+    <a href="/admin/transactions?page={{ .PrevPage }}{{ if .Filters.user }}&user={{ .Filters.user }}{{ end }}{{ if .Filters.status }}&status={{ .Filters.status }}{{ end }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Prev</a>
     {{ end }}
 
     <span class="px-4 py-2 text-gray-600 dark:text-gray-400">Page {{ .Page }} of {{ .TotalPages }}</span>
 
     {{ if lt .Page .TotalPages }}
-    <a href="/admin/transactions?page={{ add .Page 1 }}{{ if .Filters.user }}&user={{ .Filters.user }}{{ end }}{{ if .Filters.status }}&status={{ .Filters.status }}{{ end }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Next</a>
+    <a href="/admin/transactions?page={{ .NextPage }}{{ if .Filters.user }}&user={{ .Filters.user }}{{ end }}{{ if .Filters.status }}&status={{ .Filters.status }}{{ end }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Next</a>
     <a href="/admin/transactions?page={{ .TotalPages }}{{ if .Filters.user }}&user={{ .Filters.user }}{{ end }}{{ if .Filters.status }}&status={{ .Filters.status }}{{ end }}" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Last</a>
     {{ end }}
   </div>
   {{ end }}
 
 </div>
+
+<script>
+// User search AJAX
+const userSearchInput = document.getElementById('user_search');
+const userDropdown = document.getElementById('user_dropdown');
+const userIdInput = document.getElementById('user_id');
+
+userSearchInput.addEventListener('input', async (e) => {
+  const query = e.target.value.trim();
+  if (query.length < 1) {
+    userDropdown.classList.add('hidden');
+    return;
+  }
+
+  try {
+    const response = await fetch(`/admin/transactions/api/users-search?q=${encodeURIComponent(query)}`);
+    const users = await response.json();
+
+    userDropdown.innerHTML = '';
+    if (users && users.length > 0) {
+      users.forEach(user => {
+        const item = document.createElement('div');
+        item.className = 'px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-white';
+        item.textContent = user.text;
+        item.onclick = () => {
+          userIdInput.value = user.id;
+          userSearchInput.value = user.text;
+          userDropdown.classList.add('hidden');
+        };
+        userDropdown.appendChild(item);
+      });
+      userDropdown.classList.remove('hidden');
+    } else {
+      const item = document.createElement('div');
+      item.className = 'px-3 py-2 text-sm text-gray-500 dark:text-gray-400';
+      item.textContent = 'No users found';
+      userDropdown.appendChild(item);
+      userDropdown.classList.remove('hidden');
+    }
+  } catch (err) {
+    console.error('Error searching users:', err);
+  }
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#user_search') && !e.target.closest('#user_dropdown')) {
+    userDropdown.classList.add('hidden');
+  }
+});
+</script>
 {{ end }}
