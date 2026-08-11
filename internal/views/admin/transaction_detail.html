@@ -133,7 +133,7 @@
           {{ range .Logs }}
           <div class="border-l-4 {{ if .Success }}border-green-500{{ else }}border-red-500{{ end }} bg-gray-50 dark:bg-gray-800 p-4">
             <div class="flex items-start justify-between mb-2">
-              <p class="font-medium text-gray-900 dark:text-white text-sm">{{ if .Success }}✓{{ else }}✗{{ end }} {{ .Direction | upper }}</p>
+              <p class="font-medium text-gray-900 dark:text-white text-sm">{{ if .Success }}✓{{ else }}✗{{ end }} {{ .Direction }}</p>
               <p class="text-xs text-gray-500 dark:text-gray-400">{{ .CreatedAt.Format "2006-01-02 15:04:05" }}</p>
             </div>
             {{ if .ErrorMessage }}
